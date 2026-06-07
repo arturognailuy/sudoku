@@ -1,14 +1,14 @@
-package cli
+package game
 
 import (
 	"os"
 	"os/signal"
 )
 
-// Define the close channel type.
+// CloseChannel provides a signal-based shutdown mechanism for the game loop.
 type CloseChannel chan struct{}
 
-// Function to handle the interrupt signal.
+// handleInterruptSignal listens for OS interrupt signals and closes the channel.
 func (closeChannel CloseChannel) handleInterruptSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -20,7 +20,7 @@ func (closeChannel CloseChannel) handleInterruptSignal() {
 	}()
 }
 
-// Constructor like function to create a new close channel.
+// NewCloseChannel creates a new close channel that responds to OS interrupt signals.
 func NewCloseChannel() CloseChannel {
 	var closeChannel CloseChannel = make(chan struct{})
 	closeChannel.handleInterruptSignal()
@@ -28,7 +28,7 @@ func NewCloseChannel() CloseChannel {
 	return closeChannel
 }
 
-// Function to check if the close channel is closed, unblocking.
+// IsClosed checks if the close channel has been closed (non-blocking).
 func (closeChannel CloseChannel) IsClosed() bool {
 	select {
 	case <-closeChannel:
@@ -39,7 +39,7 @@ func (closeChannel CloseChannel) IsClosed() bool {
 	return false
 }
 
-// Function to close the close channel.
+// Close closes the channel, signaling shutdown.
 func (closeChannel CloseChannel) Close() {
 	close(closeChannel)
 }

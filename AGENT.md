@@ -19,11 +19,11 @@ go build && go test ./...
 ```
 .
 ├── main.go              # Entry point — CLI parsing → game loop
-├── cli/                 # Command-line flag parsing, close channel
+├── cli/                 # Command-line flag parsing (difficulty enum, help)
 ├── core/                # Board, cell, position, validator, normalizer, string serialization
 ├── solver/              # ISudokuSolver interface, solver store, default backtracking solver
 ├── generator/           # Puzzle generation — solved board + cell removal with uniqueness checks
-├── game/                # Game state, undo/redo/hints, interactive CLI play loop
+├── game/                # Game state, undo/redo/hints, interactive CLI play loop, signal handling
 ├── util/                # Random shuffle, array helpers
 ├── .aidoc/              # AI-native documentation
 │   ├── INDEX.md
@@ -61,14 +61,9 @@ go build && go test ./...
 ### Documentation
 
 - Keep `.aidoc/` docs in sync with code changes in the same PR.
+- Follow DocGuidelines: docs capture the *why* and *constraints*, not the *how* that code already expresses.
 - `README.md` is for humans; `.aidoc/` is for AI agents.
 
 ## Domain Context
 
 This is a Sudoku puzzle game. The current difficulty model is clue-count-based (how many cells are pre-filled). The goal is to evolve toward strategy-based difficulty, where difficulty is determined by the hardest solving technique required. See `.aidoc/designs/difficulty-model.md` for the design.
-
-## Key Interfaces
-
-- **`ISudokuSolver`** (`solver/sudoku_solver.go`) — all solvers implement this. Methods: `Solve`, `Hint`, `CountSolutions`, `GetKey`, `IsReliable`.
-- **`SudokuSolverStore`** (`solver/sudoku_solver_store.go`) — registry mapping solver keys to implementations.
-- **`SudokuDifficulty`** (`generator/sudoku_generator_difficulty.go`) — has `StrategySolverKeys` field already wired into the generator.
