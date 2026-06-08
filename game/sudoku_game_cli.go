@@ -155,8 +155,7 @@ func (game *SudokuGame) runCommand(command string, closeChannel CloseChannel) bo
 	case "help", "h":
 		game.printHelp()
 		return false
-	case "add", "a":
-	case "clear", "d":
+	case "add", "a", "clear", "d":
 		success, err := game.runCommandWithArguments(commandFields)
 		if err != nil {
 			printError("Failed to run the", commandFields[0], "command:", err)
