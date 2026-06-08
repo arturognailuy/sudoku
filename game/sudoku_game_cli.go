@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gnailuy/sudoku/cli"
 	"github.com/gnailuy/sudoku/core"
 )
 
@@ -144,7 +143,7 @@ func (game *SudokuGame) runCommandWithArguments(commandFields []string) (success
 }
 
 // Function to run a command.
-func (game *SudokuGame) runCommand(command string, closeChannel cli.CloseChannel) bool {
+func (game *SudokuGame) runCommand(command string, closeChannel CloseChannel) bool {
 	commandFields := strings.SplitN(command, " ", 2)
 
 	// Empty command, return directly.
@@ -156,8 +155,7 @@ func (game *SudokuGame) runCommand(command string, closeChannel cli.CloseChannel
 	case "help", "h":
 		game.printHelp()
 		return false
-	case "add", "a":
-	case "clear", "d":
+	case "add", "a", "clear", "d":
 		success, err := game.runCommandWithArguments(commandFields)
 		if err != nil {
 			printError("Failed to run the", commandFields[0], "command:", err)
@@ -215,7 +213,7 @@ func (game *SudokuGame) runCommand(command string, closeChannel cli.CloseChannel
 }
 
 // Function to ask the user for input.
-func (game *SudokuGame) askUserInput(scanner *bufio.Scanner, inputChannel chan string, closeChannel cli.CloseChannel) {
+func (game *SudokuGame) askUserInput(scanner *bufio.Scanner, inputChannel chan string, closeChannel CloseChannel) {
 	// Check if the close channel is closed.
 	if closeChannel.IsClosed() {
 		return
@@ -241,7 +239,7 @@ func (game *SudokuGame) askUserInput(scanner *bufio.Scanner, inputChannel chan s
 // Function to start the game.
 func (game *SudokuGame) PlayCli() {
 	inputChannel := make(chan string)
-	closeChannel := cli.NewCloseChannel()
+	closeChannel := NewCloseChannel()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
