@@ -69,6 +69,6 @@ Defined in `solver/sudoku_solver.go`. All solvers implement `ISudokuSolver` with
 
 ## Design Constraints
 
-- **Interface naming:** `ISudokuSolver` uses the `I` prefix (non-standard Go). Planned for rename in a future core refactoring phase — see `.aidoc/designs/roadmap.md` Phase 4.
+- **Interface naming:** `ISudokuSolver` uses the `I` prefix (non-standard Go). Planned for rename in the core refactoring phase — see `.aidoc/designs/roadmap.md` Phase 2.
 - **Error vs panic:** Methods called with invalid state from within the system `panic` (bug detection). Methods processing user input return errors. This split is intentional.
 - **Geometric distribution stop:** The generator uses `util.RandomBool(0.125)` to probabilistically stop cell removal after reaching the target clue range. This produces natural variation within a difficulty band.

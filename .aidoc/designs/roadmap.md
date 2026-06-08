@@ -10,6 +10,7 @@ dependencies:
 # Roadmap
 
 Future development phases for the Sudoku project, from core refactoring through UI readiness.
+Refactoring comes first — clean up while the codebase is small, then build new solvers on solid foundations.
 
 ## Related Docs
 
@@ -19,10 +20,26 @@ Future development phases for the Sudoku project, from core refactoring through 
 | `.aidoc/designs/difficulty-model.md` | Difficulty model design (strategy-based, with puzzle database) |
 | `.aidoc/INDEX.md` | Discovery index |
 
-## Phase 2: Strategy Solvers
+## Phase 2: Core Refactoring
+
+Refactor the codebase while it's small, before adding new solvers.
+New strategy solvers should be built on clean, modern infrastructure.
+
+- **Interface naming:** Rename to follow Go naming conventions (e.g., `ISudokuSolver` → `Solver`).
+  The current `I`-prefix style is non-standard Go. This touches nearly every file,
+  so it's best done now while the codebase is small.
+- **Core data structures:** Revisit `Board`, `Cell`, `Position`, and related types
+  for clarity, performance, and extensibility.
+- **Solver architecture:** Review the solver interface and store design
+  to establish clean foundations for strategy solvers.
+- **Game design:** Refactor the game loop and state management for cleaner separation
+  of concerns.
+
+## Phase 3: Strategy Solvers
 
 Implement solving techniques incrementally, one per PR.
-Each solver implements `ISudokuSolver`, gets tests, and registers in the solver store.
+Each solver implements the solver interface (renamed in Phase 2), gets tests,
+and registers in the solver store.
 
 Priority order:
 1. Naked Singles
@@ -34,7 +51,7 @@ Priority order:
 See `.aidoc/designs/difficulty-model.md` for the strategy tier definitions
 and `.aidoc/architecture/guidelines.md` for the step-by-step solver addition guide.
 
-## Phase 3: Generator Integration and Puzzle Database
+## Phase 4: Generator Integration and Puzzle Database
 
 Wire strategy solvers into puzzle generation and build a puzzle database:
 
@@ -45,20 +62,6 @@ Wire strategy solvers into puzzle generation and build a puzzle database:
 
 Clue-count ranges are a secondary constraint: a puzzle must fall within the expected
 clue band *and* require techniques at the target tier.
-
-## Phase 4: Core Refactoring
-
-Major refactoring of the core data structures, solver, and game design:
-
-- **Interface naming:** Rename to follow Go naming conventions (e.g., `ISudokuSolver` → `Solver`).
-  The current `I`-prefix style is non-standard Go. This touches nearly every file,
-  so it's deferred to a dedicated refactoring phase.
-- **Core data structures:** Revisit `Board`, `Cell`, `Position`, and related types
-  for clarity, performance, and extensibility.
-- **Solver architecture:** Review the solver interface and store design
-  once multiple strategy solvers exist and real usage patterns emerge.
-- **Game design:** Refactor the game loop and state management for cleaner separation
-  of concerns, preparing for the UI-ready engine phase.
 
 ## Phase 5: UI-Ready Core Engine
 
@@ -77,4 +80,4 @@ Goals:
 - **UI independence:** The engine makes no assumptions about rendering, input method,
   or platform. A web UI, TUI, or mobile app should all be viable frontends.
 
-This phase depends on the core refactoring (Phase 4) to establish clean interfaces first.
+This phase depends on the core refactoring (Phase 2) to establish clean interfaces first.

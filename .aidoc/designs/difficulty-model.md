@@ -90,7 +90,3 @@ The plumbing exists in the generator (`generator/sudoku_generator.go`):
 
 What's missing: actual strategy solver implementations to register.
 
-## Resolved Questions
-
-- **Clue-count ranges:** Preserved as a secondary constraint alongside technique requirements (not replaced). See "Clue Count as Secondary Constraint" above.
-- **Rejection/regeneration vs. storage:** Puzzles are generated offline and stored with difficulty metadata, not rejected. See "Generation and Storage Flow" above.
