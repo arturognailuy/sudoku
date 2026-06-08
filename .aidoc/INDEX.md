@@ -22,6 +22,11 @@ This index provides reading chains for common starting points and a complete doc
 2. `generator/sudoku_generator_difficulty.go` — difficulty levels and `StrategySolverKeys`
 3. `generator/sudoku_generator.go` — board generation and cell removal logic
 
+### Understanding the Roadmap
+1. `.aidoc/designs/roadmap.md` — future phases: strategy solvers, puzzle database, core refactoring, UI-ready engine
+2. `.aidoc/designs/difficulty-model.md` — difficulty model and generation/storage flow
+3. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
 2. `solver/sudoku_solver.go` — implement `ISudokuSolver`
@@ -37,4 +42,5 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
+| `.aidoc/designs/roadmap.md` | Future phases: strategy solvers, puzzle database, core refactoring, UI-ready engine |
 | `README.md` | Human-facing project summary |

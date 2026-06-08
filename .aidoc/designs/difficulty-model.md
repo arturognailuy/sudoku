@@ -59,12 +59,27 @@ Difficulty should be defined by the **hardest technique required to solve** the 
 | Hard | Up to Advanced | Requires at least one advanced technique |
 | Expert/Evil | Expert or guessing | Requires expert techniques or trial-and-error |
 
-### Generation Flow
+### Clue Count as Secondary Constraint
+
+Clue-count ranges are preserved as a secondary constraint alongside technique requirements.
+A puzzle that requires a Jellyfish but has 50 clues isn't fun — the strategy difficulty
+and the clue count must both fall within reasonable bounds for a satisfying experience.
+The existing clue-count ranges define the acceptable band; technique requirements define
+the minimum solving complexity.
+
+### Generation and Storage Flow
+
+Rather than reject-and-regenerate (which is expensive and may loop indefinitely for rare
+technique requirements), puzzles are generated offline and stored:
 
 1. Generate a puzzle using the existing generator.
 2. Attempt to solve with strategy solvers in tier order (basic → intermediate → advanced → expert).
-3. Record the highest tier required.
-4. If the required tier doesn't match the requested difficulty, reject and regenerate.
+3. Record the highest tier required and the clue count.
+4. Save the puzzle with its difficulty metadata to a database.
+5. To serve a puzzle of a given difficulty, look up the database for a match.
+
+This decouples generation (slow, offline, batch) from serving (fast, database lookup),
+and avoids the need for retry limits or fallback logic.
 
 ### Architecture Support Already In Place
 
@@ -75,7 +90,7 @@ The plumbing exists in the generator (`generator/sudoku_generator.go`):
 
 What's missing: actual strategy solver implementations to register.
 
-## Open Questions
+## Resolved Questions
 
-<!-- TODO: (arturo) Determine if clue-count ranges should be preserved as a secondary constraint alongside technique requirements, or replaced entirely. -->
-<!-- TODO: (arturo) Decide on rejection/regeneration limits — how many retries before falling back to a less constrained difficulty. -->
+- **Clue-count ranges:** Preserved as a secondary constraint alongside technique requirements (not replaced). See "Clue Count as Secondary Constraint" above.
+- **Rejection/regeneration vs. storage:** Puzzles are generated offline and stored with difficulty metadata, not rejected. See "Generation and Storage Flow" above.
