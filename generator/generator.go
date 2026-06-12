@@ -8,9 +8,9 @@ import (
 )
 
 // Function to generate a solved Sudoku board by solving an empty normalized board randomly.
-func GenerateNormalizedSolvedBoard(options SudokuGeneratorOptions) core.SudokuBoard {
+func GenerateNormalizedSolvedBoard(options Options) core.Board {
 	// The first row of a normalize empty board is always from 1 to 9.
-	board := core.NewEmptySudokuBoard()
+	board := core.NewEmptyBoard()
 	for col := 0; col < 9; col++ {
 		board.Set(core.NewPosition(0, col), col+1)
 	}
@@ -23,7 +23,7 @@ func GenerateNormalizedSolvedBoard(options SudokuGeneratorOptions) core.SudokuBo
 }
 
 // Function to generate a Sudoku problem from a solved board.
-func GenerateSudokuProblemFromSolvedBoard(board core.SudokuBoard, options SudokuGeneratorOptions) core.SudokuBoard {
+func GenerateSudokuProblemFromSolvedBoard(board core.Board, options Options) core.Board {
 	if !board.IsSolved() || !board.IsValid() {
 		panic("Bug: The board is not solved or not valid to generate a problem")
 	}
@@ -125,7 +125,7 @@ func GenerateSudokuProblemFromSolvedBoard(board core.SudokuBoard, options Sudoku
 }
 
 // Function to generate a Sudoku problem.
-func GenerateSudokuProblem(options SudokuGeneratorOptions) core.SudokuBoard {
+func GenerateSudokuProblem(options Options) core.Board {
 	solvedBoard := GenerateNormalizedSolvedBoard(options)
 	solvedBoard.Randomize()
 
@@ -135,12 +135,12 @@ func GenerateSudokuProblem(options SudokuGeneratorOptions) core.SudokuBoard {
 }
 
 // Function to generate a Sudoku problem from an input string.
-func GenerateSudokuProblemFromString(input string) (boardPointer *core.SudokuBoard, err error) {
+func GenerateSudokuProblemFromString(input string) (boardPointer *core.Board, err error) {
 	if !core.IsValidSudokuString(input) {
 		return nil, errors.New("invalid Sudoku string: " + input)
 	}
 
-	board := core.NewEmptySudokuBoard()
+	board := core.NewEmptyBoard()
 	board.FromString(input)
 
 	if !board.IsValid() {

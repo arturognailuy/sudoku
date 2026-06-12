@@ -25,13 +25,14 @@ Refactoring comes first — clean up while the codebase is small, then build new
 Refactor the codebase while it's small, before adding new solvers.
 New strategy solvers should be built on clean, modern infrastructure.
 
-- **Interface naming:** Rename to follow Go naming conventions (e.g., `ISudokuSolver` → `Solver`).
-  The current `I`-prefix style is non-standard Go. This touches nearly every file,
-  so it's best done now while the codebase is small.
+- **Interface naming:** ✅ Complete. Renamed to Go conventions: `Solver` (interface),
+  `Base`, `Backtracker`, `Store`, `Board`, `Game`, `Difficulty`, `Options`, `MoveRecord`.
+  Files renamed to drop `sudoku_` prefix.
 - **Core data structures:** Revisit `Board`, `Cell`, `Position`, and related types
-  for clarity, performance, and extensibility.
-- **Solver architecture:** Review the solver interface and store design
-  to establish clean foundations for strategy solvers.
+  for clarity, performance, and extensibility. Add `CandidateSet` bitfield for
+  constraint propagation (Option B approved).
+- **Solver architecture:** Split the solver interface into `Solver` + `StrategySolver` +
+  `CompleteSolver` with a `Move` struct for richer hints (Option B approved).
 - **Game design:** Refactor the game loop and state management for cleaner separation
   of concerns.
 

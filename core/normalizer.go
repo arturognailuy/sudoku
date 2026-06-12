@@ -3,7 +3,7 @@ package core
 import "github.com/gnailuy/sudoku/util"
 
 // Function to normalize a Sudoku board.
-func (board *SudokuBoard) Normalize() {
+func (board *Board) Normalize() {
 	if !board.IsSolved() {
 		panic("Bug: Normalizing an unsolved board is not allowed")
 	}
@@ -27,7 +27,7 @@ func (board *SudokuBoard) Normalize() {
 }
 
 // Function to randomize a normalized Sudoku board.
-func (board *SudokuBoard) Randomize() {
+func (board *Board) Randomize() {
 	// Make a copy of the board.
 	boardCopy := board.Copy()
 

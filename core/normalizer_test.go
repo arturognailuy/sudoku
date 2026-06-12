@@ -8,7 +8,7 @@ import (
 
 // Test the Normalize function.
 func TestNormalize(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 	board.FromString("583167294672394815149825376934678521267451983851932467316589742795246138428713659")
 
 	// Normalize the board.
@@ -33,7 +33,7 @@ func TestNormalize(t *testing.T) {
 
 // Test the Randomize function on solved board.
 func TestRandomizeSolvedBoard(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 	board.FromString("123456789567389241498271365839562174756914823214837956345128697681795432972643518")
 
 	// Randomize the board.
@@ -47,7 +47,7 @@ func TestRandomizeSolvedBoard(t *testing.T) {
 
 // Test the Randomize function on unsolved board.
 func TestRandomizeUnsolvedBoard(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 	board.FromString("123456789567389241498271365839562174756914823214837956345128697681795432972643518")
 
 	// Randomly remove some numbers.

@@ -67,20 +67,20 @@ func PrintHelp() {
 }
 
 // Function to create the difficulty options based on the command line flags.
-func (options *CommandLineOptions) GetDifficultyOptions() generator.SudokuDifficulty {
+func (options *CommandLineOptions) GetDifficultyOptions() generator.Difficulty {
 	level := options.Level.Get()
 	switch level {
 	case Easy:
-		return generator.NewEasySudokuDifficulty()
+		return generator.NewEasyDifficulty()
 	case Medium:
-		return generator.NewMediumSudokuDifficulty()
+		return generator.NewMediumDifficulty()
 	case Hard:
-		return generator.NewHardSudokuDifficulty()
+		return generator.NewHardDifficulty()
 	case Extreme:
-		return generator.NewExtremeSudokuDifficulty()
+		return generator.NewExtremeDifficulty()
 	case Evil:
-		return generator.NewEvilSudokuDifficulty()
+		return generator.NewEvilDifficulty()
 	default:
-		return generator.NewHardSudokuDifficulty()
+		return generator.NewHardDifficulty()
 	}
 }

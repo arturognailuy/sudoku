@@ -4,26 +4,26 @@ import (
 	"github.com/gnailuy/sudoku/solver"
 )
 
-// Define the Sudoku game options struct.
-type SudokuGameOptions struct {
+// Options configures the game with a solver store and optional strategy solver keys.
+type Options struct {
 	// Public fields.
 	StrategySolverKeys []string
 
 	// Private fields.
-	solverStore solver.SudokuSolverStore
+	solverStore solver.Store
 }
 
-// Constructor like function to create a default options object.
-func NewDefaultSudokuGameOptions(solverStore solver.SudokuSolverStore) SudokuGameOptions {
-	return SudokuGameOptions{
+// NewDefaultOptions creates default game options with no strategy solvers.
+func NewDefaultOptions(solverStore solver.Store) Options {
+	return Options{
 		StrategySolverKeys: []string{},
 		solverStore:        solverStore,
 	}
 }
 
 // Function to get the strategy solvers from the store.
-func (options *SudokuGameOptions) GetStrategySolvers() []solver.ISudokuSolver {
-	strategySolvers := []solver.ISudokuSolver{}
+func (options *Options) GetStrategySolvers() []solver.Solver {
+	strategySolvers := []solver.Solver{}
 
 	for _, key := range options.StrategySolverKeys {
 		solver := options.solverStore.GetSolverByKey(key)

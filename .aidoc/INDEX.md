@@ -14,13 +14,13 @@ This index provides reading chains for common starting points and a complete doc
 ### Understanding the Architecture
 1. `AGENT.md` — global rules, repo layout
 2. `.aidoc/architecture/guidelines.md` — design constraints, layer boundaries, solver interface contract
-3. `solver/sudoku_solver.go` — `ISudokuSolver` interface and `BaseSolver`
-4. `solver/sudoku_solver_store.go` — solver registry
+3. `solver/solver.go` — `Solver` interface and `Base`
+4. `solver/store.go` — solver registry
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
-2. `generator/sudoku_generator_difficulty.go` — difficulty levels and `StrategySolverKeys`
-3. `generator/sudoku_generator.go` — board generation and cell removal logic
+2. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
+3. `generator/generator.go` — board generation and cell removal logic
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — future phases: core refactoring, strategy solvers, puzzle database, UI-ready engine
@@ -29,10 +29,10 @@ This index provides reading chains for common starting points and a complete doc
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
-2. `solver/sudoku_solver.go` — implement `ISudokuSolver`
-3. `solver/sudoku_solver_store.go` — register in `NewSudokuSolverStore()`
+2. `solver/solver.go` — implement `Solver`
+3. `solver/store.go` — register in `NewStore()`
 4. Write tests in `solver/<name>_solver_test.go`
-5. Update `generator/sudoku_generator_difficulty.go` to reference the new solver key
+5. Update `generator/difficulty.go` to reference the new solver key
 
 ## Document Map
 

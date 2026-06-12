@@ -4,7 +4,7 @@ import "testing"
 
 // Function to test the IsValidInput function.
 func TestIsValidInput(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 	board.Set(NewPosition(4, 4), 1)
 
 	// Test the row.
@@ -35,7 +35,7 @@ func TestIsValidInput(t *testing.T) {
 
 // Function to test the IsValid function.
 func TestIsValid(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 	board.FromString("583.67..46723.48...4.8253.6934..852.2.74519.3851.3.4673..589742.952461.84.87..659")
 
 	// Test the current board is valid.
@@ -52,7 +52,7 @@ func TestIsValid(t *testing.T) {
 
 // Function to test the IsSolved function.
 func TestIsSolved(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 	board.FromString("583167294672394815149825376934678521267451983851932467316589742795246138428713659")
 
 	// Test the current board is solved.

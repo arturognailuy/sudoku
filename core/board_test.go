@@ -4,7 +4,7 @@ import "testing"
 
 // Test the SetCell and Unset function.
 func TestSetAndUnset(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 
 	tests := []struct {
 		cell Cell
@@ -39,7 +39,7 @@ func TestSetAndUnset(t *testing.T) {
 
 // Test the GetRandomPositionWith function.
 func TestGetRandomPositionWith(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 
 	tests := []struct {
 		cell Cell
@@ -74,8 +74,8 @@ func TestGetRandomPositionWith(t *testing.T) {
 
 // Test the Merge function.
 func TestMerge(t *testing.T) {
-	board1 := NewEmptySudokuBoard()
-	board2 := NewEmptySudokuBoard()
+	board1 := NewEmptyBoard()
+	board2 := NewEmptyBoard()
 
 	tests1 := []struct {
 		cell Cell
