@@ -38,7 +38,7 @@ func (board *Board) SetCell(cell Cell) (err error) {
 		return errors.New("cannot set invalid cell: " + cell.ToString())
 	}
 
-	board.Set(cell.Position, cell.Value)
+	_ = board.Set(cell.Position, cell.Value)
 
 	return nil
 }

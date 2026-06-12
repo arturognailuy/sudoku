@@ -61,7 +61,7 @@ func solve(board *core.Board, state *solveState, options solveOptions) bool {
 				for _, value := range candidateValues {
 					// Try to place a value in the cell and solve the board recursively if it is valid.
 					if board.IsValidInput(position, value) {
-						board.Set(position, value)
+						_ = board.Set(position, value) // value already validated by IsValidInput
 						state.solvePath = append(state.solvePath, core.NewCell(position, value))
 
 						if solve(board, state, options) {

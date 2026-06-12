@@ -19,7 +19,7 @@ func (board *Board) Normalize() {
 		for j := 0; j < 9; j++ {
 			for k := 0; k < 9; k++ {
 				if boardCopy.Get(NewPosition(j, k)) == originalValue {
-					board.Set(NewPosition(j, k), targetValue)
+					_ = board.Set(NewPosition(j, k), targetValue)
 				}
 			}
 		}
@@ -40,7 +40,7 @@ func (board *Board) Randomize() {
 
 			if boardCopy.Get(position) != 0 {
 				targetValue := randomArray[boardCopy.Get(position)-1]
-				board.Set(position, targetValue)
+				_ = board.Set(position, targetValue)
 			}
 		}
 	}

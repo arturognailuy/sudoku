@@ -55,13 +55,13 @@ func (game *Game) addNonZeroInput(input core.Cell) {
 		panic("Bug: Cannot add a zero input with this function")
 	}
 
-	game.PlayBoard.SetCell(input)
+	_ = game.PlayBoard.SetCell(input)       // cell validated by caller
 	game.invalidInput.Unset(input.Position) // Reset the invalid input state when adding a new input.
 
 	if game.countSolutions() <= 0 {
 		// Store the invalid input in the invalidInput board and unset the cell in the play board.
 		game.PlayBoard.Unset(input.Position)
-		game.invalidInput.SetCell(input)
+		_ = game.invalidInput.SetCell(input) // cell validated by caller
 	}
 }
 
@@ -151,7 +151,7 @@ func (game *Game) Undo() (err error) {
 	lastInput := game.inputSequence[game.inputCursor]
 	game.inputCursor--
 
-	game.AddInput(core.Cell{
+	_ = game.AddInput(core.Cell{
 		Position: lastInput.Input.Position,
 		Value:    lastInput.PreviousValue,
 	})
@@ -169,7 +169,7 @@ func (game *Game) Redo() (err error) {
 	game.inputCursor++
 	nextInput := game.inputSequence[game.inputCursor]
 
-	game.AddInput(nextInput.Input)
+	_ = game.AddInput(nextInput.Input)
 
 	return
 }
@@ -178,7 +178,7 @@ func (game *Game) Redo() (err error) {
 func (game *Game) Repair() (undoSteps int) {
 	for !game.IsValid() && game.inputCursor >= 0 {
 		undoSteps++
-		game.Undo()
+		_ = game.Undo()
 	}
 
 	return undoSteps

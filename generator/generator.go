@@ -12,7 +12,9 @@ func GenerateNormalizedSolvedBoard(options Options) core.Board {
 	// The first row of a normalize empty board is always from 1 to 9.
 	board := core.NewEmptyBoard()
 	for col := 0; col < 9; col++ {
-		board.Set(core.NewPosition(0, col), col+1)
+		if err := board.Set(core.NewPosition(0, col), col+1); err != nil {
+			panic("Bug: " + err.Error())
+		}
 	}
 
 	// To generate a solved board from an empty normalized board, we use the reliable default solver.
@@ -109,7 +111,7 @@ func GenerateSudokuProblemFromSolvedBoard(board core.Board, options Options) cor
 			}
 
 			// If the problem is not solvable or has more than maximum solutions, revert the removal.
-			board.Set(position, originalValue)
+			_ = board.Set(position, originalValue) // value was just read from this position
 		}
 
 		// Remove the position from the non-empty positions list.

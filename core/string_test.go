@@ -6,9 +6,9 @@ import "testing"
 func TestToString(t *testing.T) {
 	board := NewEmptyBoard()
 
-	board.SetCell(NewCell(NewPosition(0, 0), 1))
-	board.SetCell(NewCell(NewPosition(4, 4), 5))
-	board.SetCell(NewCell(NewPosition(8, 8), 9))
+	_ = board.SetCell(NewCell(NewPosition(0, 0), 1))
+	_ = board.SetCell(NewCell(NewPosition(4, 4), 5))
+	_ = board.SetCell(NewCell(NewPosition(8, 8), 9))
 
 	expected := "1.......................................5.......................................9"
 

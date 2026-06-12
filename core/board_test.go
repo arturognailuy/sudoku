@@ -15,7 +15,7 @@ func TestSetAndUnset(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		board.SetCell(test.cell)
+		_ = board.SetCell(test.cell)
 
 		if board.Get(test.cell.Position) != test.cell.Value {
 			t.Errorf("Expected cell value at %s: %d, got %d", test.cell.Position.ToString(), test.cell.Value, board.Get(test.cell.Position))
@@ -50,7 +50,7 @@ func TestGetRandomPositionWith(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		board.SetCell(test.cell)
+		_ = board.SetCell(test.cell)
 	}
 
 	position := board.GetRandomPositionWith(func(value int) bool {
@@ -86,7 +86,7 @@ func TestMerge(t *testing.T) {
 	}
 
 	for _, test := range tests1 {
-		board1.SetCell(test.cell)
+		_ = board1.SetCell(test.cell)
 	}
 
 	tests2 := []struct {
@@ -97,7 +97,7 @@ func TestMerge(t *testing.T) {
 	}
 
 	for _, test := range tests2 {
-		board2.SetCell(test.cell)
+		_ = board2.SetCell(test.cell)
 	}
 
 	board1.Merge(board2)

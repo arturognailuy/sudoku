@@ -52,7 +52,7 @@ func TestRandomizeUnsolvedBoard(t *testing.T) {
 
 	// Randomly remove some numbers.
 	for i := 0; i < 10; i++ {
-		board.Set(NewPosition(util.RandomInt(0, 9), util.RandomInt(0, 9)), 0)
+		_ = board.Set(NewPosition(util.RandomInt(0, 9), util.RandomInt(0, 9)), 0)
 	}
 
 	// Randomize the board.

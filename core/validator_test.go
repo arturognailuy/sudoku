@@ -5,7 +5,7 @@ import "testing"
 // Function to test the IsValidInput function.
 func TestIsValidInput(t *testing.T) {
 	board := NewEmptyBoard()
-	board.Set(NewPosition(4, 4), 1)
+	_ = board.Set(NewPosition(4, 4), 1)
 
 	// Test the row.
 	if board.IsValidInput(NewPosition(4, 0), 1) {
@@ -44,7 +44,7 @@ func TestIsValid(t *testing.T) {
 	}
 
 	// Test the invalid board.
-	board.Set(NewPosition(2, 0), 5)
+	_ = board.Set(NewPosition(2, 0), 5)
 	if board.IsValid() {
 		t.Error("The board is invalid")
 	}
@@ -61,7 +61,7 @@ func TestIsSolved(t *testing.T) {
 	}
 
 	// Test the filled but invalid board.
-	board.Set(NewPosition(0, 0), 1)
+	_ = board.Set(NewPosition(0, 0), 1)
 	if board.IsSolved() {
 		t.Error("The board is filled but not solved")
 	}
