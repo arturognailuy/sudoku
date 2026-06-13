@@ -69,6 +69,7 @@ Defined in `solver/solver.go`. All solvers implement `Solver` with these semanti
 
 ## Design Constraints
 
-- **Interface naming:** Types follow Go conventions. Examples: `Solver` (interface), `Base`, `Backtracker`, `Store`, `Board`, `Game`, `Difficulty`, `Options`, `MoveRecord`.
+- **Interface naming:** Types follow Go conventions. Examples: `Solver` (interface), `Base`, `Backtracker`, `Store`, `Board`, `Game`, `Difficulty`, `Options`, `MoveRecord`, `CandidateSet`.
+- **Candidate tracking:** `Board` maintains a `[9][9]CandidateSet` alongside the grid. `Set()` eliminates the placed value from row/column/box peers. `Unset()` restores candidates. All board mutation goes through `Set()`/`Unset()` to keep candidates consistent. Strategy solvers query `board.Candidates(pos)` instead of recomputing valid inputs.
 - **Error vs panic:** Methods called with invalid state from within the system `panic` (bug detection). Methods processing user input return errors. This split is intentional.
 - **Geometric distribution stop:** The generator uses `util.RandomBool(0.125)` to probabilistically stop cell removal after reaching the target clue range. This produces natural variation within a difficulty band.

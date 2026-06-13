@@ -58,11 +58,8 @@ func (board *Board) FromString(s string) {
 	for i := 0; i < 81; i++ {
 		row := i / 9
 		column := i % 9
-		if isAllowedZeroPlaceholder(s[i]) {
-			board.grid[row][column] = 0
-		} else {
-			board.grid[row][column] = int(s[i] - '0')
-			board.filledCellsCount++
+		if !isAllowedZeroPlaceholder(s[i]) {
+			_ = board.Set(NewPosition(row, column), int(s[i]-'0'))
 		}
 	}
 }
