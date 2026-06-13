@@ -55,28 +55,30 @@ func solve(board *core.Board, state *solveState, options solveOptions) bool {
 			position := core.NewPosition(row, column)
 
 			if board.Get(position) == 0 {
-				// When counting solutions, we do not need to generate candidate values randomly.
-				candidateValues := util.GenerateNumberArray(1, 10, !options.CountSolutions && options.Randomly)
+				// Compute candidate values for this cell.
+				candidateValues := board.Candidates(position).Values()
+
+				// When solving randomly (not counting), shuffle candidates.
+				if !options.CountSolutions && options.Randomly {
+					util.ShuffleArray(candidateValues)
+				}
 
 				for _, value := range candidateValues {
-					// Try to place a value in the cell and solve the board recursively if it is valid.
-					if board.IsValidInput(position, value) {
-						_ = board.Set(position, value) // value already validated by IsValidInput
-						state.solvePath = append(state.solvePath, core.NewCell(position, value))
+					_ = board.Set(position, value) // value is a valid candidate
+					state.solvePath = append(state.solvePath, core.NewCell(position, value))
 
-						if solve(board, state, options) {
-							if options.CountSolutions {
-								// Collect one solution when the board solved.
-								state.numberOfSolutions++
-							} else {
-								// Return the first solution.
-								return true
-							}
+					if solve(board, state, options) {
+						if options.CountSolutions {
+							// Collect one solution when the board solved.
+							state.numberOfSolutions++
+						} else {
+							// Return the first solution.
+							return true
 						}
-
-						board.Unset(position)
-						state.solvePath = state.solvePath[:len(state.solvePath)-1]
 					}
+
+					board.Unset(position)
+					state.solvePath = state.solvePath[:len(state.solvePath)-1]
 				}
 
 				return false
