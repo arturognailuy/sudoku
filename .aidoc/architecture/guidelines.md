@@ -2,7 +2,7 @@
 domain: Architecture
 status: Active
 entry_points:
-  - solver/sudoku_solver.go
+  - solver/solver.go
 dependencies:
   - .aidoc/INDEX.md
   - .aidoc/designs/difficulty-model.md
