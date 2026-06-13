@@ -2,7 +2,7 @@
 domain: Designs
 status: Active
 entry_points:
-  - generator/sudoku_generator_difficulty.go
+  - generator/difficulty.go
 dependencies:
   - .aidoc/architecture/guidelines.md
 ---
@@ -21,7 +21,7 @@ while the target model uses solving techniques (meaningful difficulty). This doc
 
 ## Current Model (Clue-Count)
 
-Difficulty is defined solely by pre-filled cell count in `generator/sudoku_generator_difficulty.go`:
+Difficulty is defined solely by pre-filled cell count in `generator/difficulty.go`:
 
 | Level | Clues (min–max) |
 |-------|-----------------|
@@ -83,10 +83,10 @@ and avoids the need for retry limits or fallback logic.
 
 ### Architecture Support Already In Place
 
-The plumbing exists in the generator (`generator/sudoku_generator.go`):
-- `SudokuDifficulty.StrategySolverKeys` lists solver keys to check during cell removal.
+The plumbing exists in the generator (`generator/generator.go`):
+- `Difficulty.StrategySolverKeys` lists solver keys to check during cell removal.
 - The generator calls `solver.Hint()` on each listed strategy solver before confirming a removal.
-- `SudokuSolverStore` maps solver keys to implementations.
+- `Store` maps solver keys to implementations.
 
 What's missing: actual strategy solver implementations to register.
 

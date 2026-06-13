@@ -33,7 +33,7 @@ func IsValidSudokuString(s string) bool {
 }
 
 // Function to print the board as a single string.
-func (board *SudokuBoard) ToString() string {
+func (board *Board) ToString() string {
 	result := ""
 
 	for i := 0; i < 9; i++ {
@@ -50,7 +50,7 @@ func (board *SudokuBoard) ToString() string {
 }
 
 // Function to build a Sudoku board from a string.
-func (board *SudokuBoard) FromString(s string) {
+func (board *Board) FromString(s string) {
 	if !IsValidSudokuString(s) {
 		panic("Bug: Invalid Sudoku string")
 	}

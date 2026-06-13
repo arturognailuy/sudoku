@@ -1,7 +1,7 @@
 package core
 
 // Function to check if a value can be placed in a specific position.
-func (board SudokuBoard) IsValidInput(position Position, value int) bool {
+func (board Board) IsValidInput(position Position, value int) bool {
 	if !position.IsValid() || value < 1 || value > 9 {
 		return false
 	}
@@ -35,7 +35,7 @@ func (board SudokuBoard) IsValidInput(position Position, value int) bool {
 }
 
 // Function to check if the Sudoku board is valid.
-func (board SudokuBoard) IsValid() bool {
+func (board Board) IsValid() bool {
 	for i := 0; i < 9; i++ {
 		for j := 0; j < 9; j++ {
 			position := NewPosition(i, j)
@@ -49,7 +49,7 @@ func (board SudokuBoard) IsValid() bool {
 }
 
 // Function to check if the Sudoku board is solved.
-func (board SudokuBoard) IsSolved() bool {
+func (board Board) IsSolved() bool {
 	for i := 0; i < 9; i++ {
 		for j := 0; j < 9; j++ {
 			position := NewPosition(i, j)
@@ -63,6 +63,6 @@ func (board SudokuBoard) IsSolved() bool {
 }
 
 // Function to check if the board is empty.
-func (board SudokuBoard) IsEmpty() bool {
+func (board Board) IsEmpty() bool {
 	return board.filledCellsCount == 0
 }

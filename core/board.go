@@ -7,19 +7,19 @@ import (
 	"github.com/gnailuy/sudoku/util"
 )
 
-// Define the SudokuBoard struct.
-type SudokuBoard struct {
+// Board represents a 9x9 Sudoku grid.
+type Board struct {
 	grid             [9][9]int
 	filledCellsCount int
 }
 
-// Constructor like function to create a empty Sudoku board.
-func NewEmptySudokuBoard() SudokuBoard {
-	return *new(SudokuBoard)
+// NewEmptyBoard creates an empty Sudoku board with all cells set to zero.
+func NewEmptyBoard() Board {
+	return *new(Board)
 }
 
 // Function to set the value to a position.
-func (board *SudokuBoard) Set(position Position, value int) (err error) {
+func (board *Board) Set(position Position, value int) (err error) {
 	if value < 1 || value > 9 {
 		return errors.New("cannot set invalid number: " + fmt.Sprint(value))
 	}
@@ -33,18 +33,18 @@ func (board *SudokuBoard) Set(position Position, value int) (err error) {
 }
 
 // Function to set the value of a cell.
-func (board *SudokuBoard) SetCell(cell Cell) (err error) {
+func (board *Board) SetCell(cell Cell) (err error) {
 	if !cell.IsValid() {
 		return errors.New("cannot set invalid cell: " + cell.ToString())
 	}
 
-	board.Set(cell.Position, cell.Value)
+	_ = board.Set(cell.Position, cell.Value)
 
 	return nil
 }
 
 // Function to unset the value of a position.
-func (board *SudokuBoard) Unset(position Position) {
+func (board *Board) Unset(position Position) {
 	if board.grid[position.Row][position.Column] > 0 {
 		board.filledCellsCount--
 	}
@@ -52,12 +52,12 @@ func (board *SudokuBoard) Unset(position Position) {
 }
 
 // Function to get the value of a position.
-func (board *SudokuBoard) Get(position Position) int {
+func (board *Board) Get(position Position) int {
 	return board.grid[position.Row][position.Column]
 }
 
 // Function to get a random position satisfying the value validator.
-func (board *SudokuBoard) GetRandomPositionWith(validator func(int) bool) *Position {
+func (board *Board) GetRandomPositionWith(validator func(int) bool) *Position {
 	rowOrder := util.GenerateNumberArray(0, 9, true)
 	columnOrder := util.GenerateNumberArray(0, 9, true)
 	for _, row := range rowOrder {
@@ -74,20 +74,20 @@ func (board *SudokuBoard) GetRandomPositionWith(validator func(int) bool) *Posit
 }
 
 // Function to get the number of filled cells.
-func (board *SudokuBoard) GetFilledCellsCount() int {
+func (board *Board) GetFilledCellsCount() int {
 	return board.filledCellsCount
 }
 
 // Function to return a copy of the board.
-func (board *SudokuBoard) Copy() SudokuBoard {
-	return SudokuBoard{
+func (board *Board) Copy() Board {
+	return Board{
 		grid:             board.grid,
 		filledCellsCount: board.filledCellsCount,
 	}
 }
 
 // Function to merge the board with another board.
-func (board *SudokuBoard) Merge(otherBoard SudokuBoard) {
+func (board *Board) Merge(otherBoard Board) {
 	for i := 0; i < 9; i++ {
 		for j := 0; j < 9; j++ {
 			if board.grid[i][j] == 0 && otherBoard.grid[i][j] != 0 {

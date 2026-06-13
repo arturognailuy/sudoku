@@ -4,11 +4,11 @@ import "testing"
 
 // Test the ToString function.
 func TestToString(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 
-	board.SetCell(NewCell(NewPosition(0, 0), 1))
-	board.SetCell(NewCell(NewPosition(4, 4), 5))
-	board.SetCell(NewCell(NewPosition(8, 8), 9))
+	_ = board.SetCell(NewCell(NewPosition(0, 0), 1))
+	_ = board.SetCell(NewCell(NewPosition(4, 4), 5))
+	_ = board.SetCell(NewCell(NewPosition(8, 8), 9))
 
 	expected := "1.......................................5.......................................9"
 
@@ -19,7 +19,7 @@ func TestToString(t *testing.T) {
 
 // Test the FromString function.
 func TestFromString(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 	board.FromString("1.......................................5.......................................9")
 
 	if board.Get(NewPosition(0, 0)) != 1 {
@@ -37,7 +37,7 @@ func TestFromString(t *testing.T) {
 
 // Test the FromString function with an invalid string.
 func TestFromStringInvalid(t *testing.T) {
-	board := NewEmptySudokuBoard()
+	board := NewEmptyBoard()
 
 	defer func() {
 		if r := recover(); r == nil {

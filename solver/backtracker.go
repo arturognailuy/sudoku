@@ -5,17 +5,17 @@ import (
 	"github.com/gnailuy/sudoku/util"
 )
 
-// Define the default solver object.
-type DefaultSolver struct {
-	BaseSolver
+// Backtracker implements a recursive backtracking solver.
+type Backtracker struct {
+	Base
 }
 
-// Constructor like function to create a default DefaultSolver object.
-func NewDefaultSolver() DefaultSolver {
-	return DefaultSolver{
-		BaseSolver{
+// NewBacktracker creates a new backtracking solver.
+func NewBacktracker() Backtracker {
+	return Backtracker{
+		Base{
 			Key:         "default",
-			DisplayName: "Default Solver",
+			DisplayName: "Backtracking Solver",
 			Description: `Default solver using recursive backtracking in a random order.`,
 			Reliable:    true,
 		},
@@ -49,7 +49,7 @@ type solveState struct {
 }
 
 // Function to solve the Sudoku board using backtracking.
-func solve(board *core.SudokuBoard, state *solveState, options solveOptions) bool {
+func solve(board *core.Board, state *solveState, options solveOptions) bool {
 	for _, row := range options.RowOrder {
 		for _, column := range options.ColumnOrder {
 			position := core.NewPosition(row, column)
@@ -61,7 +61,7 @@ func solve(board *core.SudokuBoard, state *solveState, options solveOptions) boo
 				for _, value := range candidateValues {
 					// Try to place a value in the cell and solve the board recursively if it is valid.
 					if board.IsValidInput(position, value) {
-						board.Set(position, value)
+						_ = board.Set(position, value) // value already validated by IsValidInput
 						state.solvePath = append(state.solvePath, core.NewCell(position, value))
 
 						if solve(board, state, options) {
@@ -95,7 +95,7 @@ func solve(board *core.SudokuBoard, state *solveState, options solveOptions) boo
 }
 
 // Function to solve the Sudoku board with random candidate values.
-func (solver DefaultSolver) Solve(board *core.SudokuBoard) bool {
+func (solver Backtracker) Solve(board *core.Board) bool {
 	if !board.IsValid() {
 		return false
 	}
@@ -105,7 +105,7 @@ func (solver DefaultSolver) Solve(board *core.SudokuBoard) bool {
 }
 
 // Function to generate a hint for the Sudoku board without solving the board.
-func (solver DefaultSolver) Hint(board *core.SudokuBoard) *core.Cell {
+func (solver Backtracker) Hint(board *core.Board) *core.Cell {
 	if !board.IsValid() {
 		return nil
 	}
@@ -122,7 +122,7 @@ func (solver DefaultSolver) Hint(board *core.SudokuBoard) *core.Cell {
 
 // Function to count the number of solutions for the Sudoku board.
 // Note that if the board is already solved, we return 1 as doing nothing is also a solution.
-func (solver DefaultSolver) CountSolutions(board *core.SudokuBoard) int {
+func (solver Backtracker) CountSolutions(board *core.Board) int {
 	// If the board is already solved, return 1.
 	if board.IsSolved() {
 		return 1

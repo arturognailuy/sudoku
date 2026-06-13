@@ -28,7 +28,7 @@ func printColumnNumbers() {
 }
 
 // Function to print the Sudoku game.
-func (game *SudokuGame) print() {
+func (game *Game) print() {
 	// Header column numbers.
 	fmt.Println()
 	printColumnNumbers()
@@ -63,7 +63,7 @@ func (game *SudokuGame) print() {
 }
 
 // Function to print the help message.
-func (game *SudokuGame) printHelp() {
+func (game *Game) printHelp() {
 	fmt.Println("Supported commands:")
 	fmt.Println("  - help, h                       : Print this help message.")
 	fmt.Println("  - add, a <row> <column> <value> : Add the value to the cell at (row, column).")
@@ -79,7 +79,7 @@ func (game *SudokuGame) printHelp() {
 }
 
 // Function to set a cell for the add and clear commands.
-func (game *SudokuGame) setValue(rowInput, columnInput, valueInput int) (success bool, err error) {
+func (game *Game) setValue(rowInput, columnInput, valueInput int) (success bool, err error) {
 	// Check user input validity.
 	positionPointer, err := core.NewPositionFromInput(rowInput, columnInput)
 	if err != nil {
@@ -103,7 +103,7 @@ func (game *SudokuGame) setValue(rowInput, columnInput, valueInput int) (success
 }
 
 // Function to handle the add command.
-func (game *SudokuGame) runAddCommand(commandArguments string) (added bool, err error) {
+func (game *Game) runAddCommand(commandArguments string) (added bool, err error) {
 	var row, column, value int
 	_, err = fmt.Sscanf(commandArguments, "%1d%1d%1d", &row, &column, &value)
 	if err != nil {
@@ -115,7 +115,7 @@ func (game *SudokuGame) runAddCommand(commandArguments string) (added bool, err 
 }
 
 // Function to handle the clear command.
-func (game *SudokuGame) runClearCommand(commandArguments string) (cleared bool, err error) {
+func (game *Game) runClearCommand(commandArguments string) (cleared bool, err error) {
 	var row, column int
 	_, err = fmt.Sscanf(commandArguments, "%1d%1d", &row, &column)
 	if err != nil {
@@ -127,7 +127,7 @@ func (game *SudokuGame) runClearCommand(commandArguments string) (cleared bool, 
 }
 
 // Function to handle the command with arguments.
-func (game *SudokuGame) runCommandWithArguments(commandFields []string) (success bool, err error) {
+func (game *Game) runCommandWithArguments(commandFields []string) (success bool, err error) {
 	if len(commandFields) != 2 {
 		return false, errors.New("no argument specified for the command")
 	}
@@ -143,7 +143,7 @@ func (game *SudokuGame) runCommandWithArguments(commandFields []string) (success
 }
 
 // Function to run a command.
-func (game *SudokuGame) runCommand(command string, closeChannel CloseChannel) bool {
+func (game *Game) runCommand(command string, closeChannel CloseChannel) bool {
 	commandFields := strings.SplitN(command, " ", 2)
 
 	// Empty command, return directly.
@@ -213,7 +213,7 @@ func (game *SudokuGame) runCommand(command string, closeChannel CloseChannel) bo
 }
 
 // Function to ask the user for input.
-func (game *SudokuGame) askUserInput(scanner *bufio.Scanner, inputChannel chan string, closeChannel CloseChannel) {
+func (game *Game) askUserInput(scanner *bufio.Scanner, inputChannel chan string, closeChannel CloseChannel) {
 	// Check if the close channel is closed.
 	if closeChannel.IsClosed() {
 		return
@@ -237,7 +237,7 @@ func (game *SudokuGame) askUserInput(scanner *bufio.Scanner, inputChannel chan s
 }
 
 // Function to start the game.
-func (game *SudokuGame) PlayCli() {
+func (game *Game) PlayCli() {
 	inputChannel := make(chan string)
 	closeChannel := NewCloseChannel()
 

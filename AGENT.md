@@ -21,7 +21,7 @@ go build && go test ./...
 ├── main.go              # Entry point — CLI parsing → game loop
 ├── cli/                 # Command-line flag parsing (difficulty enum, help)
 ├── core/                # Board, cell, position, validator, normalizer, string serialization
-├── solver/              # ISudokuSolver interface, solver store, default backtracking solver
+├── solver/              # Solver interface, solver store, backtracking solver
 ├── generator/           # Puzzle generation — solved board + cell removal with uniqueness checks
 ├── game/                # Game state, undo/redo/hints, interactive CLI play loop, signal handling
 ├── util/                # Random shuffle, array helpers

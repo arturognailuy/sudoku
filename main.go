@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Create and initialize the solver store.
-	solverStore := solver.NewSudokuSolverStore()
+	solverStore := solver.NewStore()
 
 	// Parse the command line options.
 	options := cli.NewCommandLineOptions()
@@ -45,14 +45,14 @@ func main() {
 	} else {
 		// Generate a random problem.
 		fmt.Printf("Generating a random %s Sudoku problem...\n", options.Level.String())
-		problem := generator.GenerateSudokuProblem(generator.NewSudokuProblemOptions(solverStore, options.GetDifficultyOptions()))
+		problem := generator.GenerateSudokuProblem(generator.NewProblemOptions(solverStore, options.GetDifficultyOptions()))
 
 		playCli(problem, solverStore)
 	}
 }
 
 // Function to play a game in CLI.
-func playCli(problem core.SudokuBoard, solverStore solver.SudokuSolverStore) {
-	newGame := game.NewSudokuGame(problem, game.NewDefaultSudokuGameOptions(solverStore))
+func playCli(problem core.Board, solverStore solver.Store) {
+	newGame := game.NewGame(problem, game.NewDefaultOptions(solverStore))
 	newGame.PlayCli()
 }
