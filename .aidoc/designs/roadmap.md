@@ -25,13 +25,10 @@ Refactoring comes first — clean up while the codebase is small, then build new
 Refactor the codebase while it's small, before adding new solvers.
 New strategy solvers should be built on clean, modern infrastructure.
 
-- **Core data structures:** `CandidateSet` bitfield added to `Board` for automatic constraint
-  propagation. Helper methods `Candidates()`, `EmptyPositions()`, `ForEachCell()` available.
-  The backtracking solver uses candidates instead of recomputing valid inputs.
 - **Solver architecture:** Split the solver interface into `Solver` + `StrategySolver` +
-  `CompleteSolver` with a `Move` struct for richer hints (Option B approved).
-- **Game design:** Refactor the game loop and state management for cleaner separation
-  of concerns.
+  `CompleteSolver` with a `Move` struct for richer hint output.
+- **Game/CLI separation:** Extract CLI I/O from the `Game` struct so game logic is
+  testable and UI-agnostic.
 
 ## Phase 3: Strategy Solvers
 
