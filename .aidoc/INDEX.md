@@ -15,7 +15,7 @@ This index provides reading chains for common starting points and a complete doc
 1. `AGENT.md` — global rules, repo layout
 2. `.aidoc/architecture/guidelines.md` — design constraints, layer boundaries, solver interface contract
 3. `core/candidates.go` — `CandidateSet` bitfield type
-4. `core/board.go` — `Board` struct with candidate tracking
+4. `core/board.go` — `Board` struct with compute-on-fly `Candidates()` method
 5. `solver/solver.go` — `Solver` interface and `Base`
 6. `solver/store.go` — solver registry
 

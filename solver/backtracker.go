@@ -49,14 +49,13 @@ type solveState struct {
 }
 
 // Function to solve the Sudoku board using backtracking.
-// Uses the board's candidate tracking for efficient value selection.
 func solve(board *core.Board, state *solveState, options solveOptions) bool {
 	for _, row := range options.RowOrder {
 		for _, column := range options.ColumnOrder {
 			position := core.NewPosition(row, column)
 
 			if board.Get(position) == 0 {
-				// Get candidate values from the board's candidate tracking.
+				// Compute candidate values for this cell.
 				candidateValues := board.Candidates(position).Values()
 
 				// When solving randomly (not counting), shuffle candidates.

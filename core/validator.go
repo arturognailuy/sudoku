@@ -1,7 +1,6 @@
 package core
 
 // Function to check if a value can be placed in a specific position.
-// This checks the board's grid directly (independent of candidate tracking).
 func (board Board) IsValidInput(position Position, value int) bool {
 	if !position.IsValid() || value < 1 || value > 9 {
 		return false
