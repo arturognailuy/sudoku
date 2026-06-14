@@ -84,23 +84,20 @@ and avoids the need for retry limits or fallback logic.
 ### Architecture Support Already In Place
 
 The plumbing exists in the generator (`generator/generator.go`):
-- `Difficulty.StrategySolverKeys` lists solver keys to check during cell removal.
-- The generator calls `solver.Apply()` on each listed strategy solver before confirming a removal.
+- `Difficulty.SolverKeys` lists solver keys introduced at this tier.
+- `Difficulty.LowerTierSolverKeys` holds cumulative solvers from all lower tiers.
+- `Difficulty.AllowedSolverKeys()` returns the full allowed set (lower tiers + this tier).
+- During cell removal, the generator calls `solver.Apply()` on each allowed solver before confirming a removal.
+- After generation, `requiresThisTierSolver()` checks that lower-tier solvers alone can't solve the puzzle.
 - `Store` maps solver keys to implementations.
 
-**Easy difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single"]`.
-The generator produces Easy puzzles that are solvable using only naked and hidden singles.
+**Easy difficulty:** `SolverKeys: ["naked-single", "hidden-single"]`.
+The generator produces Easy puzzles solvable using only naked and hidden singles.
+As the lowest tier, no lower-tier check is needed.
 
-**Medium difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single", "naked-subset", "pointing-pair"]`
-with `RequiredSolverKeys: ["naked-subset", "pointing-pair"]`.
-The generator produces Medium puzzles that are solvable using basic techniques plus
-intermediate techniques, AND guarantees the puzzle actually requires at least one
-intermediate technique — basic techniques alone cannot solve it.
-
-The `RequiredSolverKeys` mechanism works by checking generated puzzles: after the
-cell-removal loop, the generator tries to solve the puzzle using only the solvers
-NOT in `RequiredSolverKeys`. If those basic solvers can fully solve the puzzle,
-it doesn't qualify as Medium and is regenerated.
+**Medium difficulty:** `SolverKeys: ["naked-subset", "pointing-pair"]`, `LowerTierSolverKeys: ["naked-single", "hidden-single"]`.
+Allowed set = all four solvers. The generator produces Medium puzzles that genuinely
+require at least one intermediate technique — basic techniques alone cannot solve them.
 
 Hard and above still use empty keys (no technique constraint).
 

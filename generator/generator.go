@@ -83,10 +83,11 @@ func GenerateSudokuProblemFromSolvedBoard(board core.Board, options Options) cor
 			if numberOfSolutions > 0 && numberOfSolutions <= options.MaximumSolutions {
 				canProgress := false
 
-				if len(options.Difficulty.StrategySolverKeys) > 0 {
+				allowedKeys := options.Difficulty.AllowedSolverKeys()
+				if len(allowedKeys) > 0 {
 					// If there are strategy solvers configured, we limit the problem to be solvable with the specified strategies.
 					// Test the strategy solvers to ensure that at least one of them can make progress.
-					for _, key := range options.Difficulty.StrategySolverKeys {
+					for _, key := range allowedKeys {
 						strategySolver := options.solverStore.GetStrategySolverByKey(key)
 						if strategySolver == nil {
 							panic("Bug: Invalid strategy solver key: " + key)
@@ -135,46 +136,41 @@ func GenerateSudokuProblem(options Options) core.Board {
 
 		problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, options)
 
-		if requiresSolverFromKeys(problem, options) {
+		if requiresThisTierSolver(problem, options) {
 			return problem
 		}
-		// Puzzle doesn't require any solver from RequiredSolverKeys — regenerate.
+		// Lower-tier solvers alone can solve it — regenerate.
 	}
 }
 
-// requiresSolverFromKeys checks whether the puzzle requires at least one
-// solver from Difficulty.RequiredSolverKeys. If RequiredSolverKeys is empty,
-// any puzzle qualifies. The check works by attempting to solve the puzzle
-// using only the allowed solvers that are NOT in RequiredSolverKeys. If
-// the puzzle can be fully solved without any required solver, it fails
-// the requirement.
-func requiresSolverFromKeys(board core.Board, options Options) bool {
-	if len(options.Difficulty.RequiredSolverKeys) == 0 {
+// requiresThisTierSolver checks whether the puzzle requires at least one
+// solver from this tier's SolverKeys. If LowerTierSolverKeys is empty
+// (lowest tier or unconstrained), any puzzle qualifies.
+//
+// The check works by attempting to solve the puzzle using only the
+// lower-tier solvers. If those can fully solve the puzzle, it doesn't
+// genuinely require this tier's techniques.
+func requiresThisTierSolver(board core.Board, options Options) bool {
+	// If there are no lower-tier solvers, this is the lowest tier
+	// (or unconstrained) — every puzzle qualifies.
+	if len(options.Difficulty.LowerTierSolverKeys) == 0 {
 		return true
 	}
 
-	// Build the set of required keys for O(1) lookup.
-	required := make(map[string]bool, len(options.Difficulty.RequiredSolverKeys))
-	for _, key := range options.Difficulty.RequiredSolverKeys {
-		required[key] = true
-	}
-
-	// Collect solvers that are allowed but NOT required (the "basic" set).
-	var basicSolvers []solver.StrategySolver
-	for _, key := range options.Difficulty.StrategySolverKeys {
-		if !required[key] {
-			s := options.solverStore.GetStrategySolverByKey(key)
-			if s != nil {
-				basicSolvers = append(basicSolvers, s)
-			}
+	// Collect the lower-tier solvers.
+	var lowerSolvers []solver.StrategySolver
+	for _, key := range options.Difficulty.LowerTierSolverKeys {
+		s := options.solverStore.GetStrategySolverByKey(key)
+		if s != nil {
+			lowerSolvers = append(lowerSolvers, s)
 		}
 	}
 
-	// Try to solve the puzzle using only basic solvers.
+	// Try to solve the puzzle using only lower-tier solvers.
 	testBoard := board // copy (Board is a value type)
 	for {
 		var found bool
-		for _, s := range basicSolvers {
+		for _, s := range lowerSolvers {
 			move := s.Apply(&testBoard)
 			if move != nil {
 				_ = testBoard.Set(move.Cell.Position, move.Cell.Value)
@@ -187,8 +183,8 @@ func requiresSolverFromKeys(board core.Board, options Options) bool {
 		}
 	}
 
-	// If basic solvers alone can solve it, the puzzle doesn't require
-	// any solver from RequiredSolverKeys.
+	// If lower-tier solvers alone can solve it, the puzzle doesn't
+	// require any solver from this tier.
 	return !testBoard.IsSolved()
 }
 

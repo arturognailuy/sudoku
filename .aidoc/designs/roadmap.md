@@ -31,12 +31,13 @@ Implementation by difficulty tier:
 **Easy tier (PR #6):** ✅
 - Naked Singles — cell has exactly one candidate left.
 - Hidden Singles — candidate appears in only one cell within a row, column, or box.
-- Both registered in store, wired into Easy difficulty (`StrategySolverKeys`).
+- Both registered in store, wired into Easy difficulty (`SolverKeys`).
 
-**Intermediate tier (PR #7):** ✅
+**Intermediate tier (PR #7):** In review
 - Naked Pairs/Triples — two/three cells in a unit share the same candidates exclusively; eliminating those candidates from other cells in the unit reveals singles.
 - Pointing Pairs / Box-Line Reduction — candidate confined to single row/column within a box (or vice versa); elimination reveals singles.
-- Both registered in store, wired into Medium difficulty (`StrategySolverKeys`).
+- Both registered in store, wired into Medium difficulty (`SolverKeys`).
+- Single-field design: `SolverKeys` holds the solvers introduced at this tier; `LowerTierSolverKeys` holds cumulative lower-tier solvers; `AllowedSolverKeys()` returns the full allowed set.
 
 **Advanced tier (PR #8, stretch):**
 - X-Wing — candidate in exactly two cells in two rows sharing the same columns.
