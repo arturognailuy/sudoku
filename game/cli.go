@@ -178,15 +178,15 @@ func (game *Game) runCommand(command string, closeChannel CloseChannel) bool {
 	case "hint", "i":
 		hint := game.Hint()
 		if hint != nil {
-			added, err := game.setValue(hint.Position.Row+1, hint.Position.Column+1, hint.Value)
+			added, err := game.setValue(hint.Cell.Position.Row+1, hint.Cell.Position.Column+1, hint.Cell.Value)
 			if err != nil {
 				printError("Failed to apply hint:", err)
 			}
 			if added {
-				if hint.Value != 0 {
-					fmt.Printf("Hint: Added %d to cell (%d, %d)\n", hint.Value, hint.Position.Row+1, hint.Position.Column+1)
+				if hint.Cell.Value != 0 {
+					fmt.Printf("Hint: %s\n", hint.Reason)
 				} else {
-					fmt.Printf("Hint: Cleared cell (%d, %d)\n", hint.Position.Row+1, hint.Position.Column+1)
+					fmt.Printf("Hint: %s\n", hint.Reason)
 				}
 			}
 			return added

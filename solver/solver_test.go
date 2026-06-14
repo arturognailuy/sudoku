@@ -1,0 +1,162 @@
+package solver_test
+
+import (
+	"testing"
+
+	"github.com/gnailuy/sudoku/core"
+	"github.com/gnailuy/sudoku/solver"
+)
+
+// TestMoveString verifies the Move.String() output format.
+func TestMoveString(t *testing.T) {
+	move := solver.Move{
+		Cell:      core.NewCell(core.NewPosition(2, 4), 7),
+		Technique: "naked-single",
+		Reason:    "only candidate in cell",
+	}
+
+	s := move.String()
+	if s == "" {
+		t.Fatal("Move.String() returned empty string")
+	}
+	// Should contain technique, position, value, and reason.
+	if !containsAll(s, "naked-single", "(3, 5)", "7", "only candidate in cell") {
+		t.Errorf("Move.String() = %q, expected to contain technique, position, value, reason", s)
+	}
+}
+
+// TestBacktrackerImplementsCompleteSolver verifies the Backtracker satisfies CompleteSolver.
+func TestBacktrackerImplementsCompleteSolver(t *testing.T) {
+	var _ solver.CompleteSolver = solver.NewBacktracker()
+}
+
+// TestBacktrackerHintReturnsMove verifies Hint() returns a Move with technique info.
+func TestBacktrackerHintReturnsMove(t *testing.T) {
+	board := core.NewEmptyBoard()
+	// Fill most of the board to get a deterministic hint.
+	// Use a simple partial board: just leave one cell empty.
+	bt := solver.NewBacktracker()
+	bt.Solve(&board)
+
+	// Now unset one cell to create a puzzle with one empty cell.
+	pos := core.NewPosition(4, 4)
+	board.Unset(pos)
+
+	move := bt.Hint(&board)
+	if move == nil {
+		t.Fatal("Hint() returned nil for a solvable board with one empty cell")
+	}
+
+	if move.Technique != "backtracker" {
+		t.Errorf("Expected technique 'backtracker', got %q", move.Technique)
+	}
+
+	if move.Cell.Position != pos {
+		t.Errorf("Expected hint at %s, got %s", pos.ToString(), move.Cell.Position.ToString())
+	}
+
+	if move.Cell.Value < 1 || move.Cell.Value > 9 {
+		t.Errorf("Expected hint value 1-9, got %d", move.Cell.Value)
+	}
+
+	if move.Reason == "" {
+		t.Error("Expected non-empty reason in hint Move")
+	}
+}
+
+// TestStoreGetDefaultSolver verifies the store returns a CompleteSolver.
+func TestStoreGetDefaultSolver(t *testing.T) {
+	store := solver.NewStore()
+	defaultSolver := store.GetDefaultSolver()
+
+	if defaultSolver == nil {
+		t.Fatal("GetDefaultSolver() returned nil")
+	}
+
+	if defaultSolver.GetKey() != "default" {
+		t.Errorf("Expected key 'default', got %q", defaultSolver.GetKey())
+	}
+}
+
+// TestStoreGetStrategySolverByKeyReturnsNil verifies nil for unknown keys.
+func TestStoreGetStrategySolverByKeyReturnsNil(t *testing.T) {
+	store := solver.NewStore()
+
+	s := store.GetStrategySolverByKey("nonexistent")
+	if s != nil {
+		t.Error("Expected nil for nonexistent strategy solver key")
+	}
+}
+
+// TestBacktrackerSolveStillWorks verifies Solve() still works after the refactor.
+func TestBacktrackerSolveStillWorks(t *testing.T) {
+	board := core.NewEmptyBoard()
+	bt := solver.NewBacktracker()
+
+	result := bt.Solve(&board)
+	if !result {
+		t.Fatal("Backtracker.Solve() returned false for empty board")
+	}
+
+	if !board.IsSolved() {
+		t.Fatal("Board is not solved after Backtracker.Solve()")
+	}
+}
+
+// TestBacktrackerCountSolutionsStillWorks verifies CountSolutions() after refactor.
+func TestBacktrackerCountSolutionsStillWorks(t *testing.T) {
+	board := core.NewEmptyBoard()
+	bt := solver.NewBacktracker()
+	bt.Solve(&board)
+
+	// Solved board has exactly 1 solution.
+	count := bt.CountSolutions(&board)
+	if count != 1 {
+		t.Errorf("Expected 1 solution for solved board, got %d", count)
+	}
+
+	// Unset one cell — should still have 1 solution (unique).
+	board.Unset(core.NewPosition(0, 0))
+	count = bt.CountSolutions(&board)
+	if count != 1 {
+		t.Errorf("Expected 1 solution for board with one empty cell, got %d", count)
+	}
+}
+
+// TestBaseImplementsSolver verifies Base satisfies the Solver interface.
+func TestBaseImplementsSolver(t *testing.T) {
+	base := solver.Base{
+		Key:         "test",
+		DisplayName: "Test Solver",
+		Description: "A test solver",
+	}
+
+	var _ solver.Solver = base
+
+	if base.GetKey() != "test" {
+		t.Errorf("Expected key 'test', got %q", base.GetKey())
+	}
+	if base.GetDisplayName() != "Test Solver" {
+		t.Errorf("Expected name 'Test Solver', got %q", base.GetDisplayName())
+	}
+	if base.GetDescription() != "A test solver" {
+		t.Errorf("Expected description 'A test solver', got %q", base.GetDescription())
+	}
+}
+
+// containsAll checks if s contains all the given substrings.
+func containsAll(s string, subs ...string) bool {
+	for _, sub := range subs {
+		found := false
+		for i := 0; i <= len(s)-len(sub); i++ {
+			if s[i:i+len(sub)] == sub {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}

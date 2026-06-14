@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/solver"
@@ -20,11 +21,11 @@ type Game struct {
 	PlayBoard    core.Board // The board that the user can play with.
 
 	// Private fields.
-	invalidInput    core.Board      // Put the invalid input in another board to keep the play board solvable.
-	inputSequence   []MoveRecord    // User input sequence.
-	inputCursor     int             // The cursor of the current user input.
-	defaultSolver   solver.Solver   // The default solver to judge the input, must be reliable.
-	strategySolvers []solver.Solver // An optional list of strategy solvers to give hints, may be unreliable.
+	invalidInput    core.Board              // Put the invalid input in another board to keep the play board solvable.
+	inputSequence   []MoveRecord            // User input sequence.
+	inputCursor     int                     // The cursor of the current user input.
+	completeSolver  solver.CompleteSolver    // The complete solver for judging input and solving, must be reliable.
+	strategySolvers []solver.StrategySolver  // An optional list of strategy solvers to give hints.
 }
 
 // NewGame creates a new game from a problem board and options.
@@ -39,14 +40,14 @@ func NewGame(problem core.Board, options Options) Game {
 		invalidInput:    core.NewEmptyBoard(),
 		inputSequence:   []MoveRecord{},
 		inputCursor:     -1,
-		defaultSolver:   options.solverStore.GetDefaultSolver(),
+		completeSolver:  options.solverStore.GetDefaultSolver(),
 		strategySolvers: options.GetStrategySolvers(),
 	}
 }
 
-// Function to count the solutions of the current play board using the default solver.
+// Function to count the solutions of the current play board using the complete solver.
 func (game *Game) countSolutions() int {
-	return game.defaultSolver.CountSolutions(&game.PlayBoard)
+	return game.completeSolver.CountSolutions(&game.PlayBoard)
 }
 
 // Function to add a non-zero cell input.
@@ -194,11 +195,13 @@ func (game *Game) Reset() {
 
 // Function to solve the game.
 func (game *Game) Solve() {
-	game.defaultSolver.Solve(&game.PlayBoard)
+	game.completeSolver.Solve(&game.PlayBoard)
 }
 
-// Function to get a hint of the game.
-func (game *Game) Hint() *core.Cell {
+// Hint returns the next recommended move.
+// It first checks for invalid inputs to clear, then tries strategy solvers,
+// and falls back to the complete solver.
+func (game *Game) Hint() *solver.Move {
 	// If there is any invalid input, randomly remove one of them.
 	if !game.invalidInput.IsEmpty() {
 		positionPointer := game.invalidInput.GetRandomPositionWith(func(value int) bool {
@@ -209,22 +212,26 @@ func (game *Game) Hint() *core.Cell {
 			panic("Bug: Invalid input board is not empty but cannot find a valid position")
 		}
 
-		return &core.Cell{
-			Position: *positionPointer,
-			Value:    0,
+		return &solver.Move{
+			Cell: core.Cell{
+				Position: *positionPointer,
+				Value:    0,
+			},
+			Technique: "clear-invalid",
+			Reason:    fmt.Sprintf("clear invalid input at %s", positionPointer.ToString()),
 		}
 	}
 
-	// If any of the strategy solvers can give a hint, use it.
-	for _, solver := range game.strategySolvers {
-		hint := solver.Hint(&game.PlayBoard)
-		if hint != nil {
-			return hint
+	// If any of the strategy solvers can find a move, use it.
+	for _, s := range game.strategySolvers {
+		move := s.Apply(&game.PlayBoard)
+		if move != nil {
+			return move
 		}
 	}
 
-	// Otherwise, get a hint from the default solver.
-	return game.defaultSolver.Hint(&game.PlayBoard)
+	// Otherwise, get a hint from the complete solver.
+	return game.completeSolver.Hint(&game.PlayBoard)
 }
 
 // Function to check if the game is solved.

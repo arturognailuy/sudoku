@@ -1,39 +1,46 @@
 package solver
 
-// Store maps solver keys to Solver implementations.
-type Store map[string]Solver
+// Store maps solver keys to Solver implementations and provides typed access
+// for CompleteSolver and StrategySolver lookups.
+type Store struct {
+	complete  map[string]CompleteSolver
+	strategy  map[string]StrategySolver
+}
 
 // NewStore creates a Store and registers the default backtracking solver.
 func NewStore() Store {
-	store := make(Store)
+	store := Store{
+		complete: make(map[string]CompleteSolver),
+		strategy: make(map[string]StrategySolver),
+	}
 
 	// Register the default solver.
 	backtracker := NewBacktracker()
-	store[backtracker.GetKey()] = backtracker
+	store.complete[backtracker.GetKey()] = backtracker
 
 	return store
 }
 
-// GetSolverByKey returns the solver for the given key, or nil if not found.
-func (store Store) GetSolverByKey(key string) Solver {
-	if solver, ok := store[key]; ok {
-		return solver
-	}
-
-	return nil
+// RegisterStrategy adds a StrategySolver to the store.
+func (store Store) RegisterStrategy(s StrategySolver) {
+	store.strategy[s.GetKey()] = s
 }
 
 // GetDefaultSolver returns the default reliable solver, panicking if not found.
-func (store Store) GetDefaultSolver() Solver {
-	defaultSolver := store.GetSolverByKey("default")
-
-	if defaultSolver == nil {
+func (store Store) GetDefaultSolver() CompleteSolver {
+	defaultSolver, ok := store.complete["default"]
+	if !ok {
 		panic("Bug: Default solver not found in the store")
 	}
 
-	if !defaultSolver.IsReliable() {
-		panic("Bug: Default solver must be reliable")
+	return defaultSolver
+}
+
+// GetStrategySolverByKey returns the strategy solver for the given key, or nil if not found.
+func (store Store) GetStrategySolverByKey(key string) StrategySolver {
+	if s, ok := store.strategy[key]; ok {
+		return s
 	}
 
-	return defaultSolver
+	return nil
 }

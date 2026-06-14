@@ -16,8 +16,9 @@ This index provides reading chains for common starting points and a complete doc
 2. `.aidoc/architecture/guidelines.md` — design constraints, layer boundaries, solver interface contract
 3. `core/candidates.go` — `CandidateSet` bitfield type
 4. `core/board.go` — `Board` struct with compute-on-fly `Candidates()` method
-5. `solver/solver.go` — `Solver` interface and `Base`
-6. `solver/store.go` — solver registry
+5. `solver/solver.go` — `Solver`, `StrategySolver`, `CompleteSolver` interfaces and `Base`
+6. `solver/move.go` — `Move` struct (cell + technique + reason)
+7. `solver/store.go` — solver registry with typed access
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -31,10 +32,11 @@ This index provides reading chains for common starting points and a complete doc
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
-2. `solver/solver.go` — implement `Solver`
-3. `solver/store.go` — register in `NewStore()`
-4. Write tests in `solver/<name>_solver_test.go`
-5. Update `generator/difficulty.go` to reference the new solver key
+2. `solver/solver.go` — implement `StrategySolver`
+3. `solver/move.go` — return `*Move` from `Apply()`
+4. `solver/store.go` — register with `RegisterStrategy()`
+5. Write tests in `solver/<name>_solver_test.go`
+6. Update `generator/difficulty.go` to reference the new solver key
 
 ## Document Map
 
