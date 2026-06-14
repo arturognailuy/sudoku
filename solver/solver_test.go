@@ -109,6 +109,28 @@ func TestStoreRegistersStrategySolvers(t *testing.T) {
 	}
 }
 
+// TestStoreGetAllStrategySolverKeys verifies all registered keys are returned.
+func TestStoreGetAllStrategySolverKeys(t *testing.T) {
+	store := solver.NewStore()
+	keys := store.GetAllStrategySolverKeys()
+
+	if len(keys) != 2 {
+		t.Fatalf("Expected 2 strategy solver keys, got %d: %v", len(keys), keys)
+	}
+
+	// Check both keys are present (order is not guaranteed from map iteration).
+	keySet := map[string]bool{}
+	for _, k := range keys {
+		keySet[k] = true
+	}
+	if !keySet["naked-single"] {
+		t.Error("Expected 'naked-single' in keys")
+	}
+	if !keySet["hidden-single"] {
+		t.Error("Expected 'hidden-single' in keys")
+	}
+}
+
 // TestBacktrackerSolveStillWorks verifies Solve() still works after the refactor.
 func TestBacktrackerSolveStillWorks(t *testing.T) {
 	board := core.NewEmptyBoard()

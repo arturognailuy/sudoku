@@ -49,3 +49,13 @@ func (store Store) GetStrategySolverByKey(key string) StrategySolver {
 
 	return nil
 }
+
+// GetAllStrategySolverKeys returns the keys of all registered strategy solvers.
+func (store Store) GetAllStrategySolverKeys() []string {
+	keys := make([]string, 0, len(store.strategy))
+	for key := range store.strategy {
+		keys = append(keys, key)
+	}
+
+	return keys
+}
