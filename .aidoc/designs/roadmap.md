@@ -22,19 +22,25 @@ Refactoring comes first — clean up while the codebase is small, then build new
 
 ## Phase 3: Strategy Solvers
 
-Implement solving techniques incrementally, one per PR.
+Implement solving techniques incrementally, organized by difficulty tier.
 Each solver implements `StrategySolver` (with `Apply()` returning `*Move`),
 gets tests, and registers in the solver store.
 
-Priority order:
-1. Naked Singles
-2. Hidden Singles
-3. Naked/Hidden Pairs and Triples
-4. Pointing Pairs / Box-Line Reduction
-5. X-Wing (stretch)
+Implementation by difficulty tier:
 
-See `.aidoc/designs/difficulty-model.md` for the strategy tier definitions
-and `.aidoc/architecture/guidelines.md` for the step-by-step solver addition guide.
+**Easy tier (PR #6):** ✅
+- Naked Singles — cell has exactly one candidate left.
+- Hidden Singles — candidate appears in only one cell within a row, column, or box.
+- Both registered in store, wired into Easy difficulty (`StrategySolverKeys`).
+
+**Intermediate tier (PR #7):**
+- Naked Pairs/Triples — two/three cells share the same candidates exclusively.
+- Pointing Pairs / Box-Line Reduction — candidate confined to single row/column within a box.
+- Wire into Medium difficulty.
+
+**Advanced tier (PR #8, stretch):**
+- X-Wing — candidate in exactly two cells in two rows sharing the same columns.
+- Wire into Hard difficulty.
 
 ## Phase 4: Generator Integration and Puzzle Database
 
