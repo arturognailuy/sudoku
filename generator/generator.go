@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/gnailuy/sudoku/core"
+	"github.com/gnailuy/sudoku/solver"
 	"github.com/gnailuy/sudoku/util"
 )
 
@@ -128,12 +129,67 @@ func GenerateSudokuProblemFromSolvedBoard(board core.Board, options Options) cor
 
 // Function to generate a Sudoku problem.
 func GenerateSudokuProblem(options Options) core.Board {
-	solvedBoard := GenerateNormalizedSolvedBoard(options)
-	solvedBoard.Randomize()
+	for {
+		solvedBoard := GenerateNormalizedSolvedBoard(options)
+		solvedBoard.Randomize()
 
-	problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, options)
+		problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, options)
 
-	return problem
+		if requiresSolverFromKeys(problem, options) {
+			return problem
+		}
+		// Puzzle doesn't require any solver from RequiredSolverKeys — regenerate.
+	}
+}
+
+// requiresSolverFromKeys checks whether the puzzle requires at least one
+// solver from Difficulty.RequiredSolverKeys. If RequiredSolverKeys is empty,
+// any puzzle qualifies. The check works by attempting to solve the puzzle
+// using only the allowed solvers that are NOT in RequiredSolverKeys. If
+// the puzzle can be fully solved without any required solver, it fails
+// the requirement.
+func requiresSolverFromKeys(board core.Board, options Options) bool {
+	if len(options.Difficulty.RequiredSolverKeys) == 0 {
+		return true
+	}
+
+	// Build the set of required keys for O(1) lookup.
+	required := make(map[string]bool, len(options.Difficulty.RequiredSolverKeys))
+	for _, key := range options.Difficulty.RequiredSolverKeys {
+		required[key] = true
+	}
+
+	// Collect solvers that are allowed but NOT required (the "basic" set).
+	var basicSolvers []solver.StrategySolver
+	for _, key := range options.Difficulty.StrategySolverKeys {
+		if !required[key] {
+			s := options.solverStore.GetStrategySolverByKey(key)
+			if s != nil {
+				basicSolvers = append(basicSolvers, s)
+			}
+		}
+	}
+
+	// Try to solve the puzzle using only basic solvers.
+	testBoard := board // copy (Board is a value type)
+	for {
+		var found bool
+		for _, s := range basicSolvers {
+			move := s.Apply(&testBoard)
+			if move != nil {
+				_ = testBoard.Set(move.Cell.Position, move.Cell.Value)
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+	}
+
+	// If basic solvers alone can solve it, the puzzle doesn't require
+	// any solver from RequiredSolverKeys.
+	return !testBoard.IsSolved()
 }
 
 // Function to generate a Sudoku problem from an input string.

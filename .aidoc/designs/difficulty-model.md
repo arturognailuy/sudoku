@@ -91,9 +91,16 @@ The plumbing exists in the generator (`generator/generator.go`):
 **Easy difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single"]`.
 The generator produces Easy puzzles that are solvable using only naked and hidden singles.
 
-**Medium difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single", "naked-subset", "pointing-pair"]`.
-The generator produces Medium puzzles that are solvable using basic techniques plus naked pairs/triples
-and pointing pairs / box-line reductions.
+**Medium difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single", "naked-subset", "pointing-pair"]`
+with `RequiredSolverKeys: ["naked-subset", "pointing-pair"]`.
+The generator produces Medium puzzles that are solvable using basic techniques plus
+intermediate techniques, AND guarantees the puzzle actually requires at least one
+intermediate technique — basic techniques alone cannot solve it.
+
+The `RequiredSolverKeys` mechanism works by checking generated puzzles: after the
+cell-removal loop, the generator tries to solve the puzzle using only the solvers
+NOT in `RequiredSolverKeys`. If those basic solvers can fully solve the puzzle,
+it doesn't qualify as Medium and is regenerated.
 
 Hard and above still use empty keys (no technique constraint).
 
