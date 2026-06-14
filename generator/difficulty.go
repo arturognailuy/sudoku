@@ -4,7 +4,8 @@ package generator
 //
 // SolverKeys lists the strategy solvers introduced at this tier.
 // The full set of allowed solvers for a level equals SolverKeys plus
-// all solvers from lower tiers. For example:
+// all solvers from lower tiers, derived from the ordered tierRegistry.
+// For example:
 //   - Easy:   SolverKeys = [naked-single, hidden-single]
 //   - Medium: SolverKeys = [naked-subset, pointing-pair]
 //     Allowed = Easy.SolverKeys + Medium.SolverKeys
@@ -14,28 +15,78 @@ package generator
 // lower-tier solvers alone cannot solve the puzzle — ensuring the
 // puzzle genuinely requires at least one solver from this tier.
 //
-// LowerTierSolverKeys holds the cumulative allowed solvers from all
-// lower tiers. It is set automatically by the New*Difficulty()
-// constructors. Empty means this is the lowest tier (or no solver
-// constraint).
+// Lower-tier solver keys are derived from tierRegistry — there is no
+// separate field. The registry is the single source of truth for tier
+// ordering.
 type Difficulty struct {
-	MinimumClues        int      // Inclusive.
-	MaximumClues        int      // Exclusive.
-	SolverKeys          []string // Solvers introduced at this tier. Empty means no technique constraint.
-	LowerTierSolverKeys []string // Cumulative solvers from all lower tiers. Empty for the lowest tier.
+	MinimumClues int      // Inclusive.
+	MaximumClues int      // Exclusive.
+	SolverKeys   []string // Solvers introduced at this tier. Empty means no technique constraint.
+}
+
+// tierRegistry defines the ordered list of difficulty tiers that have
+// strategy solver constraints. Lower tiers appear first. This is the
+// single source of truth for the tier hierarchy — lower-tier solver
+// keys are derived from this ordering.
+var tierRegistry = [][]string{
+	{"naked-single", "hidden-single"},     // Easy
+	{"naked-subset", "pointing-pair"},     // Medium
+	// Future: {"x-wing"},                 // Hard
+}
+
+// lowerTierSolverKeys returns the cumulative solver keys from all tiers
+// below the tier that owns the given SolverKeys. Returns nil if the
+// tier is the lowest or is not found in the registry.
+func lowerTierSolverKeys(solverKeys []string) []string {
+	if len(solverKeys) == 0 {
+		return nil
+	}
+
+	for i, tier := range tierRegistry {
+		if matchesTier(tier, solverKeys) {
+			if i == 0 {
+				return nil // lowest tier
+			}
+			var lower []string
+			for _, t := range tierRegistry[:i] {
+				lower = append(lower, t...)
+			}
+			return lower
+		}
+	}
+
+	return nil // not in registry (custom/unconstrained)
+}
+
+// matchesTier checks whether solverKeys matches the given tier entry.
+func matchesTier(tier, solverKeys []string) bool {
+	if len(tier) != len(solverKeys) {
+		return false
+	}
+	for i := range tier {
+		if tier[i] != solverKeys[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // AllowedSolverKeys returns the full set of solvers the puzzle may use:
-// this tier's SolverKeys plus all lower-tier solvers.
+// this tier's SolverKeys plus all lower-tier solvers (derived from
+// tierRegistry).
 func (d Difficulty) AllowedSolverKeys() []string {
-	all := make([]string, 0, len(d.LowerTierSolverKeys)+len(d.SolverKeys))
-	all = append(all, d.LowerTierSolverKeys...)
+	lower := lowerTierSolverKeys(d.SolverKeys)
+	all := make([]string, 0, len(lower)+len(d.SolverKeys))
+	all = append(all, lower...)
 	all = append(all, d.SolverKeys...)
 	return all
 }
 
-// easySolverKeys is the solver set for the Easy tier.
-var easySolverKeys = []string{"naked-single", "hidden-single"}
+// LowerTierSolverKeys returns the cumulative solver keys from all tiers
+// below this difficulty's tier. Derived from tierRegistry.
+func (d Difficulty) LowerTierSolverKeys() []string {
+	return lowerTierSolverKeys(d.SolverKeys)
+}
 
 // NewEasyDifficulty creates the easy difficulty level.
 // Easy puzzles are solvable using only naked singles and hidden singles.
@@ -43,7 +94,7 @@ func NewEasyDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues: 45,
 		MaximumClues: 60,
-		SolverKeys:   easySolverKeys,
+		SolverKeys:   tierRegistry[0],
 	}
 }
 
@@ -52,10 +103,9 @@ func NewEasyDifficulty() Difficulty {
 // or pointing-pair) — basic techniques alone won't suffice.
 func NewMediumDifficulty() Difficulty {
 	return Difficulty{
-		MinimumClues:        32,
-		MaximumClues:        45,
-		SolverKeys:          []string{"naked-subset", "pointing-pair"},
-		LowerTierSolverKeys: easySolverKeys,
+		MinimumClues: 32,
+		MaximumClues: 45,
+		SolverKeys:   tierRegistry[1],
 	}
 }
 

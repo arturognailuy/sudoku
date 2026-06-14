@@ -84,18 +84,20 @@ and avoids the need for retry limits or fallback logic.
 ### Architecture Support Already In Place
 
 The plumbing exists in the generator (`generator/generator.go`):
-- `Difficulty.SolverKeys` lists solver keys introduced at this tier.
-- `Difficulty.LowerTierSolverKeys` holds cumulative solvers from all lower tiers.
-- `Difficulty.AllowedSolverKeys()` returns the full allowed set (lower tiers + this tier).
+- `Difficulty.SolverKeys` lists solver keys introduced at this tier (the only field).
+- `tierRegistry` (package-level ordered slice) defines the tier hierarchy. Lower-tier solver keys are derived from this registry — there is no separate field. This is the single source of truth for tier ordering.
+- `Difficulty.AllowedSolverKeys()` returns the full allowed set (lower tiers + this tier), computed from `tierRegistry`.
+- `Difficulty.LowerTierSolverKeys()` returns the cumulative keys from all tiers below, derived from `tierRegistry`.
 - During cell removal, the generator calls `solver.Apply()` on each allowed solver before confirming a removal.
 - After generation, `requiresThisTierSolver()` checks that lower-tier solvers alone can't solve the puzzle.
 - `Store` maps solver keys to implementations.
 
 **Easy difficulty:** `SolverKeys: ["naked-single", "hidden-single"]`.
 The generator produces Easy puzzles solvable using only naked and hidden singles.
-As the lowest tier, no lower-tier check is needed.
+As the lowest tier in `tierRegistry`, `LowerTierSolverKeys()` returns nil.
 
-**Medium difficulty:** `SolverKeys: ["naked-subset", "pointing-pair"]`, `LowerTierSolverKeys: ["naked-single", "hidden-single"]`.
+**Medium difficulty:** `SolverKeys: ["naked-subset", "pointing-pair"]`.
+`LowerTierSolverKeys()` returns `["naked-single", "hidden-single"]` (derived from Easy tier in registry).
 Allowed set = all four solvers. The generator produces Medium puzzles that genuinely
 require at least one intermediate technique — basic techniques alone cannot solve them.
 

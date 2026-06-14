@@ -144,22 +144,24 @@ func GenerateSudokuProblem(options Options) core.Board {
 }
 
 // requiresThisTierSolver checks whether the puzzle requires at least one
-// solver from this tier's SolverKeys. If LowerTierSolverKeys is empty
+// solver from this tier's SolverKeys. If there are no lower-tier solvers
 // (lowest tier or unconstrained), any puzzle qualifies.
 //
 // The check works by attempting to solve the puzzle using only the
-// lower-tier solvers. If those can fully solve the puzzle, it doesn't
-// genuinely require this tier's techniques.
+// lower-tier solvers (derived from tierRegistry). If those can fully
+// solve the puzzle, it doesn't genuinely require this tier's techniques.
 func requiresThisTierSolver(board core.Board, options Options) bool {
+	lowerKeys := options.Difficulty.LowerTierSolverKeys()
+
 	// If there are no lower-tier solvers, this is the lowest tier
 	// (or unconstrained) — every puzzle qualifies.
-	if len(options.Difficulty.LowerTierSolverKeys) == 0 {
+	if len(lowerKeys) == 0 {
 		return true
 	}
 
 	// Collect the lower-tier solvers.
 	var lowerSolvers []solver.StrategySolver
-	for _, key := range options.Difficulty.LowerTierSolverKeys {
+	for _, key := range lowerKeys {
 		s := options.solverStore.GetStrategySolverByKey(key)
 		if s != nil {
 			lowerSolvers = append(lowerSolvers, s)
