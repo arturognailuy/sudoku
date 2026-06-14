@@ -148,7 +148,7 @@ func GenerateSudokuProblem(options Options) core.Board {
 // (lowest tier or unconstrained), any puzzle qualifies.
 //
 // The check works by attempting to solve the puzzle using only the
-// lower-tier solvers (derived from tierRegistry). If those can fully
+// lower-tier solvers (derived from tierRegistry/tierOrder). If those can fully
 // solve the puzzle, it doesn't genuinely require this tier's techniques.
 func requiresThisTierSolver(board core.Board, options Options) bool {
 	lowerKeys := options.Difficulty.LowerTierSolverKeys()

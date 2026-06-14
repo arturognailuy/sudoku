@@ -37,7 +37,7 @@ Implementation by difficulty tier:
 - Naked Pairs/Triples — two/three cells in a unit share the same candidates exclusively; eliminating those candidates from other cells in the unit reveals singles.
 - Pointing Pairs / Box-Line Reduction — candidate confined to single row/column within a box (or vice versa); elimination reveals singles.
 - Both registered in store, wired into Medium difficulty (`SolverKeys`).
-- Single-field design: `SolverKeys` holds the solvers introduced at this tier. `tierRegistry` (ordered slice) is the single source of truth for tier ordering — `LowerTierSolverKeys()` and `AllowedSolverKeys()` derive cumulative keys from it.
+- Single-field design: `SolverKeys` holds the solvers introduced at this tier. `tierRegistry` (map keyed by difficulty level name) + `tierOrder` (ordered slice of tier names) are the single source of truth for tier ordering — `LowerTierSolverKeys()` and `AllowedSolverKeys()` derive cumulative keys from them.
 
 **Advanced tier (PR #8, stretch):**
 - X-Wing — candidate in exactly two cells in two rows sharing the same columns.
