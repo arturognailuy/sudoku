@@ -1,11 +1,14 @@
 package solver
 
 import (
+	"fmt"
+
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/util"
 )
 
 // Backtracker implements a recursive backtracking solver.
+// It satisfies CompleteSolver — it can fully solve any valid board.
 type Backtracker struct {
 	Base
 }
@@ -17,7 +20,6 @@ func NewBacktracker() Backtracker {
 			Key:         "default",
 			DisplayName: "Backtracking Solver",
 			Description: `Default solver using recursive backtracking in a random order.`,
-			Reliable:    true,
 		},
 	}
 }
@@ -96,8 +98,8 @@ func solve(board *core.Board, state *solveState, options solveOptions) bool {
 	return true
 }
 
-// Function to solve the Sudoku board with random candidate values.
-func (solver Backtracker) Solve(board *core.Board) bool {
+// Solve solves the board in place using backtracking with random candidate order.
+func (s Backtracker) Solve(board *core.Board) bool {
 	if !board.IsValid() {
 		return false
 	}
@@ -106,8 +108,8 @@ func (solver Backtracker) Solve(board *core.Board) bool {
 	return solve(board, state, newSolveOptions(true, false, false))
 }
 
-// Function to generate a hint for the Sudoku board without solving the board.
-func (solver Backtracker) Hint(board *core.Board) *core.Cell {
+// Hint returns the next determinable move without modifying the board.
+func (s Backtracker) Hint(board *core.Board) *Move {
 	if !board.IsValid() {
 		return nil
 	}
@@ -116,15 +118,19 @@ func (solver Backtracker) Hint(board *core.Board) *core.Cell {
 	solve(board, state, newSolveOptions(true, true, false))
 
 	if len(state.solvePath) > 0 {
-		return &state.solvePath[0]
+		cell := state.solvePath[0]
+		return &Move{
+			Cell:      cell,
+			Technique: "backtracker",
+			Reason:    fmt.Sprintf("backtracking finds %d at %s", cell.Value, cell.Position.ToString()),
+		}
 	}
 
 	return nil
 }
 
-// Function to count the number of solutions for the Sudoku board.
-// Note that if the board is already solved, we return 1 as doing nothing is also a solution.
-func (solver Backtracker) CountSolutions(board *core.Board) int {
+// CountSolutions returns the number of solutions for the board.
+func (s Backtracker) CountSolutions(board *core.Board) int {
 	// If the board is already solved, return 1.
 	if board.IsSolved() {
 		return 1

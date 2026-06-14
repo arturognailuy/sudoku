@@ -18,8 +18,8 @@ func GenerateNormalizedSolvedBoard(options Options) core.Board {
 	}
 
 	// To generate a solved board from an empty normalized board, we use the reliable default solver.
-	solver := options.solverStore.GetDefaultSolver()
-	solver.Solve(&board)
+	defaultSolver := options.solverStore.GetDefaultSolver()
+	defaultSolver.Solve(&board)
 
 	return board
 }
@@ -80,31 +80,31 @@ func GenerateSudokuProblemFromSolvedBoard(board core.Board, options Options) cor
 
 			// Check if the problem is solvable and has no more than maximum solutions.
 			if numberOfSolutions > 0 && numberOfSolutions <= options.MaximumSolutions {
-				canHint := false
+				canProgress := false
 
 				if len(options.Difficulty.StrategySolverKeys) > 0 {
 					// If there are strategy solvers configured, we limit the problem to be solvable with the specified strategies.
-					// Test the strategy solvers to ensure that at least one of them can give a hint.
+					// Test the strategy solvers to ensure that at least one of them can make progress.
 					for _, key := range options.Difficulty.StrategySolverKeys {
-						solver := options.solverStore.GetSolverByKey(key)
-						if solver == nil {
+						strategySolver := options.solverStore.GetStrategySolverByKey(key)
+						if strategySolver == nil {
 							panic("Bug: Invalid strategy solver key: " + key)
 						}
 
-						hint := solver.Hint(&board)
-						if hint != nil {
-							canHint = true
+						move := strategySolver.Apply(&board)
+						if move != nil {
+							canProgress = true
 							break
 						}
 					}
 				} else {
 					// If there are no strategy solvers configured, we don't care about limiting the problem to specific strategies.
-					// And the default solver can always give a hint.
-					canHint = true
+					// And the default solver can always make progress.
+					canProgress = true
 				}
 
 				// Confirm the removal.
-				if canHint {
+				if canProgress {
 					removedPositionIndex = j
 					break
 				}

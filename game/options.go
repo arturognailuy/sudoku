@@ -21,14 +21,14 @@ func NewDefaultOptions(solverStore solver.Store) Options {
 	}
 }
 
-// Function to get the strategy solvers from the store.
-func (options *Options) GetStrategySolvers() []solver.Solver {
-	strategySolvers := []solver.Solver{}
+// GetStrategySolvers returns the strategy solvers specified by the options.
+func (options *Options) GetStrategySolvers() []solver.StrategySolver {
+	strategySolvers := []solver.StrategySolver{}
 
 	for _, key := range options.StrategySolverKeys {
-		solver := options.solverStore.GetSolverByKey(key)
-		if solver != nil {
-			strategySolvers = append(strategySolvers, solver)
+		s := options.solverStore.GetStrategySolverByKey(key)
+		if s != nil {
+			strategySolvers = append(strategySolvers, s)
 		} else {
 			panic("Bug: Invalid solver key: " + key)
 		}

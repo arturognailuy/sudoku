@@ -25,16 +25,14 @@ Refactoring comes first — clean up while the codebase is small, then build new
 Refactor the codebase while it's small, before adding new solvers.
 New strategy solvers should be built on clean, modern infrastructure.
 
-- **Solver architecture:** Split the solver interface into `Solver` + `StrategySolver` +
-  `CompleteSolver` with a `Move` struct for richer hint output.
 - **Game/CLI separation:** Extract CLI I/O from the `Game` struct so game logic is
   testable and UI-agnostic.
 
 ## Phase 3: Strategy Solvers
 
 Implement solving techniques incrementally, one per PR.
-Each solver implements the solver interface (renamed in Phase 2), gets tests,
-and registers in the solver store.
+Each solver implements `StrategySolver` (with `Apply()` returning `*Move`),
+gets tests, and registers in the solver store.
 
 Priority order:
 1. Naked Singles
