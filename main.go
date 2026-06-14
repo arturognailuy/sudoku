@@ -48,10 +48,10 @@ func main() {
 		difficulty := options.GetDifficultyOptions()
 		problem := generator.GenerateSudokuProblem(generator.NewProblemOptions(solverStore, difficulty))
 
-		// Use the difficulty's strategy solver keys for hints, falling back
+		// Use the difficulty's allowed solver keys for hints, falling back
 		// to all registered solvers when the difficulty has no keys set
 		// (e.g., Extreme/Evil levels).
-		keys := difficulty.StrategySolverKeys
+		keys := difficulty.AllowedSolverKeys()
 		if len(keys) == 0 {
 			keys = solverStore.GetAllStrategySolverKeys()
 		}

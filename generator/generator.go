@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/gnailuy/sudoku/core"
+	"github.com/gnailuy/sudoku/solver"
 	"github.com/gnailuy/sudoku/util"
 )
 
@@ -82,10 +83,11 @@ func GenerateSudokuProblemFromSolvedBoard(board core.Board, options Options) cor
 			if numberOfSolutions > 0 && numberOfSolutions <= options.MaximumSolutions {
 				canProgress := false
 
-				if len(options.Difficulty.StrategySolverKeys) > 0 {
+				allowedKeys := options.Difficulty.AllowedSolverKeys()
+				if len(allowedKeys) > 0 {
 					// If there are strategy solvers configured, we limit the problem to be solvable with the specified strategies.
 					// Test the strategy solvers to ensure that at least one of them can make progress.
-					for _, key := range options.Difficulty.StrategySolverKeys {
+					for _, key := range allowedKeys {
 						strategySolver := options.solverStore.GetStrategySolverByKey(key)
 						if strategySolver == nil {
 							panic("Bug: Invalid strategy solver key: " + key)
@@ -128,12 +130,64 @@ func GenerateSudokuProblemFromSolvedBoard(board core.Board, options Options) cor
 
 // Function to generate a Sudoku problem.
 func GenerateSudokuProblem(options Options) core.Board {
-	solvedBoard := GenerateNormalizedSolvedBoard(options)
-	solvedBoard.Randomize()
+	for {
+		solvedBoard := GenerateNormalizedSolvedBoard(options)
+		solvedBoard.Randomize()
 
-	problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, options)
+		problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, options)
 
-	return problem
+		if requiresThisTierSolver(problem, options) {
+			return problem
+		}
+		// Lower-tier solvers alone can solve it — regenerate.
+	}
+}
+
+// requiresThisTierSolver checks whether the puzzle requires at least one
+// solver from this tier's SolverKeys. If there are no lower-tier solvers
+// (lowest tier or unconstrained), any puzzle qualifies.
+//
+// The check works by attempting to solve the puzzle using only the
+// lower-tier solvers (derived from tierRegistry/tierOrder). If those can fully
+// solve the puzzle, it doesn't genuinely require this tier's techniques.
+func requiresThisTierSolver(board core.Board, options Options) bool {
+	lowerKeys := options.Difficulty.LowerTierSolverKeys()
+
+	// If there are no lower-tier solvers, this is the lowest tier
+	// (or unconstrained) — every puzzle qualifies.
+	if len(lowerKeys) == 0 {
+		return true
+	}
+
+	// Collect the lower-tier solvers.
+	var lowerSolvers []solver.StrategySolver
+	for _, key := range lowerKeys {
+		s := options.solverStore.GetStrategySolverByKey(key)
+		if s != nil {
+			lowerSolvers = append(lowerSolvers, s)
+		}
+	}
+
+	// Try to solve the puzzle using only lower-tier solvers.
+	testBoard := board // copy (Board is a value type)
+	for {
+		var found bool
+		for _, s := range lowerSolvers {
+			move := s.Apply(&testBoard)
+			if move != nil {
+				_ = testBoard.Set(move.Cell.Position, move.Cell.Value)
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+	}
+
+	// If lower-tier solvers alone can solve it, the puzzle doesn't
+	// require any solver from this tier.
+	return !testBoard.IsSolved()
 }
 
 // Function to generate a Sudoku problem from an input string.

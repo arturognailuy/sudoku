@@ -84,11 +84,22 @@ and avoids the need for retry limits or fallback logic.
 ### Architecture Support Already In Place
 
 The plumbing exists in the generator (`generator/generator.go`):
-- `Difficulty.StrategySolverKeys` lists solver keys to check during cell removal.
-- The generator calls `solver.Apply()` on each listed strategy solver before confirming a removal.
+- `Difficulty.SolverKeys` lists solver keys introduced at this tier (the only field).
+- `tierRegistry` (package-level map keyed by difficulty level name, e.g. `"easy"`, `"medium"`) + `tierOrder` (ordered slice of tier names) define the tier hierarchy. Lower-tier solver keys are derived from these — there is no separate field. This is the single source of truth for tier ordering.
+- `Difficulty.AllowedSolverKeys()` returns the full allowed set (lower tiers + this tier), computed from `tierRegistry`/`tierOrder`.
+- `Difficulty.LowerTierSolverKeys()` returns the cumulative keys from all tiers below, derived from `tierRegistry`/`tierOrder`.
+- During cell removal, the generator calls `solver.Apply()` on each allowed solver before confirming a removal.
+- After generation, `requiresThisTierSolver()` checks that lower-tier solvers alone can't solve the puzzle.
 - `Store` maps solver keys to implementations.
 
-**Easy difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single"]`.
-The generator produces Easy puzzles that are solvable using only naked and hidden singles.
-Medium and above still use empty keys (no technique constraint).
+**Easy difficulty:** `SolverKeys: ["naked-single", "hidden-single"]`.
+The generator produces Easy puzzles solvable using only naked and hidden singles.
+As the lowest tier in `tierOrder`, `LowerTierSolverKeys()` returns nil.
+
+**Medium difficulty:** `SolverKeys: ["naked-subset", "pointing-pair"]`.
+`LowerTierSolverKeys()` returns `["naked-single", "hidden-single"]` (derived from Easy tier in registry/tierOrder).
+Allowed set = all four solvers. The generator produces Medium puzzles that genuinely
+require at least one intermediate technique — basic techniques alone cannot solve them.
+
+Hard and above still use empty keys (no technique constraint).
 

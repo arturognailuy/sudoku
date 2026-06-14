@@ -95,6 +95,7 @@ Extends `Solver`. Used by solvers that can fully solve any valid board (e.g., ba
 3. Register in `solver.NewStore()` using `store.RegisterStrategy(s)`.
 4. Add the solver key to the appropriate difficulty level's `StrategySolverKeys` in `generator/difficulty.go`.
 5. Write tests in `solver/<technique>_solver_test.go`.
+6. If the solver needs to iterate over units, use `allUnits()` from `solver/units.go`.
 
 ## Design Constraints
 
