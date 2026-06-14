@@ -54,5 +54,6 @@ func main() {
 // Function to play a game in CLI.
 func playCli(problem core.Board, solverStore solver.Store) {
 	newGame := game.NewGame(problem, game.NewDefaultOptions(solverStore))
-	newGame.PlayCli()
+	ctrl := cli.NewController(&newGame)
+	ctrl.Play()
 }

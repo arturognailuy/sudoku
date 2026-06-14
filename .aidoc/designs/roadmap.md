@@ -20,14 +20,6 @@ Refactoring comes first — clean up while the codebase is small, then build new
 | `.aidoc/designs/difficulty-model.md` | Difficulty model design (strategy-based, with puzzle database) |
 | `.aidoc/INDEX.md` | Discovery index |
 
-## Phase 2: Core Refactoring
-
-Refactor the codebase while it's small, before adding new solvers.
-New strategy solvers should be built on clean, modern infrastructure.
-
-- **Game/CLI separation:** Extract CLI I/O from the `Game` struct so game logic is
-  testable and UI-agnostic.
-
 ## Phase 3: Strategy Solvers
 
 Implement solving techniques incrementally, one per PR.
@@ -68,9 +60,10 @@ Goals:
 - **Note-taking support:** Players can annotate cells with candidate values
   (pencil marks). The engine tracks notes as part of the game state, including
   undo/redo for note operations.
-- **CLI as one frontend:** The existing CLI becomes one consumer of the engine API,
-  not the only interface.
+- **CLI as one frontend:** The existing CLI is already separated into `cli/controller.go`,
+  consuming the Game API. Additional UIs follow the same pattern.
 - **UI independence:** The engine makes no assumptions about rendering, input method,
   or platform. A web UI, TUI, or mobile app should all be viable frontends.
 
-This phase depends on the core refactoring (Phase 2) to establish clean interfaces first.
+The core Game struct is already pure state (no I/O) after Phase 2. This phase
+extends it with note-taking and formalizes the API as a stable engine boundary.

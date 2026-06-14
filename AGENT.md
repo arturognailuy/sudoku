@@ -19,11 +19,11 @@ go build && go test ./...
 ```
 .
 ├── main.go              # Entry point — CLI parsing → game loop
-├── cli/                 # Command-line flag parsing (difficulty enum, help)
+├── cli/                 # CLI controller, flag parsing, signal handling
 ├── core/                # Board, cell, position, validator, normalizer, string serialization
-├── solver/              # Solver interface, solver store, backtracking solver
+├── solver/              # Solver interfaces, solver store, backtracking solver
 ├── generator/           # Puzzle generation — solved board + cell removal with uniqueness checks
-├── game/                # Game state, undo/redo/hints, interactive CLI play loop, signal handling
+├── game/                # Game state — pure logic (undo/redo/hints), no I/O
 ├── util/                # Random shuffle, array helpers
 ├── .aidoc/              # AI-native documentation
 │   ├── INDEX.md

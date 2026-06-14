@@ -1,4 +1,4 @@
-package game
+package cli
 
 import (
 	"bufio"
@@ -8,14 +8,30 @@ import (
 	"strings"
 
 	"github.com/gnailuy/sudoku/core"
+	"github.com/gnailuy/sudoku/game"
 )
 
-// Function to print an error message with a prefix [ERROR].
+// Controller owns all terminal I/O for the Sudoku game.
+// It holds a Game and translates user commands into Game API calls.
+type Controller struct {
+	game         *game.Game
+	closeChannel CloseChannel
+}
+
+// NewController creates a CLI controller for the given game.
+func NewController(g *game.Game) *Controller {
+	return &Controller{
+		game:         g,
+		closeChannel: NewCloseChannel(),
+	}
+}
+
+// printError prints an error message with a prefix [ERROR].
 func printError(message ...any) {
 	fmt.Fprintln(os.Stderr, "[ERROR]", message)
 }
 
-// Function to print the column numbers.
+// printColumnNumbers prints the column number header/footer.
 func printColumnNumbers() {
 	fmt.Print("    ")
 	for i := 0; i < 9; i++ {
@@ -27,13 +43,11 @@ func printColumnNumbers() {
 	fmt.Println()
 }
 
-// Function to print the Sudoku game.
-func (game *Game) print() {
-	// Header column numbers.
+// PrintBoard renders the 9×9 Sudoku grid with row/column numbers.
+func (ctrl *Controller) PrintBoard() {
 	fmt.Println()
 	printColumnNumbers()
 
-	// Board and row numbers.
 	for i := 0; i < 9; i++ {
 		if i%3 == 0 {
 			fmt.Println("    -------+-------+-------")
@@ -42,7 +56,7 @@ func (game *Game) print() {
 		fmt.Printf(" %d ", i+1)
 		for j := 0; j < 9; j++ {
 			position := core.NewPosition(i, j)
-			value := game.Get(position)
+			value := ctrl.game.Get(position)
 
 			if j%3 == 0 {
 				fmt.Print("| ")
@@ -57,13 +71,12 @@ func (game *Game) print() {
 	}
 	fmt.Println("    -------+-------+-------")
 
-	// Footer column numbers.
 	printColumnNumbers()
 	fmt.Println()
 }
 
-// Function to print the help message.
-func (game *Game) printHelp() {
+// PrintHelp displays the available commands.
+func (ctrl *Controller) PrintHelp() {
 	fmt.Println("Supported commands:")
 	fmt.Println("  - help, h                       : Print this help message.")
 	fmt.Println("  - add, a <row> <column> <value> : Add the value to the cell at (row, column).")
@@ -78,9 +91,8 @@ func (game *Game) printHelp() {
 	fmt.Println("  - quit, q                       : Quit the game.")
 }
 
-// Function to set a cell for the add and clear commands.
-func (game *Game) setValue(rowInput, columnInput, valueInput int) (success bool, err error) {
-	// Check user input validity.
+// setValue applies a cell value through the game API.
+func (ctrl *Controller) setValue(rowInput, columnInput, valueInput int) (success bool, err error) {
 	positionPointer, err := core.NewPositionFromInput(rowInput, columnInput)
 	if err != nil {
 		return false, fmt.Errorf("error in the input position: %w", err)
@@ -91,118 +103,109 @@ func (game *Game) setValue(rowInput, columnInput, valueInput int) (success bool,
 		return false, fmt.Errorf("error in the input value: %w", err)
 	}
 
-	// Skip adding if the input is the same as the current value.
-	if game.Get(*positionPointer) == valueInput {
+	if ctrl.game.Get(*positionPointer) == valueInput {
 		return false, nil
 	}
 
-	// Add the value to the cell.
-	err = game.AddInputAndRecordHistory(*cellPointer)
+	err = ctrl.game.AddInputAndRecordHistory(*cellPointer)
 	success = err == nil
 	return
 }
 
-// Function to handle the add command.
-func (game *Game) runAddCommand(commandArguments string) (added bool, err error) {
+// runAddCommand handles the add command.
+func (ctrl *Controller) runAddCommand(commandArguments string) (added bool, err error) {
 	var row, column, value int
 	_, err = fmt.Sscanf(commandArguments, "%1d%1d%1d", &row, &column, &value)
 	if err != nil {
 		return false, err
-	} else {
-		added, err = game.setValue(row, column, value)
-		return
 	}
+	added, err = ctrl.setValue(row, column, value)
+	return
 }
 
-// Function to handle the clear command.
-func (game *Game) runClearCommand(commandArguments string) (cleared bool, err error) {
+// runClearCommand handles the clear command.
+func (ctrl *Controller) runClearCommand(commandArguments string) (cleared bool, err error) {
 	var row, column int
 	_, err = fmt.Sscanf(commandArguments, "%1d%1d", &row, &column)
 	if err != nil {
 		return false, err
-	} else {
-		cleared, err = game.setValue(row, column, 0)
-		return
 	}
+	cleared, err = ctrl.setValue(row, column, 0)
+	return
 }
 
-// Function to handle the command with arguments.
-func (game *Game) runCommandWithArguments(commandFields []string) (success bool, err error) {
+// runCommandWithArguments handles commands that take arguments (add/clear).
+func (ctrl *Controller) runCommandWithArguments(commandFields []string) (success bool, err error) {
 	if len(commandFields) != 2 {
 		return false, errors.New("no argument specified for the command")
 	}
 
 	switch commandFields[0] {
 	case "add", "a":
-		return game.runAddCommand(commandFields[1])
+		return ctrl.runAddCommand(commandFields[1])
 	case "clear", "d":
-		return game.runClearCommand(commandFields[1])
+		return ctrl.runClearCommand(commandFields[1])
 	default:
 		return false, fmt.Errorf("unsupported command: %s", commandFields[0])
 	}
 }
 
-// Function to run a command.
-func (game *Game) runCommand(command string, closeChannel CloseChannel) bool {
+// RunCommand parses and dispatches a single command.
+func (ctrl *Controller) RunCommand(command string) bool {
 	commandFields := strings.SplitN(command, " ", 2)
 
-	// Empty command, return directly.
 	if len(commandFields) == 0 || len(commandFields[0]) == 0 {
 		return false
 	}
 
 	switch commandFields[0] {
 	case "help", "h":
-		game.printHelp()
+		ctrl.PrintHelp()
 		return false
 	case "add", "a", "clear", "d":
-		success, err := game.runCommandWithArguments(commandFields)
+		success, err := ctrl.runCommandWithArguments(commandFields)
 		if err != nil {
 			printError("Failed to run the", commandFields[0], "command:", err)
 		}
 		return success
 	case "check", "c":
-		if game.IsValid() {
+		if ctrl.game.IsValid() {
 			fmt.Println("The current board is correct.")
 		} else {
 			fmt.Println("You have entered incorrect values(s).")
 		}
 	case "undo", "u":
-		err := game.Undo()
+		err := ctrl.game.Undo()
 		return err == nil
 	case "redo", "r":
-		err := game.Redo()
+		err := ctrl.game.Redo()
 		return err == nil
 	case "repair", "f":
-		return game.Repair() > 0
+		return ctrl.game.Repair() > 0
 	case "hint", "i":
-		hint := game.Hint()
+		hint := ctrl.game.Hint()
 		if hint != nil {
-			added, err := game.setValue(hint.Cell.Position.Row+1, hint.Cell.Position.Column+1, hint.Cell.Value)
+			added, err := ctrl.setValue(hint.Cell.Position.Row+1, hint.Cell.Position.Column+1, hint.Cell.Value)
 			if err != nil {
 				printError("Failed to apply hint:", err)
 			}
 			if added {
-				if hint.Cell.Value != 0 {
-					fmt.Printf("Hint: %s\n", hint.Reason)
-				} else {
-					fmt.Printf("Hint: %s\n", hint.Reason)
-				}
+				fmt.Printf("Hint: %s\n", hint.Reason)
 			}
 			return added
 		}
 		return false
 	case "solve", "s":
-		game.Solve()
+		ctrl.game.Solve()
 		return true
 	case "reset", "e":
-		game.Reset()
+		ctrl.game.Reset()
 		return true
 	case "quit", "q":
-		closeChannel.Close()
+		ctrl.closeChannel.Close()
 	default:
-		// I find myself often forgetting to use the 'add' command and just typing the numbers directly.
-		added, err := game.runAddCommand(command)
+		// Shorthand: bare digits are treated as an add command.
+		added, err := ctrl.runAddCommand(command)
 		if err != nil {
 			printError("Failed to run the command:", err)
 		}
@@ -212,21 +215,17 @@ func (game *Game) runCommand(command string, closeChannel CloseChannel) bool {
 	return false
 }
 
-// Function to ask the user for input.
-func (game *Game) askUserInput(scanner *bufio.Scanner, inputChannel chan string, closeChannel CloseChannel) {
-	// Check if the close channel is closed.
-	if closeChannel.IsClosed() {
+// askUserInput prints the board, prompts, and reads one line of input.
+func (ctrl *Controller) askUserInput(scanner *bufio.Scanner, inputChannel chan string) {
+	if ctrl.closeChannel.IsClosed() {
 		return
 	}
 
-	// Print the problem.
-	game.print()
+	ctrl.PrintBoard()
 
-	// Ask for user input.
 	fmt.Println("Enter a command (Enter 'help' or 'h for help):")
 	fmt.Print("> ")
 
-	// Block until the user enters a command.
 	if scanner.Scan() {
 		inputChannel <- strings.TrimSpace(scanner.Text())
 	}
@@ -236,32 +235,29 @@ func (game *Game) askUserInput(scanner *bufio.Scanner, inputChannel chan string,
 	}
 }
 
-// Function to start the game.
-func (game *Game) PlayCli() {
+// Play runs the main interactive game loop.
+func (ctrl *Controller) Play() {
 	inputChannel := make(chan string)
-	closeChannel := NewCloseChannel()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		// Ask for user input in a goroutine, it will block until the user enters a command.
-		go game.askUserInput(scanner, inputChannel, closeChannel)
+		go ctrl.askUserInput(scanner, inputChannel)
 
-		// Block until we receive a command or the close channel is closed.
 		select {
 		case command := <-inputChannel:
-			game.runCommand(command, closeChannel)
-		case <-closeChannel:
+			ctrl.RunCommand(command)
+		case <-ctrl.closeChannel:
 			fmt.Println("\nExiting the game.")
-			fmt.Println(game.ToString())
+			fmt.Println(ctrl.game.ToString())
 			os.Exit(0)
 		}
 
-		if game.IsSolved() {
-			game.print()
+		if ctrl.game.IsSolved() {
+			ctrl.PrintBoard()
 			break
 		}
 	}
 
 	fmt.Println("Congratulations! You have solved the problem.")
-	fmt.Println(game.ToString())
+	fmt.Println(ctrl.game.ToString())
 }
