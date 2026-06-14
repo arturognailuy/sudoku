@@ -7,7 +7,8 @@ type Store struct {
 	strategy  map[string]StrategySolver
 }
 
-// NewStore creates a Store and registers the default backtracking solver.
+// NewStore creates a Store and registers the default backtracking solver
+// and all built-in strategy solvers.
 func NewStore() Store {
 	store := Store{
 		complete: make(map[string]CompleteSolver),
@@ -17,6 +18,10 @@ func NewStore() Store {
 	// Register the default solver.
 	backtracker := NewBacktracker()
 	store.complete[backtracker.GetKey()] = backtracker
+
+	// Register strategy solvers.
+	store.RegisterStrategy(NewNakedSingleSolver())
+	store.RegisterStrategy(NewHiddenSingleSolver())
 
 	return store
 }
@@ -43,4 +48,14 @@ func (store Store) GetStrategySolverByKey(key string) StrategySolver {
 	}
 
 	return nil
+}
+
+// GetAllStrategySolverKeys returns the keys of all registered strategy solvers.
+func (store Store) GetAllStrategySolverKeys() []string {
+	keys := make([]string, 0, len(store.strategy))
+	for key := range store.strategy {
+		keys = append(keys, key)
+	}
+
+	return keys
 }

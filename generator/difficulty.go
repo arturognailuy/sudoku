@@ -8,11 +8,12 @@ type Difficulty struct {
 }
 
 // NewEasyDifficulty creates the easy difficulty level.
+// Easy puzzles are solvable using only naked singles and hidden singles.
 func NewEasyDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues:       45,
 		MaximumClues:       60,
-		StrategySolverKeys: []string{},
+		StrategySolverKeys: []string{"naked-single", "hidden-single"},
 	}
 }
 

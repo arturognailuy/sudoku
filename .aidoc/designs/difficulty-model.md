@@ -85,8 +85,10 @@ and avoids the need for retry limits or fallback logic.
 
 The plumbing exists in the generator (`generator/generator.go`):
 - `Difficulty.StrategySolverKeys` lists solver keys to check during cell removal.
-- The generator calls `solver.Hint()` on each listed strategy solver before confirming a removal.
+- The generator calls `solver.Apply()` on each listed strategy solver before confirming a removal.
 - `Store` maps solver keys to implementations.
 
-What's missing: actual strategy solver implementations to register.
+**Easy difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single"]`.
+The generator produces Easy puzzles that are solvable using only naked and hidden singles.
+Medium and above still use empty keys (no technique constraint).
 

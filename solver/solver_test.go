@@ -88,6 +88,49 @@ func TestStoreGetStrategySolverByKeyReturnsNil(t *testing.T) {
 	}
 }
 
+// TestStoreRegistersStrategySolvers verifies built-in strategy solvers are registered.
+func TestStoreRegistersStrategySolvers(t *testing.T) {
+	store := solver.NewStore()
+
+	naked := store.GetStrategySolverByKey("naked-single")
+	if naked == nil {
+		t.Fatal("Expected naked-single solver to be registered")
+	}
+	if naked.GetKey() != "naked-single" {
+		t.Errorf("Expected key 'naked-single', got %q", naked.GetKey())
+	}
+
+	hidden := store.GetStrategySolverByKey("hidden-single")
+	if hidden == nil {
+		t.Fatal("Expected hidden-single solver to be registered")
+	}
+	if hidden.GetKey() != "hidden-single" {
+		t.Errorf("Expected key 'hidden-single', got %q", hidden.GetKey())
+	}
+}
+
+// TestStoreGetAllStrategySolverKeys verifies all registered keys are returned.
+func TestStoreGetAllStrategySolverKeys(t *testing.T) {
+	store := solver.NewStore()
+	keys := store.GetAllStrategySolverKeys()
+
+	if len(keys) != 2 {
+		t.Fatalf("Expected 2 strategy solver keys, got %d: %v", len(keys), keys)
+	}
+
+	// Check both keys are present (order is not guaranteed from map iteration).
+	keySet := map[string]bool{}
+	for _, k := range keys {
+		keySet[k] = true
+	}
+	if !keySet["naked-single"] {
+		t.Error("Expected 'naked-single' in keys")
+	}
+	if !keySet["hidden-single"] {
+		t.Error("Expected 'hidden-single' in keys")
+	}
+}
+
 // TestBacktrackerSolveStillWorks verifies Solve() still works after the refactor.
 func TestBacktrackerSolveStillWorks(t *testing.T) {
 	board := core.NewEmptyBoard()

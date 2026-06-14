@@ -41,19 +41,30 @@ func main() {
 			fmt.Fprintf(os.Stderr, "The input has %d solutions: %s\n", solutionCount, *options.Input)
 		}
 
-		playCli(*problem, solverStore)
+		playCli(*problem, solverStore, solverStore.GetAllStrategySolverKeys())
 	} else {
 		// Generate a random problem.
 		fmt.Printf("Generating a random %s Sudoku problem...\n", options.Level.String())
-		problem := generator.GenerateSudokuProblem(generator.NewProblemOptions(solverStore, options.GetDifficultyOptions()))
+		difficulty := options.GetDifficultyOptions()
+		problem := generator.GenerateSudokuProblem(generator.NewProblemOptions(solverStore, difficulty))
 
-		playCli(problem, solverStore)
+		// Use the difficulty's strategy solver keys for hints, falling back
+		// to all registered solvers when the difficulty has no keys set
+		// (e.g., Extreme/Evil levels).
+		keys := difficulty.StrategySolverKeys
+		if len(keys) == 0 {
+			keys = solverStore.GetAllStrategySolverKeys()
+		}
+
+		playCli(problem, solverStore, keys)
 	}
 }
 
 // Function to play a game in CLI.
-func playCli(problem core.Board, solverStore solver.Store) {
-	newGame := game.NewGame(problem, game.NewDefaultOptions(solverStore))
+func playCli(problem core.Board, solverStore solver.Store, strategySolverKeys []string) {
+	opts := game.NewDefaultOptions(solverStore)
+	opts.StrategySolverKeys = strategySolverKeys
+	newGame := game.NewGame(problem, opts)
 	ctrl := cli.NewController(&newGame)
 	ctrl.Play()
 }
