@@ -19,6 +19,8 @@ This index provides reading chains for common starting points and a complete doc
 5. `solver/solver.go` — `Solver`, `StrategySolver`, `CompleteSolver` interfaces and `Base`
 6. `solver/move.go` — `Move` struct (cell + technique + reason)
 7. `solver/store.go` — solver registry with typed access
+8. `game/game.go` — `Game` struct (pure state, no I/O)
+9. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model

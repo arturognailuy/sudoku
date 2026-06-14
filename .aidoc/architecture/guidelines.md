@@ -30,19 +30,19 @@ The generator already has plumbing for strategy-based validation — it calls `S
 ## Layer Boundaries
 
 ```
-CLI (flags) → main.go → Generator (create puzzle) → Game (play loop)
-                              ↓
-                         Solver Store → Solver implementations
-                              ↓
-                         Core (board, cell, position, validation)
+CLI (flags + controller) → main.go → Generator (create puzzle) → Game (pure state)
+                                           ↓
+                                      Solver Store → Solver implementations
+                                           ↓
+                                      Core (board, cell, position, validation)
 ```
 
 **Dependency rules:**
 - `core` has zero dependencies on other packages (leaf layer).
 - `solver` depends only on `core` and `util`.
 - `generator` depends on `core`, `solver`, and `util`.
-- `game` depends on `core` and `solver`. Does **not** depend on `cli` or `generator`.
-- `cli` depends on `generator` (for difficulty enum). Only `main.go` imports `cli`.
+- `game` depends on `core` and `solver`. Does **not** depend on `cli` or `generator`. Contains pure game logic — no I/O imports (`fmt` for string formatting only; no `os`, `bufio`, or terminal I/O).
+- `cli` depends on `generator` (for difficulty enum) and `game` (for the controller). Owns all terminal I/O: flag parsing, board display, input handling, signal handling.
 - `util` has no internal dependencies (pure helpers).
 
 Violations of these boundaries indicate a design problem.
