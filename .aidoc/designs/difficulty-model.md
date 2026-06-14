@@ -90,5 +90,10 @@ The plumbing exists in the generator (`generator/generator.go`):
 
 **Easy difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single"]`.
 The generator produces Easy puzzles that are solvable using only naked and hidden singles.
-Medium and above still use empty keys (no technique constraint).
+
+**Medium difficulty is now wired:** `StrategySolverKeys: ["naked-single", "hidden-single", "naked-subset", "pointing-pair"]`.
+The generator produces Medium puzzles that are solvable using basic techniques plus naked pairs/triples
+and pointing pairs / box-line reductions.
+
+Hard and above still use empty keys (no technique constraint).
 

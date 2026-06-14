@@ -107,6 +107,22 @@ func TestStoreRegistersStrategySolvers(t *testing.T) {
 	if hidden.GetKey() != "hidden-single" {
 		t.Errorf("Expected key 'hidden-single', got %q", hidden.GetKey())
 	}
+
+	nakedSubset := store.GetStrategySolverByKey("naked-subset")
+	if nakedSubset == nil {
+		t.Fatal("Expected naked-subset solver to be registered")
+	}
+	if nakedSubset.GetKey() != "naked-subset" {
+		t.Errorf("Expected key 'naked-subset', got %q", nakedSubset.GetKey())
+	}
+
+	pointing := store.GetStrategySolverByKey("pointing-pair")
+	if pointing == nil {
+		t.Fatal("Expected pointing-pair solver to be registered")
+	}
+	if pointing.GetKey() != "pointing-pair" {
+		t.Errorf("Expected key 'pointing-pair', got %q", pointing.GetKey())
+	}
 }
 
 // TestStoreGetAllStrategySolverKeys verifies all registered keys are returned.
@@ -114,20 +130,19 @@ func TestStoreGetAllStrategySolverKeys(t *testing.T) {
 	store := solver.NewStore()
 	keys := store.GetAllStrategySolverKeys()
 
-	if len(keys) != 2 {
-		t.Fatalf("Expected 2 strategy solver keys, got %d: %v", len(keys), keys)
+	if len(keys) != 4 {
+		t.Fatalf("Expected 4 strategy solver keys, got %d: %v", len(keys), keys)
 	}
 
-	// Check both keys are present (order is not guaranteed from map iteration).
+	// Check all keys are present (order is not guaranteed from map iteration).
 	keySet := map[string]bool{}
 	for _, k := range keys {
 		keySet[k] = true
 	}
-	if !keySet["naked-single"] {
-		t.Error("Expected 'naked-single' in keys")
-	}
-	if !keySet["hidden-single"] {
-		t.Error("Expected 'hidden-single' in keys")
+	for _, expected := range []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"} {
+		if !keySet[expected] {
+			t.Errorf("Expected %q in keys", expected)
+		}
 	}
 }
 

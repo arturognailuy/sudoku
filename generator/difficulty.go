@@ -18,11 +18,13 @@ func NewEasyDifficulty() Difficulty {
 }
 
 // NewMediumDifficulty creates the medium difficulty level.
+// Medium puzzles are solvable using basic techniques plus naked pairs/triples
+// and pointing pairs / box-line reductions.
 func NewMediumDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues:       32,
 		MaximumClues:       45,
-		StrategySolverKeys: []string{},
+		StrategySolverKeys: []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"},
 	}
 }
 
