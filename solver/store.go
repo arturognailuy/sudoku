@@ -27,6 +27,8 @@ func NewStore() Store {
 	store.RegisterStrategy(NewXWingSolver())
 	store.RegisterStrategy(NewSwordfishSolver())
 	store.RegisterStrategy(NewHiddenSubsetSolver())
+	store.RegisterStrategy(NewXYWingSolver())
+	store.RegisterStrategy(NewSimpleColoringSolver())
 
 	return store
 }

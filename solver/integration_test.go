@@ -89,7 +89,7 @@ func countPlacements(moves []*solver.Move) int {
 // ---------------------------------------------------------------------------
 
 // A classic Easy puzzle — solvable entirely with naked singles and hidden singles.
-const easyPuzzle = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+const easyPuzzle = "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
 
 // Medium puzzle requiring naked-subset technique.
 // At step 12, a naked pair {2,6} in box 5 eliminates candidates, unblocking the rest.
@@ -108,13 +108,25 @@ const xWingPuzzle = "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1..
 // Provided by Yuliang (sourced from the internet for reliable testing).
 // Contains a Swordfish pattern that eliminates candidates and enables
 // subsequent techniques to complete the puzzle.
-const swordfishPuzzle = "300040000000007048000000907010003080400050020050008070500300000000000090609025300"
+const swordfishPuzzle = "3...4.........7.48......9.7.1...3.8.4...5..2..5...8.7.5..3............9.6.9.253.."
 
 // Expert puzzle requiring hidden-subset technique.
 // Provided by Yuliang (sourced from the internet for reliable testing).
 // Fully solvable by our 7 strategy solvers alone (55 moves, 0 empty);
 // genuinely requires hidden-subset — without it, only 10 moves are possible.
-const hiddenSubsetPuzzle = "000000000231090000065003100008924000100050006000136700009300570000010843000000000"
+const hiddenSubsetPuzzle = ".........231.9.....65..31....8924...1...5...6...1367....93..57.....1.843........."
+
+// Evil puzzle requiring xy-wing technique.
+// Expert solvers get stuck at 33 placements. With all 9 solvers including
+// xy-wing, the puzzle is fully solvable (56 placements, 0 empty).
+// Cannot be solved without xy-wing even with simple-coloring available.
+const xyWingPuzzle = ".23.......4..9.63..7.8.2.1..581..9....2....5.4....93..9..6.5.....7.8...6........."
+
+// Evil puzzle requiring simple-coloring technique.
+// Expert solvers get stuck at 27 placements. With all 9 solvers including
+// simple-coloring, the puzzle is fully solvable (57 placements, 0 empty).
+// Cannot be solved without simple-coloring even with xy-wing available.
+const simpleColoringPuzzle = "12...6.8.7.8............3..2...8..3..8..2...5...9....7....93...31.57.....5...89.."
 
 // ---------------------------------------------------------------------------
 // Basic tier tests
@@ -373,6 +385,82 @@ func TestIntegration_HiddenSubsetRequired(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Evil tier tests
+// ---------------------------------------------------------------------------
+
+// TestIntegration_XYWingRequired verifies that a real puzzle requires the
+// xy-wing solver. Without it, expert-tier solvers alone cannot solve it,
+// but adding evil-tier solvers solves it completely.
+func TestIntegration_XYWingRequired(t *testing.T) {
+	store := solver.NewStore()
+	expertKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
+	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}
+
+	// Expert-tier solvers alone cannot solve this puzzle.
+	expertBoard := boardFromString(t, xyWingPuzzle)
+	solveWithStrategies(t, &expertBoard, store, expertKeys)
+	if expertBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by expert-tier techniques alone")
+	}
+
+	// With evil-tier solvers added, the puzzle can be solved completely.
+	fullBoard := boardFromString(t, xyWingPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with evil-tier solvers")
+	}
+
+	// Verify xy-wing technique was used.
+	xywCount := techniqueCount(moves, "xy-wing")
+	if xywCount == 0 {
+		t.Error("Expected at least one xy-wing move")
+	}
+
+	// No backtracker should be needed.
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d xy-wing", len(moves), xywCount)
+}
+
+// TestIntegration_SimpleColoringRequired verifies that a real puzzle requires
+// the simple-coloring solver. Without it, expert-tier solvers plus xy-wing
+// alone cannot solve it, but adding simple-coloring solves it completely.
+func TestIntegration_SimpleColoringRequired(t *testing.T) {
+	store := solver.NewStore()
+	noColorKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing"}
+	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}
+
+	// Without simple-coloring, the puzzle cannot be solved.
+	noColorBoard := boardFromString(t, simpleColoringPuzzle)
+	solveWithStrategies(t, &noColorBoard, store, noColorKeys)
+	if noColorBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable without simple-coloring solver")
+	}
+
+	// With simple-coloring, the puzzle can be solved.
+	fullBoard := boardFromString(t, simpleColoringPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with all evil-tier solvers")
+	}
+
+	// Verify simple-coloring technique was used.
+	scCount := techniqueCount(moves, "simple-coloring")
+	if scCount == 0 {
+		t.Error("Expected at least one simple-coloring move")
+	}
+
+	// No backtracker should be needed.
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d simple-coloring", len(moves), scCount)
+}
+
+// ---------------------------------------------------------------------------
 // Hint pipeline tests
 // ---------------------------------------------------------------------------
 
@@ -391,6 +479,8 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 		{"HardHints", xWingPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}, 10},
 		{"ExpertSwordfishHints", swordfishPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}, 10},
 		{"ExpertHiddenSubsetHints", hiddenSubsetPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}, 10},
+		{"EvilXYWingHints", xyWingPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}, 10},
+		{"EvilSimpleColoringHints", simpleColoringPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}, 10},
 	}
 
 	for _, tt := range tests {
@@ -488,7 +578,7 @@ func TestIntegration_SolverOrderingMatters(t *testing.T) {
 // are registered in the store.
 func TestIntegration_AllSolversRegistered(t *testing.T) {
 	store := solver.NewStore()
-	expected := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
+	expected := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}
 
 	for _, key := range expected {
 		s := store.GetStrategySolverByKey(key)
@@ -503,12 +593,14 @@ func TestIntegration_AllSolversRegistered(t *testing.T) {
 func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
 	store := solver.NewStore()
 	puzzles := map[string]string{
-		"easy":          easyPuzzle,
-		"naked-subset":  nakedSubsetPuzzle,
-		"pointing-pair": pointingPairPuzzle,
-		"x-wing":        xWingPuzzle,
-		"swordfish":     swordfishPuzzle,
-		"hidden-subset": hiddenSubsetPuzzle,
+		"easy":             easyPuzzle,
+		"naked-subset":     nakedSubsetPuzzle,
+		"pointing-pair":    pointingPairPuzzle,
+		"x-wing":           xWingPuzzle,
+		"swordfish":        swordfishPuzzle,
+		"hidden-subset":    hiddenSubsetPuzzle,
+		"xy-wing":          xyWingPuzzle,
+		"simple-coloring":  simpleColoringPuzzle,
 	}
 
 	for name, p := range puzzles {

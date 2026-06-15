@@ -10,7 +10,7 @@ import (
 // testProblem returns a minimal valid Sudoku board for testing.
 // This is a real puzzle with a unique solution.
 func testProblem() core.Board {
-	input := "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+	input := "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
 	var board core.Board
 	board.FromString(input)
 	return board

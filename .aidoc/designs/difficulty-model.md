@@ -29,7 +29,7 @@ Difficulty combines clue count with technique requirements in `generator/difficu
 | Medium | 32–44 | Intermediate | naked-subset, pointing-pair |
 | Hard | 25–31 | Advanced | x-wing |
 | Expert | 22–24 | Expert | swordfish, hidden-subset |
-| Evil | 17–21 | Unconstrained | (none — may require guessing) |
+| Evil | 17–22 | Evil | xy-wing, simple-coloring |
 
 Each level's allowed solvers = its own SolverKeys + all solvers from lower tiers.
 During generation, the generator verifies that lower-tier solvers alone cannot solve
@@ -47,7 +47,7 @@ Difficulty should be defined by the **hardest technique required to solve** the 
 | Intermediate | Naked pairs/triples, pointing pairs / box-line reduction | Medium |
 | Advanced | X-Wing | Hard |
 | Expert | Swordfish, hidden pairs/triples | Expert |
-| Unconstrained | Trial-and-error, guessing | Evil |
+| Evil | XY-Wing, simple coloring | Evil |
 
 ### Difficulty Mapping
 
@@ -57,7 +57,7 @@ Difficulty should be defined by the **hardest technique required to solve** the 
 | Medium | Up to Intermediate | Requires at least one intermediate technique |
 | Hard | Up to Advanced | Requires at least one X-Wing step |
 | Expert | Up to Expert | Requires at least one swordfish or hidden-subset step |
-| Evil | Unconstrained | May require trial-and-error or techniques not yet implemented |
+| Evil | Up to Evil | Requires at least one XY-Wing or simple coloring step |
 
 ### Clue Count as Secondary Constraint
 
@@ -113,4 +113,10 @@ require at least one X-Wing step — basic and intermediate techniques alone can
 Allowed set = all seven solvers. The generator produces Expert puzzles that genuinely
 require at least one expert technique — lower-tier techniques alone cannot solve them.
 
-Evil still uses empty keys (no technique constraint).
+**Evil difficulty:** `SolverKeys: ["xy-wing", "simple-coloring"]`.
+`LowerTierSolverKeys()` returns `["naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"]`
+(derived from Easy + Medium + Hard + Expert tiers in registry/tierOrder).
+Allowed set = all nine solvers. The generator produces Evil puzzles that genuinely
+require at least one evil technique — lower-tier techniques alone cannot solve them.
+
+All five difficulty levels are now fully strategy-based with technique requirements.
