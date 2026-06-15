@@ -89,7 +89,7 @@ func countPlacements(moves []*solver.Move) int {
 // ---------------------------------------------------------------------------
 
 // A classic Easy puzzle — solvable entirely with naked singles and hidden singles.
-const easyPuzzle = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+const easyPuzzle = "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
 
 // Medium puzzle requiring naked-subset technique.
 // At step 12, a naked pair {2,6} in box 5 eliminates candidates, unblocking the rest.
@@ -108,13 +108,13 @@ const xWingPuzzle = "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1..
 // Provided by Yuliang (sourced from the internet for reliable testing).
 // Contains a Swordfish pattern that eliminates candidates and enables
 // subsequent techniques to complete the puzzle.
-const swordfishPuzzle = "300040000000007048000000907010003080400050020050008070500300000000000090609025300"
+const swordfishPuzzle = "3...4.........7.48......9.7.1...3.8.4...5..2..5...8.7.5..3............9.6.9.253.."
 
 // Expert puzzle requiring hidden-subset technique.
 // Provided by Yuliang (sourced from the internet for reliable testing).
 // Fully solvable by our 7 strategy solvers alone (55 moves, 0 empty);
 // genuinely requires hidden-subset — without it, only 10 moves are possible.
-const hiddenSubsetPuzzle = "000000000231090000065003100008924000100050006000136700009300570000010843000000000"
+const hiddenSubsetPuzzle = ".........231.9.....65..31....8924...1...5...6...1367....93..57.....1.843........."
 
 // Evil puzzle requiring xy-wing technique.
 // Expert solvers get stuck at 33 placements. With all 9 solvers including
