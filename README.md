@@ -17,7 +17,7 @@ go build
 # Choose difficulty
 ./sudoku -l medium
 ./sudoku -l hard
-./sudoku -l extreme
+./sudoku -l expert
 ./sudoku -l evil
 
 # Custom board (use . for empty cells)
