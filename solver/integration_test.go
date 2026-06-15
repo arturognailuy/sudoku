@@ -85,6 +85,11 @@ const nakedSubsetPuzzle = ".5..4....4.1.....3.8753.1.48............8..7..7...1.4
 // At step 22, a pointing pair in box 9 confined to column 8 eliminates candidates.
 const pointingPairPuzzle = "9.574....62..5..4.7...6...5....136.9..9....5.562...83.85.13..96...6....33.....2.."
 
+// Hard puzzle requiring x-wing technique.
+// At step 21, an X-Wing on digit 8 in rows 6,7 confined to columns 5,7
+// eliminates candidates, leaving 4 as the only candidate for (8,6).
+const xWingPuzzle = "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1.....7....9....97...3..."
+
 // ---------------------------------------------------------------------------
 // Basic tier tests
 // ---------------------------------------------------------------------------
@@ -216,6 +221,46 @@ func TestIntegration_PointingPairRequired(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Advanced tier tests
+// ---------------------------------------------------------------------------
+
+// TestIntegration_XWingRequired verifies that a real puzzle requires the
+// x-wing solver. Without it, intermediate solvers alone cannot solve it,
+// but adding x-wing solves it completely.
+func TestIntegration_XWingRequired(t *testing.T) {
+	store := solver.NewStore()
+	intermediateKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}
+	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
+
+	// Intermediate solvers alone cannot solve this puzzle.
+	intBoard := boardFromString(t, xWingPuzzle)
+	solveWithStrategies(t, &intBoard, store, intermediateKeys)
+	if intBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by intermediate techniques alone")
+	}
+
+	// With x-wing added, the puzzle can be solved completely.
+	fullBoard := boardFromString(t, xWingPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with x-wing solver")
+	}
+
+	// Verify x-wing technique was used.
+	xwCount := techniqueCount(moves, "x-wing")
+	if xwCount == 0 {
+		t.Error("Expected at least one x-wing move")
+	}
+
+	// No backtracker should be needed.
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d x-wing", len(moves), xwCount)
+}
+
+// ---------------------------------------------------------------------------
 // Hint pipeline tests
 // ---------------------------------------------------------------------------
 
@@ -231,6 +276,7 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 	}{
 		{"EasyHints", easyPuzzle, []string{"naked-single", "hidden-single"}, 10},
 		{"MediumHints", nakedSubsetPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}, 10},
+		{"HardHints", xWingPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}, 10},
 	}
 
 	for _, tt := range tests {
@@ -325,7 +371,7 @@ func TestIntegration_SolverOrderingMatters(t *testing.T) {
 // are registered in the store.
 func TestIntegration_AllSolversRegistered(t *testing.T) {
 	store := solver.NewStore()
-	expected := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}
+	expected := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
 
 	for _, key := range expected {
 		s := store.GetStrategySolverByKey(key)
@@ -343,6 +389,7 @@ func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
 		"easy":          easyPuzzle,
 		"naked-subset":  nakedSubsetPuzzle,
 		"pointing-pair": pointingPairPuzzle,
+		"x-wing":        xWingPuzzle,
 	}
 
 	for name, p := range puzzles {

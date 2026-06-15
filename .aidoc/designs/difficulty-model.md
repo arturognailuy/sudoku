@@ -101,5 +101,11 @@ As the lowest tier in `tierOrder`, `LowerTierSolverKeys()` returns nil.
 Allowed set = all four solvers. The generator produces Medium puzzles that genuinely
 require at least one intermediate technique — basic techniques alone cannot solve them.
 
-Hard and above still use empty keys (no technique constraint).
+**Hard difficulty:** `SolverKeys: ["x-wing"]`.
+`LowerTierSolverKeys()` returns `["naked-single", "hidden-single", "naked-subset", "pointing-pair"]`
+(derived from Easy + Medium tiers in registry/tierOrder).
+Allowed set = all five solvers. The generator produces Hard puzzles that genuinely
+require at least one X-Wing step — basic and intermediate techniques alone cannot solve them.
+
+Extreme and Evil still use empty keys (no technique constraint).
 

@@ -24,6 +24,7 @@ func NewStore() Store {
 	store.RegisterStrategy(NewHiddenSingleSolver())
 	store.RegisterStrategy(NewNakedSubsetSolver())
 	store.RegisterStrategy(NewPointingPairSolver())
+	store.RegisterStrategy(NewXWingSolver())
 
 	return store
 }
