@@ -15,8 +15,10 @@ import (
 // row-pairs must contain the candidate — leaving no room for it elsewhere
 // in those columns.
 //
-// Like the intermediate solvers, this solver returns a move only when an
-// elimination creates a naked single.
+// The solver applies eliminations to the board's elimination layer. It returns
+// a placement move when an elimination creates a naked single, or an
+// elimination-only move when candidates were reduced without creating a
+// placement.
 type XWingSolver struct {
 	Base
 }
@@ -84,23 +86,20 @@ func (s *XWingSolver) findRowXWing(board *core.Board) *Move {
 				col0, col1 := pairs[i].cols[0], pairs[i].cols[1]
 				row0, row1 := pairs[i].row, pairs[j].row
 
+				var move *Move
+				eliminated := false
 				for _, col := range []int{col0, col1} {
 					for row := 0; row < 9; row++ {
 						if row == row0 || row == row1 {
 							continue
 						}
 						pos := core.NewPosition(row, col)
-						if board.Get(pos) != 0 {
-							continue
-						}
-
-						cands := board.Candidates(pos)
-						if cands.Has(digit) {
-							reduced := cands
-							reduced.Remove(digit)
-							if reduced.Count() == 1 {
-								value := reduced.Values()[0]
-								return &Move{
+						if board.EliminateCandidate(pos, digit) {
+							eliminated = true
+							cands := board.Candidates(pos)
+							if cands.Count() == 1 && move == nil {
+								value := cands.Values()[0]
+								move = &Move{
 									Cell:      core.NewCell(pos, value),
 									Technique: s.Key,
 									Reason: fmt.Sprintf(
@@ -110,6 +109,20 @@ func (s *XWingSolver) findRowXWing(board *core.Board) *Move {
 								}
 							}
 						}
+					}
+				}
+
+				if eliminated {
+					if move != nil {
+						return move
+					}
+					return &Move{
+						EliminationOnly: true,
+						Technique:       s.Key,
+						Reason: fmt.Sprintf(
+							"X-Wing: %d in rows %d,%d is confined to columns %d,%d — candidates eliminated",
+							digit, row0+1, row1+1, col0+1, col1+1,
+						),
 					}
 				}
 			}
@@ -154,23 +167,20 @@ func (s *XWingSolver) findColumnXWing(board *core.Board) *Move {
 				row0, row1 := pairs[i].rows[0], pairs[i].rows[1]
 				col0, col1 := pairs[i].col, pairs[j].col
 
+				var move *Move
+				eliminated := false
 				for _, row := range []int{row0, row1} {
 					for col := 0; col < 9; col++ {
 						if col == col0 || col == col1 {
 							continue
 						}
 						pos := core.NewPosition(row, col)
-						if board.Get(pos) != 0 {
-							continue
-						}
-
-						cands := board.Candidates(pos)
-						if cands.Has(digit) {
-							reduced := cands
-							reduced.Remove(digit)
-							if reduced.Count() == 1 {
-								value := reduced.Values()[0]
-								return &Move{
+						if board.EliminateCandidate(pos, digit) {
+							eliminated = true
+							cands := board.Candidates(pos)
+							if cands.Count() == 1 && move == nil {
+								value := cands.Values()[0]
+								move = &Move{
 									Cell:      core.NewCell(pos, value),
 									Technique: s.Key,
 									Reason: fmt.Sprintf(
@@ -180,6 +190,20 @@ func (s *XWingSolver) findColumnXWing(board *core.Board) *Move {
 								}
 							}
 						}
+					}
+				}
+
+				if eliminated {
+					if move != nil {
+						return move
+					}
+					return &Move{
+						EliminationOnly: true,
+						Technique:       s.Key,
+						Reason: fmt.Sprintf(
+							"X-Wing: %d in columns %d,%d is confined to rows %d,%d — candidates eliminated",
+							digit, col0+1, col1+1, row0+1, row1+1,
+						),
 					}
 				}
 			}

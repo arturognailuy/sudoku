@@ -41,8 +41,15 @@ Five strategy solvers organized by difficulty tier. Each solver implements `Stra
 - Registered in store, wired into Hard difficulty (`SolverKeys: ["x-wing"]`).
 - `tierRegistry` and `tierOrder` updated with `"hard"` entry.
 
-Five solvers cover Easy/Medium/Hard — sufficient for a playable game.
-Extreme and Evil levels remain unconstrained (no technique requirements).
+**Expert tier:**
+- Swordfish — extension of X-Wing to three rows × three columns. A candidate appears in 2–3 cells in each of three rows, confined to the same three columns (or transpose). Elimination from other cells in those columns reveals singles.
+- Hidden Pairs/Triples — complement of Naked Pairs/Triples. Two or three candidates appear in only the same 2 or 3 cells within a unit. All other candidates can be eliminated from those cells, revealing singles.
+- Both registered in store, wired into Expert difficulty (`SolverKeys: ["swordfish", "hidden-subset"]`).
+- `tierRegistry` and `tierOrder` updated with `"expert"` entry.
+- CLI renamed "Extreme" → "Expert" for consistency with standard Sudoku terminology.
+
+Seven solvers cover Easy/Medium/Hard/Expert — sufficient for a fully playable game.
+Evil level remains unconstrained (no technique requirements — may require guessing).
 
 ## Phase 4: Generator Integration and Puzzle Database
 

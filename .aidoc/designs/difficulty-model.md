@@ -9,8 +9,8 @@ dependencies:
 
 # Difficulty Model
 
-Difficulty is the project's core design challenge: the current model uses clue count (a poor proxy),
-while the target model uses solving techniques (meaningful difficulty). This doc captures the gap and the migration path.
+Difficulty combines clue count with solving-technique requirements.
+This doc captures the current model and the migration path toward fully strategy-based difficulty.
 
 ## Related Docs
 
@@ -19,23 +19,21 @@ while the target model uses solving techniques (meaningful difficulty). This doc
 | `.aidoc/architecture/guidelines.md` | Solver interface contract and layer boundaries |
 | `.aidoc/INDEX.md` | Discovery index |
 
-## Current Model (Clue-Count)
+## Current Model (Clue-Count + Strategy Tiers)
 
-Difficulty is defined solely by pre-filled cell count in `generator/difficulty.go`:
+Difficulty combines clue count with technique requirements in `generator/difficulty.go`:
 
-| Level | Clues (min–max) |
-|-------|-----------------|
-| Easy | 45–59 |
-| Medium | 32–44 |
-| Hard | 25–31 |
-| Extreme | 20–24 |
-| Evil | 17–19 |
+| Level | Clues (min–max) | Strategy Tier | Solver Keys |
+|-------|-----------------|---------------|-------------|
+| Easy | 45–59 | Basic | naked-single, hidden-single |
+| Medium | 32–44 | Intermediate | naked-subset, pointing-pair |
+| Hard | 25–31 | Advanced | x-wing |
+| Expert | 22–24 | Expert | swordfish, hidden-subset |
+| Evil | 17–21 | Unconstrained | (none — may require guessing) |
 
-### Why This Is Insufficient
-
-A 25-clue puzzle might be trivially solvable with naked singles, or might require advanced techniques — clue count doesn't distinguish. All `StrategySolverKeys` are currently empty (`[]string{}`), so the generator never validates technique requirements. The geometric distribution stop means difficulty is random within each band.
-
-Users cannot request puzzles that require specific solving techniques, making "Hard" meaningless beyond "fewer clues."
+Each level's allowed solvers = its own SolverKeys + all solvers from lower tiers.
+During generation, the generator verifies that lower-tier solvers alone cannot solve
+the puzzle — ensuring it genuinely requires at least one technique from this tier.
 
 ## Target Model (Strategy-Based)
 
@@ -43,26 +41,28 @@ Difficulty should be defined by the **hardest technique required to solve** the 
 
 ### Strategy Tiers
 
-| Tier | Techniques |
-|------|-----------|
-| Basic | Naked singles, hidden singles |
-| Intermediate | Naked/hidden pairs/triples, pointing pairs, box/line reduction |
-| Advanced | X-wing, swordfish, XY-wing, simple coloring |
-| Expert | Jellyfish, finned X-wing, ALS, forcing chains |
+| Tier | Techniques | CLI Level |
+|------|-----------|----------|
+| Basic | Naked singles, hidden singles | Easy |
+| Intermediate | Naked pairs/triples, pointing pairs / box-line reduction | Medium |
+| Advanced | X-Wing | Hard |
+| Expert | Swordfish, hidden pairs/triples | Expert |
+| Unconstrained | Trial-and-error, guessing | Evil |
 
 ### Difficulty Mapping
 
 | Level | Required Tier | Meaning |
-|-------|---------------|---------|
+|-------|---------------|--------|
 | Easy | Basic only | Solvable with naked/hidden singles alone |
 | Medium | Up to Intermediate | Requires at least one intermediate technique |
-| Hard | Up to Advanced | Requires at least one advanced technique |
-| Expert/Evil | Expert or guessing | Requires expert techniques or trial-and-error |
+| Hard | Up to Advanced | Requires at least one X-Wing step |
+| Expert | Up to Expert | Requires at least one swordfish or hidden-subset step |
+| Evil | Unconstrained | May require trial-and-error or techniques not yet implemented |
 
 ### Clue Count as Secondary Constraint
 
 Clue-count ranges are preserved as a secondary constraint alongside technique requirements.
-A puzzle that requires a Jellyfish but has 50 clues isn't fun — the strategy difficulty
+A puzzle that requires a Swordfish but has 50 clues isn't fun — the strategy difficulty
 and the clue count must both fall within reasonable bounds for a satisfying experience.
 The existing clue-count ranges define the acceptable band; technique requirements define
 the minimum solving complexity.
@@ -107,5 +107,10 @@ require at least one intermediate technique — basic techniques alone cannot so
 Allowed set = all five solvers. The generator produces Hard puzzles that genuinely
 require at least one X-Wing step — basic and intermediate techniques alone cannot solve them.
 
-Extreme and Evil still use empty keys (no technique constraint).
+**Expert difficulty:** `SolverKeys: ["swordfish", "hidden-subset"]`.
+`LowerTierSolverKeys()` returns `["naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"]`
+(derived from Easy + Medium + Hard tiers in registry/tierOrder).
+Allowed set = all seven solvers. The generator produces Expert puzzles that genuinely
+require at least one expert technique — lower-tier techniques alone cannot solve them.
 
+Evil still uses empty keys (no technique constraint).

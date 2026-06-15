@@ -26,7 +26,7 @@ type Difficulty struct {
 
 // tierOrder defines the sequence of difficulty tiers from lowest to
 // highest. Used alongside tierRegistry to derive lower-tier solver keys.
-var tierOrder = []string{"easy", "medium", "hard"}
+var tierOrder = []string{"easy", "medium", "hard", "expert"}
 
 // tierRegistry maps each difficulty level name to the strategy solvers
 // introduced at that tier. This is the single source of truth for the
@@ -36,6 +36,7 @@ var tierRegistry = map[string][]string{
 	"easy":   {"naked-single", "hidden-single"},
 	"medium": {"naked-subset", "pointing-pair"},
 	"hard":   {"x-wing"},
+	"expert": {"swordfish", "hidden-subset"},
 }
 
 // lowerTierSolverKeys returns the cumulative solver keys from all tiers
@@ -125,20 +126,24 @@ func NewHardDifficulty() Difficulty {
 	}
 }
 
-// NewExtremeDifficulty creates the extreme difficulty level.
-func NewExtremeDifficulty() Difficulty {
+// NewExpertDifficulty creates the expert difficulty level.
+// Expert puzzles require at least one expert technique (swordfish or
+// hidden-subset) — lower-tier techniques alone won't suffice.
+func NewExpertDifficulty() Difficulty {
 	return Difficulty{
-		MinimumClues: 20,
+		MinimumClues: 22,
 		MaximumClues: 25,
-		SolverKeys:   []string{},
+		SolverKeys:   tierRegistry["expert"],
 	}
 }
 
 // NewEvilDifficulty creates the evil difficulty level.
+// Evil puzzles use very few clues and have no technique constraints —
+// they may require advanced techniques, trial-and-error, or guessing.
 func NewEvilDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues: 17,
-		MaximumClues: 20,
+		MaximumClues: 22,
 		SolverKeys:   []string{},
 	}
 }

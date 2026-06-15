@@ -175,7 +175,10 @@ func requiresThisTierSolver(board core.Board, options Options) bool {
 		for _, s := range lowerSolvers {
 			move := s.Apply(&testBoard)
 			if move != nil {
-				_ = testBoard.Set(move.Cell.Position, move.Cell.Value)
+				if move.IsPlacement() {
+					_ = testBoard.Set(move.Cell.Position, move.Cell.Value)
+				}
+				// Elimination-only moves are progress too.
 				found = true
 				break
 			}

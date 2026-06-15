@@ -15,17 +15,17 @@ const (
 	Easy Level = iota
 	Medium
 	Hard
-	Extreme
+	Expert
 	Evil
 )
 
 var defaultLevel = Hard
 var levelIdentities = map[Level][]string{
-	Easy:    {"easy"},
-	Medium:  {"medium"},
-	Hard:    {"hard"},
-	Extreme: {"extreme"},
-	Evil:    {"evil"},
+	Easy:   {"easy"},
+	Medium: {"medium"},
+	Hard:   {"hard"},
+	Expert: {"expert"},
+	Evil:   {"evil"},
 }
 
 // Define the command line options struct.
@@ -52,7 +52,7 @@ func (options *CommandLineOptions) Parse() {
 
 	// Accept an optional argument to specify the difficulty level of the generated problem.
 	options.Level = enumflag.New(&defaultLevel, "level", levelIdentities, enumflag.EnumCaseInsensitive)
-	pflag.VarP(options.Level, "level", "l", "Select the difficulty level for a new game. Options include: easy, medium, hard, extreme, evil.")
+	pflag.VarP(options.Level, "level", "l", "Select the difficulty level for a new game. Options include: easy, medium, hard, expert, evil.")
 
 	// Define the help message.
 	options.HelpRequested = pflag.BoolP("help", "h", false, "Show this help message.")
@@ -76,8 +76,8 @@ func (options *CommandLineOptions) GetDifficultyOptions() generator.Difficulty {
 		return generator.NewMediumDifficulty()
 	case Hard:
 		return generator.NewHardDifficulty()
-	case Extreme:
-		return generator.NewExtremeDifficulty()
+	case Expert:
+		return generator.NewExpertDifficulty()
 	case Evil:
 		return generator.NewEvilDifficulty()
 	default:

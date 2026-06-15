@@ -19,7 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 // solveWithStrategies applies strategy solvers repeatedly until no progress.
-// Returns the list of moves applied.
+// Returns the list of moves applied (both placement and elimination-only).
 func solveWithStrategies(t *testing.T, board *core.Board, store solver.Store, keys []string) []*solver.Move {
 	t.Helper()
 
@@ -45,7 +45,10 @@ func solveWithStrategies(t *testing.T, board *core.Board, store solver.Store, ke
 		if found == nil {
 			break
 		}
-		_ = board.Set(found.Cell.Position, found.Cell.Value)
+		if found.IsPlacement() {
+			_ = board.Set(found.Cell.Position, found.Cell.Value)
+		}
+		// Elimination-only moves are still progress (candidates reduced).
 		moves = append(moves, found)
 	}
 	return moves
@@ -64,6 +67,17 @@ func techniqueCount(moves []*solver.Move, technique string) int {
 	count := 0
 	for _, m := range moves {
 		if m.Technique == technique {
+			count++
+		}
+	}
+	return count
+}
+
+// countPlacements returns the number of placement moves (non-elimination-only).
+func countPlacements(moves []*solver.Move) int {
+	count := 0
+	for _, m := range moves {
+		if m.IsPlacement() {
 			count++
 		}
 	}
@@ -89,6 +103,18 @@ const pointingPairPuzzle = "9.574....62..5..4.7...6...5....136.9..9....5.562...8
 // At step 21, an X-Wing on digit 8 in rows 6,7 confined to columns 5,7
 // eliminates candidates, leaving 4 as the only candidate for (8,6).
 const xWingPuzzle = "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1.....7....9....97...3..."
+
+// Expert puzzle requiring swordfish technique.
+// Provided by Yuliang (sourced from the internet for reliable testing).
+// Contains a Swordfish pattern that eliminates candidates and enables
+// subsequent techniques to complete the puzzle.
+const swordfishPuzzle = "300040000000007048000000907010003080400050020050008070500300000000000090609025300"
+
+// Expert puzzle requiring hidden-subset technique.
+// Provided by Yuliang (sourced from the internet for reliable testing).
+// Fully solvable by our 7 strategy solvers alone (55 moves, 0 empty);
+// genuinely requires hidden-subset — without it, only 10 moves are possible.
+const hiddenSubsetPuzzle = "000000000231090000065003100008924000100050006000136700009300570000010843000000000"
 
 // ---------------------------------------------------------------------------
 // Basic tier tests
@@ -261,6 +287,92 @@ func TestIntegration_XWingRequired(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Expert tier tests
+// ---------------------------------------------------------------------------
+
+// TestIntegration_SwordfishRequired verifies that a real puzzle requires the
+// swordfish solver. Without it, hard-tier solvers alone cannot solve it,
+// but adding expert solvers solves it completely.
+func TestIntegration_SwordfishRequired(t *testing.T) {
+	store := solver.NewStore()
+	hardKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
+	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
+
+	// Hard-tier solvers alone cannot solve this puzzle.
+	hardBoard := boardFromString(t, swordfishPuzzle)
+	solveWithStrategies(t, &hardBoard, store, hardKeys)
+	if hardBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by hard-tier techniques alone")
+	}
+
+	// With expert solvers added, the puzzle can be solved completely.
+	fullBoard := boardFromString(t, swordfishPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with expert solvers")
+	}
+
+	// Verify swordfish technique was used.
+	sfCount := techniqueCount(moves, "swordfish")
+	if sfCount == 0 {
+		t.Error("Expected at least one swordfish move")
+	}
+
+	// No backtracker should be needed.
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d swordfish", len(moves), sfCount)
+}
+
+// TestIntegration_HiddenSubsetRequired verifies that a real puzzle requires the
+// hidden-subset solver. Without it, hard-tier solvers alone get stuck after very
+// few moves. With all expert solvers, the puzzle is fully solvable.
+func TestIntegration_HiddenSubsetRequired(t *testing.T) {
+	store := solver.NewStore()
+	hardKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
+	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
+
+	// Hard-tier solvers alone cannot solve this puzzle.
+	hardBoard := boardFromString(t, hiddenSubsetPuzzle)
+	hardMoves := solveWithStrategies(t, &hardBoard, store, hardKeys)
+	if hardBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by hard-tier techniques alone")
+	}
+
+	// With expert solvers, the puzzle is fully solvable.
+	fullBoard := boardFromString(t, hiddenSubsetPuzzle)
+	fullMoves := solveWithStrategies(t, &fullBoard, store, allKeys)
+
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be fully solvable with expert techniques")
+	}
+
+	// Verify hidden-subset technique was used.
+	hsCount := techniqueCount(fullMoves, "hidden-subset")
+	if hsCount == 0 {
+		t.Error("Expected at least one hidden-subset move")
+	}
+
+	// Expert solvers should make more progress than hard-tier alone.
+	hardPlacements := countPlacements(hardMoves)
+	fullPlacements := countPlacements(fullMoves)
+	if fullPlacements <= hardPlacements {
+		t.Errorf("Expected expert solvers to place more values (%d) than hard-tier alone (%d)",
+			fullPlacements, hardPlacements)
+	}
+
+	// No backtracker should be involved.
+	if bc := techniqueCount(fullMoves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Hard-tier: %d placements, Expert: %d placements (%d hidden-subset)",
+		hardPlacements, fullPlacements, hsCount)
+}
+
+// ---------------------------------------------------------------------------
 // Hint pipeline tests
 // ---------------------------------------------------------------------------
 
@@ -277,6 +389,8 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 		{"EasyHints", easyPuzzle, []string{"naked-single", "hidden-single"}, 10},
 		{"MediumHints", nakedSubsetPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}, 10},
 		{"HardHints", xWingPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}, 10},
+		{"ExpertSwordfishHints", swordfishPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}, 10},
+		{"ExpertHiddenSubsetHints", hiddenSubsetPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}, 10},
 	}
 
 	for _, tt := range tests {
@@ -293,8 +407,8 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 				solvers = append(solvers, s)
 			}
 
-			strategyCount := 0
-			for i := 0; i < tt.hints; i++ {
+			placementCount := 0
+			for placementCount < tt.hints {
 				var move *solver.Move
 				for _, s := range solvers {
 					m := s.Apply(&board)
@@ -304,15 +418,18 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 					}
 				}
 				if move == nil {
-					t.Errorf("Hint %d required backtracker (no strategy solver found a move)", i+1)
+					t.Errorf("Placement %d required backtracker (no strategy solver found a move)", placementCount+1)
 					break
 				}
-				_ = board.Set(move.Cell.Position, move.Cell.Value)
-				strategyCount++
+				if move.IsPlacement() {
+					_ = board.Set(move.Cell.Position, move.Cell.Value)
+					placementCount++
+				}
+				// Elimination-only moves are progress but don't count as placements.
 			}
 
-			if strategyCount < tt.hints {
-				t.Errorf("Expected %d strategy-based hints, got %d", tt.hints, strategyCount)
+			if placementCount < tt.hints {
+				t.Errorf("Expected %d strategy-based placements, got %d", tt.hints, placementCount)
 			}
 		})
 	}
@@ -371,7 +488,7 @@ func TestIntegration_SolverOrderingMatters(t *testing.T) {
 // are registered in the store.
 func TestIntegration_AllSolversRegistered(t *testing.T) {
 	store := solver.NewStore()
-	expected := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
+	expected := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
 
 	for _, key := range expected {
 		s := store.GetStrategySolverByKey(key)
@@ -390,6 +507,8 @@ func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
 		"naked-subset":  nakedSubsetPuzzle,
 		"pointing-pair": pointingPairPuzzle,
 		"x-wing":        xWingPuzzle,
+		"swordfish":     swordfishPuzzle,
+		"hidden-subset": hiddenSubsetPuzzle,
 	}
 
 	for name, p := range puzzles {

@@ -50,7 +50,7 @@ func main() {
 
 		// Use the difficulty's allowed solver keys for hints, falling back
 		// to all registered solvers when the difficulty has no keys set
-		// (e.g., Extreme/Evil levels).
+		// (e.g., Evil level).
 		keys := difficulty.AllowedSolverKeys()
 		if len(keys) == 0 {
 			keys = solverStore.GetAllStrategySolverKeys()
