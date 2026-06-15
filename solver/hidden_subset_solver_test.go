@@ -41,7 +41,7 @@ func TestHiddenSubsetSolver_Metadata(t *testing.T) {
 	if s.GetKey() != "hidden-subset" {
 		t.Errorf("Expected key 'hidden-subset', got %q", s.GetKey())
 	}
-	if s.GetDisplayName() != "Hidden Pairs/Triples" {
-		t.Errorf("Expected display name 'Hidden Pairs/Triples', got %q", s.GetDisplayName())
+	if s.GetDisplayName() != "Hidden Pairs/Triples/Quads" {
+		t.Errorf("Expected display name 'Hidden Pairs/Triples/Quads', got %q", s.GetDisplayName())
 	}
 }

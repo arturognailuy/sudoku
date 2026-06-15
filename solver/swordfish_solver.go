@@ -2,6 +2,7 @@ package solver
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/gnailuy/sudoku/core"
 )
@@ -15,8 +16,11 @@ import (
 // (or rows), because one combination of the three row-sets must contain
 // the candidate — leaving no room for it elsewhere in those columns.
 //
-// Like the other strategy solvers, this solver returns a move only when an
-// elimination creates a naked single.
+// The solver applies eliminations to the board's elimination layer. It returns
+// a placement move when an elimination creates a naked single, or an
+// elimination-only move when candidates were reduced without creating a
+// placement. This enables other solvers to pick up the reduced candidates
+// on the next pass.
 type SwordfishSolver struct {
 	Base
 }
@@ -110,6 +114,7 @@ func (s *SwordfishSolver) findRowSwordfish(board *core.Board) *Move {
 					for c := range colSet {
 						cols = append(cols, c)
 					}
+					sort.Ints(cols)
 					rows := []int{eligible[i].row, eligible[j].row, eligible[k].row}
 
 					rowSet := make(map[int]bool, 3)
@@ -117,24 +122,22 @@ func (s *SwordfishSolver) findRowSwordfish(board *core.Board) *Move {
 						rowSet[r] = true
 					}
 
-					// Eliminate digit from other cells in those 3 columns.
+					// Apply eliminations and track if any cell becomes a naked single.
+					var move *Move
+					eliminated := false
 					for _, col := range cols {
 						for row := 0; row < 9; row++ {
 							if rowSet[row] {
 								continue
 							}
 							pos := core.NewPosition(row, col)
-							if board.Get(pos) != 0 {
-								continue
-							}
-
-							cands := board.Candidates(pos)
-							if cands.Has(digit) {
-								reduced := cands
-								reduced.Remove(digit)
-								if reduced.Count() == 1 {
-									value := reduced.Values()[0]
-									return &Move{
+							if board.EliminateCandidate(pos, digit) {
+								eliminated = true
+								// Check if the cell is now a naked single.
+								cands := board.Candidates(pos)
+								if cands.Count() == 1 && move == nil {
+									value := cands.Values()[0]
+									move = &Move{
 										Cell:      core.NewCell(pos, value),
 										Technique: s.Key,
 										Reason: fmt.Sprintf(
@@ -144,6 +147,21 @@ func (s *SwordfishSolver) findRowSwordfish(board *core.Board) *Move {
 									}
 								}
 							}
+						}
+					}
+
+					if eliminated {
+						if move != nil {
+							return move
+						}
+						// Eliminations applied but no naked single yet.
+						return &Move{
+							EliminationOnly: true,
+							Technique:       s.Key,
+							Reason: fmt.Sprintf(
+								"Swordfish: %d in rows %d,%d,%d is confined to columns %d,%d,%d — candidates eliminated",
+								digit, rows[0]+1, rows[1]+1, rows[2]+1, cols[0]+1, cols[1]+1, cols[2]+1,
+							),
 						}
 					}
 				}
@@ -203,6 +221,7 @@ func (s *SwordfishSolver) findColumnSwordfish(board *core.Board) *Move {
 					for r := range rowSet {
 						rows = append(rows, r)
 					}
+					sort.Ints(rows)
 					cols := []int{eligible[i].col, eligible[j].col, eligible[k].col}
 
 					colSet := make(map[int]bool, 3)
@@ -210,24 +229,22 @@ func (s *SwordfishSolver) findColumnSwordfish(board *core.Board) *Move {
 						colSet[c] = true
 					}
 
-					// Eliminate digit from other cells in those 3 rows.
+					// Apply eliminations and track if any cell becomes a naked single.
+					var move *Move
+					eliminated := false
 					for _, row := range rows {
 						for col := 0; col < 9; col++ {
 							if colSet[col] {
 								continue
 							}
 							pos := core.NewPosition(row, col)
-							if board.Get(pos) != 0 {
-								continue
-							}
-
-							cands := board.Candidates(pos)
-							if cands.Has(digit) {
-								reduced := cands
-								reduced.Remove(digit)
-								if reduced.Count() == 1 {
-									value := reduced.Values()[0]
-									return &Move{
+							if board.EliminateCandidate(pos, digit) {
+								eliminated = true
+								// Check if the cell is now a naked single.
+								cands := board.Candidates(pos)
+								if cands.Count() == 1 && move == nil {
+									value := cands.Values()[0]
+									move = &Move{
 										Cell:      core.NewCell(pos, value),
 										Technique: s.Key,
 										Reason: fmt.Sprintf(
@@ -237,6 +254,21 @@ func (s *SwordfishSolver) findColumnSwordfish(board *core.Board) *Move {
 									}
 								}
 							}
+						}
+					}
+
+					if eliminated {
+						if move != nil {
+							return move
+						}
+						// Eliminations applied but no naked single yet.
+						return &Move{
+							EliminationOnly: true,
+							Technique:       s.Key,
+							Reason: fmt.Sprintf(
+								"Swordfish: %d in columns %d,%d,%d is confined to rows %d,%d,%d — candidates eliminated",
+								digit, cols[0]+1, cols[1]+1, cols[2]+1, rows[0]+1, rows[1]+1, rows[2]+1,
+							),
 						}
 					}
 				}

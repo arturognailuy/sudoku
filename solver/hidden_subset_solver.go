@@ -2,25 +2,33 @@ package solver
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/gnailuy/sudoku/core"
 )
 
-// HiddenSubsetSolver finds hidden pairs and hidden triples in rows, columns,
+// HiddenSubsetSolver finds hidden pairs, triples, and quads in rows, columns,
 // and boxes.
 //
 // A hidden pair occurs when two candidates appear in only two cells within a
-// unit. All other candidates can be eliminated from those two cells. If any
-// elimination leaves a cell with one candidate, that is the move.
+// unit. All other candidates can be eliminated from those two cells.
 //
 // A hidden triple occurs when three candidates appear in only three cells
 // within a unit. All other candidates can be eliminated from those three
 // cells.
 //
+// A hidden quad occurs when four candidates appear in only four cells within
+// a unit. All other candidates can be eliminated from those four cells.
+//
 // Hidden subsets are the complement of naked subsets: naked subsets find cells
 // whose candidates are restricted to a set, while hidden subsets find
 // candidates whose positions are restricted to a set of cells.
+//
+// The solver applies eliminations to the board's elimination layer. It returns
+// a placement move when an elimination creates a naked single, or an
+// elimination-only move when candidates were reduced without creating a
+// placement.
 type HiddenSubsetSolver struct {
 	Base
 }
@@ -30,13 +38,13 @@ func NewHiddenSubsetSolver() *HiddenSubsetSolver {
 	return &HiddenSubsetSolver{
 		Base: Base{
 			Key:         "hidden-subset",
-			DisplayName: "Hidden Pairs/Triples",
-			Description: "Finds two or three candidates confined to the same cells in a unit, enabling eliminations that reveal a single candidate.",
+			DisplayName: "Hidden Pairs/Triples/Quads",
+			Description: "Finds two, three, or four candidates confined to the same cells in a unit, enabling eliminations that reveal a single candidate.",
 		},
 	}
 }
 
-// Apply scans all units for hidden pairs and triples.
+// Apply scans all units for hidden pairs, triples, and quads.
 func (s *HiddenSubsetSolver) Apply(board *core.Board) *Move {
 	units := allUnits()
 
@@ -56,7 +64,7 @@ type digitPositions struct {
 	positions []core.Position
 }
 
-// findHiddenSubset checks a single unit for hidden pairs and triples.
+// findHiddenSubset checks a single unit for hidden pairs, triples, and quads.
 func (s *HiddenSubsetSolver) findHiddenSubset(board *core.Board, positions []core.Position, unitName string) *Move {
 	// Build a map of digit → positions of empty cells containing that digit.
 	var digits []digitPositions
@@ -67,8 +75,8 @@ func (s *HiddenSubsetSolver) findHiddenSubset(board *core.Board, positions []cor
 				cells = append(cells, pos)
 			}
 		}
-		// Only digits that appear in 2 or 3 cells are candidates for hidden subsets.
-		if len(cells) >= 2 && len(cells) <= 3 {
+		// Digits that appear in 2–4 cells are candidates for hidden subsets.
+		if len(cells) >= 2 && len(cells) <= 4 {
 			digits = append(digits, digitPositions{digit: d, positions: cells})
 		}
 	}
@@ -80,6 +88,11 @@ func (s *HiddenSubsetSolver) findHiddenSubset(board *core.Board, positions []cor
 
 	// Try hidden triples (size 3).
 	if move := s.tryHiddenSize(board, digits, unitName, 3); move != nil {
+		return move
+	}
+
+	// Try hidden quads (size 4).
+	if move := s.tryHiddenSize(board, digits, unitName, 4); move != nil {
 		return move
 	}
 
@@ -119,36 +132,26 @@ func (s *HiddenSubsetSolver) combinationsSearch(board *core.Board, digits []digi
 			hiddenDigits[digits[indices[i]].digit] = true
 		}
 
-		// For each cell in the subset, check if removing non-hidden candidates
-		// creates a naked single.
+		// For each cell in the subset, eliminate non-hidden candidates.
+		var move *Move
+		eliminated := false
 		for pos := range posSet {
 			cands := board.Candidates(pos)
-			// Count how many candidates are NOT in the hidden set.
-			hasExtra := false
 			for _, v := range cands.Values() {
 				if !hiddenDigits[v] {
-					hasExtra = true
-					break
+					if board.EliminateCandidate(pos, v) {
+						eliminated = true
+					}
 				}
 			}
-			if !hasExtra {
-				continue // No elimination possible in this cell.
-			}
-
-			// Simulate the elimination: keep only the hidden subset digits.
-			var reduced core.CandidateSet
-			for d := range hiddenDigits {
-				if cands.Has(d) {
-					reduced.Add(d)
-				}
-			}
-
-			if reduced.Count() == 1 {
-				value := reduced.Values()[0]
+			// Check if the cell is now a naked single after eliminations.
+			newCands := board.Candidates(pos)
+			if newCands.Count() == 1 && move == nil {
+				value := newCands.Values()[0]
 				subsetName := s.subsetName(size)
 				digitNames := s.digitNames(digits, indices, size)
 				cellNames := s.cellNames(posSet)
-				return &Move{
+				move = &Move{
 					Cell:      core.NewCell(pos, value),
 					Technique: s.Key,
 					Reason: fmt.Sprintf(
@@ -156,6 +159,24 @@ func (s *HiddenSubsetSolver) combinationsSearch(board *core.Board, digits []digi
 						subsetName, digitNames, unitName, cellNames, value, pos.ToString(),
 					),
 				}
+			}
+		}
+
+		if eliminated {
+			if move != nil {
+				return move
+			}
+			// Eliminations applied but no naked single yet.
+			subsetName := s.subsetName(size)
+			digitNames := s.digitNames(digits, indices, size)
+			cellNames := s.cellNames(posSet)
+			return &Move{
+				EliminationOnly: true,
+				Technique:       s.Key,
+				Reason: fmt.Sprintf(
+					"%s {%s} in %s confined to {%s} — candidates eliminated",
+					subsetName, digitNames, unitName, cellNames,
+				),
 			}
 		}
 
@@ -172,13 +193,15 @@ func (s *HiddenSubsetSolver) combinationsSearch(board *core.Board, digits []digi
 	return nil
 }
 
-// subsetName returns "Hidden pair" or "Hidden triple" based on size.
+// subsetName returns "Hidden pair", "Hidden triple", or "Hidden quad" based on size.
 func (s *HiddenSubsetSolver) subsetName(size int) string {
 	switch size {
 	case 2:
 		return "Hidden pair"
 	case 3:
 		return "Hidden triple"
+	case 4:
+		return "Hidden quad"
 	default:
 		return fmt.Sprintf("Hidden subset (%d)", size)
 	}
@@ -193,11 +216,12 @@ func (s *HiddenSubsetSolver) digitNames(digits []digitPositions, indices []int, 
 	return strings.Join(names, ", ")
 }
 
-// cellNames formats the positions of the subset cells.
+// cellNames formats the positions of the subset cells (sorted for deterministic output).
 func (s *HiddenSubsetSolver) cellNames(posSet map[core.Position]bool) string {
 	names := make([]string, 0, len(posSet))
 	for pos := range posSet {
 		names = append(names, pos.ToString())
 	}
+	sort.Strings(names)
 	return strings.Join(names, ", ")
 }

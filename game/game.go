@@ -201,6 +201,11 @@ func (game *Game) Solve() {
 // Hint returns the next recommended move.
 // It first checks for invalid inputs to clear, then tries strategy solvers,
 // and falls back to the complete solver.
+//
+// Strategy solvers may return elimination-only moves (no cell placement) when
+// they reduce candidates without creating a naked single. In that case, the
+// hint loop continues to try other solvers — the eliminations are applied to
+// the board's elimination layer and may enable other techniques.
 func (game *Game) Hint() *solver.Move {
 	// If there is any invalid input, randomly remove one of them.
 	if !game.invalidInput.IsEmpty() {
@@ -222,11 +227,24 @@ func (game *Game) Hint() *solver.Move {
 		}
 	}
 
-	// If any of the strategy solvers can find a move, use it.
-	for _, s := range game.strategySolvers {
-		move := s.Apply(&game.PlayBoard)
-		if move != nil {
-			return move
+	// Try strategy solvers. Elimination-only moves are progress (they reduce
+	// candidates), so restart the solver loop when one fires.
+	for {
+		progress := false
+		for _, s := range game.strategySolvers {
+			move := s.Apply(&game.PlayBoard)
+			if move == nil {
+				continue
+			}
+			if move.IsPlacement() {
+				return move
+			}
+			// Elimination-only move — keep going.
+			progress = true
+			break
+		}
+		if !progress {
+			break
 		}
 	}
 

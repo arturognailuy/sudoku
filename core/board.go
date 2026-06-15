@@ -11,6 +11,13 @@ import (
 type Board struct {
 	grid             [9][9]int
 	filledCellsCount int
+
+	// eliminations tracks additional candidate eliminations beyond what is
+	// derived from placed values. Each entry is a bitmask of eliminated
+	// digits (bit i set means digit i has been eliminated by a strategy
+	// solver). This allows solvers like Swordfish and Hidden Subsets to
+	// remove candidates without immediately placing a value.
+	eliminations [9][9]CandidateSet
 }
 
 // NewEmptyBoard creates an empty Sudoku board with all cells set to zero.
@@ -29,6 +36,8 @@ func (board *Board) Set(position Position, value int) (err error) {
 	}
 
 	board.grid[position.Row][position.Column] = value
+	// Clear any eliminations for this cell since it's now filled.
+	board.ClearEliminations(position)
 
 	return nil
 }
@@ -58,7 +67,9 @@ func (board *Board) Get(position Position) int {
 }
 
 // Candidates computes and returns the candidate set for the cell at position.
-// For filled cells, the set is empty.
+// For filled cells, the set is empty. The result combines peer-based
+// elimination (from placed values) with any additional eliminations tracked
+// in the eliminations layer.
 func (board *Board) Candidates(position Position) CandidateSet {
 	if board.grid[position.Row][position.Column] != 0 {
 		return 0
@@ -85,7 +96,30 @@ func (board *Board) Candidates(position Position) CandidateSet {
 			}
 		}
 	}
+	// Apply additional eliminations from strategy solvers.
+	cs &^= board.eliminations[position.Row][position.Column]
 	return cs
+}
+
+// EliminateCandidate removes a candidate digit from the given position's
+// elimination set. Returns true if the digit was actually a candidate
+// (i.e., it was present before elimination).
+func (board *Board) EliminateCandidate(position Position, digit int) bool {
+	if board.grid[position.Row][position.Column] != 0 {
+		return false
+	}
+	cands := board.Candidates(position)
+	if !cands.Has(digit) {
+		return false
+	}
+	board.eliminations[position.Row][position.Column].Add(digit)
+	return true
+}
+
+// ClearEliminations resets the elimination layer for the given position.
+// Called when a cell is set (placed) to avoid stale elimination data.
+func (board *Board) ClearEliminations(position Position) {
+	board.eliminations[position.Row][position.Column] = 0
 }
 
 // EmptyPositions returns all positions on the board that are empty (value 0).
@@ -140,6 +174,7 @@ func (board *Board) Copy() Board {
 	return Board{
 		grid:             board.grid,
 		filledCellsCount: board.filledCellsCount,
+		eliminations:     board.eliminations,
 	}
 }
 
