@@ -110,11 +110,11 @@ const xWingPuzzle = "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1..
 // subsequent techniques to complete the puzzle.
 const swordfishPuzzle = "300040000000007048000000907010003080400050020050008070500300000000000090609025300"
 
-// Expert puzzle requiring hidden-subset technique (hidden quads).
+// Expert puzzle requiring hidden-subset technique.
 // Provided by Yuliang (sourced from the internet for reliable testing).
-// Contains a Hidden Quad pattern that eliminates candidates and enables
-// subsequent techniques to complete the puzzle.
-const hiddenSubsetPuzzle = "007030000500400060800100009092500700000000000030009510300008007070006008000020600"
+// Fully solvable by our 7 strategy solvers alone (55 moves, 0 empty);
+// genuinely requires hidden-subset — without it, only 10 moves are possible.
+const hiddenSubsetPuzzle = "000000000231090000065003100008924000100050006000136700009300570000010843000000000"
 
 // ---------------------------------------------------------------------------
 // Basic tier tests
@@ -327,9 +327,8 @@ func TestIntegration_SwordfishRequired(t *testing.T) {
 }
 
 // TestIntegration_HiddenSubsetRequired verifies that a real puzzle requires the
-// hidden-subset solver. Without it, hard-tier solvers alone make less progress,
-// but with expert solvers the hidden-subset technique fires and enables
-// further progress.
+// hidden-subset solver. Without it, hard-tier solvers alone get stuck after very
+// few moves. With all expert solvers, the puzzle is fully solvable.
 func TestIntegration_HiddenSubsetRequired(t *testing.T) {
 	store := solver.NewStore()
 	hardKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
@@ -342,10 +341,13 @@ func TestIntegration_HiddenSubsetRequired(t *testing.T) {
 		t.Fatal("Expected puzzle to be unsolvable by hard-tier techniques alone")
 	}
 
-	// With expert solvers, the hidden-subset technique fires and enables
-	// further progress (more moves than hard-tier alone).
+	// With expert solvers, the puzzle is fully solvable.
 	fullBoard := boardFromString(t, hiddenSubsetPuzzle)
 	fullMoves := solveWithStrategies(t, &fullBoard, store, allKeys)
+
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be fully solvable with expert techniques")
+	}
 
 	// Verify hidden-subset technique was used.
 	hsCount := techniqueCount(fullMoves, "hidden-subset")
