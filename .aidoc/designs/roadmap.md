@@ -22,26 +22,27 @@ Refactoring comes first — clean up while the codebase is small, then build new
 
 ## Phase 3: Strategy Solvers
 
-Implement solving techniques incrementally, organized by difficulty tier.
-Each solver implements `StrategySolver` (with `Apply()` returning `*Move`),
-gets tests, and registers in the solver store.
+Five strategy solvers organized by difficulty tier. Each solver implements `StrategySolver`
+(with `Apply()` returning `*Move`), has tests, and registers in the solver store.
 
-Implementation by difficulty tier:
-
-**Easy tier (PR #6):** ✅
+**Easy tier:**
 - Naked Singles — cell has exactly one candidate left.
 - Hidden Singles — candidate appears in only one cell within a row, column, or box.
 - Both registered in store, wired into Easy difficulty (`SolverKeys`).
 
-**Intermediate tier (PR #7):** In review
+**Intermediate tier:**
 - Naked Pairs/Triples — two/three cells in a unit share the same candidates exclusively; eliminating those candidates from other cells in the unit reveals singles.
 - Pointing Pairs / Box-Line Reduction — candidate confined to single row/column within a box (or vice versa); elimination reveals singles.
 - Both registered in store, wired into Medium difficulty (`SolverKeys`).
 - Single-field design: `SolverKeys` holds the solvers introduced at this tier. `tierRegistry` (map keyed by difficulty level name) + `tierOrder` (ordered slice of tier names) are the single source of truth for tier ordering — `LowerTierSolverKeys()` and `AllowedSolverKeys()` derive cumulative keys from them.
 
-**Advanced tier (PR #8, stretch):**
-- X-Wing — candidate in exactly two cells in two rows sharing the same columns.
-- Wire into Hard difficulty.
+**Advanced tier:**
+- X-Wing — candidate in exactly two cells in each of two rows sharing the same two columns (or transpose). Elimination of the candidate from other cells in those columns/rows reveals singles.
+- Registered in store, wired into Hard difficulty (`SolverKeys: ["x-wing"]`).
+- `tierRegistry` and `tierOrder` updated with `"hard"` entry.
+
+Five solvers cover Easy/Medium/Hard — sufficient for a playable game.
+Extreme and Evil levels remain unconstrained (no technique requirements).
 
 ## Phase 4: Generator Integration and Puzzle Database
 

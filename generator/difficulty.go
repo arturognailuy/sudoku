@@ -26,7 +26,7 @@ type Difficulty struct {
 
 // tierOrder defines the sequence of difficulty tiers from lowest to
 // highest. Used alongside tierRegistry to derive lower-tier solver keys.
-var tierOrder = []string{"easy", "medium" /* future: "hard" */}
+var tierOrder = []string{"easy", "medium", "hard"}
 
 // tierRegistry maps each difficulty level name to the strategy solvers
 // introduced at that tier. This is the single source of truth for the
@@ -35,7 +35,7 @@ var tierOrder = []string{"easy", "medium" /* future: "hard" */}
 var tierRegistry = map[string][]string{
 	"easy":   {"naked-single", "hidden-single"},
 	"medium": {"naked-subset", "pointing-pair"},
-	// Future: "hard": {"x-wing"},
+	"hard":   {"x-wing"},
 }
 
 // lowerTierSolverKeys returns the cumulative solver keys from all tiers
@@ -115,11 +115,13 @@ func NewMediumDifficulty() Difficulty {
 }
 
 // NewHardDifficulty creates the hard difficulty level.
+// Hard puzzles require at least one advanced technique (X-Wing) —
+// basic and intermediate techniques alone won't suffice.
 func NewHardDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues: 25,
 		MaximumClues: 32,
-		SolverKeys:   []string{},
+		SolverKeys:   tierRegistry["hard"],
 	}
 }
 
