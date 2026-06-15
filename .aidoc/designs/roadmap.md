@@ -51,6 +51,14 @@ Five strategy solvers organized by difficulty tier. Each solver implements `Stra
 Seven solvers cover Easy/Medium/Hard/Expert — sufficient for a fully playable game.
 Evil level remains unconstrained (no technique requirements — may require guessing).
 
+**Evil tier:**
+- XY-Wing — three-cell pattern: a pivot with {X,Y} connects to two wings with {X,Z} and {Y,Z}. Any cell seeing both wings can eliminate Z, because exactly one wing must contain Z.
+- Simple Coloring — tracks conjugate pair chains for a digit (pairs of cells where the digit appears as a candidate in exactly two places in a unit). Alternating colors along the chain enable two elimination rules: same-color conflict (a color is impossible if two same-colored cells share a unit) and sees-both-colors (an uncolored cell seeing both colors can eliminate the digit).
+- Both registered in store, wired into Evil difficulty (`SolverKeys: ["xy-wing", "simple-coloring"]`).
+- `tierRegistry` and `tierOrder` updated with `"evil"` entry.
+
+Nine solvers cover Easy/Medium/Hard/Expert/Evil — fully strategy-based difficulty across all tiers.
+
 ## Phase 4: Generator Integration and Puzzle Database
 
 Wire strategy solvers into puzzle generation and build a puzzle database:
