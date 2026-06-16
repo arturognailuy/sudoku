@@ -5,9 +5,6 @@
 //
 // Solver Weights: based on HoDoKu's established values. Each weight
 // represents the difficulty cost per application of a technique.
-// Combined solvers (naked-subset, hidden-subset) use representative
-// midpoints; when split into per-size solvers (Phase 3.5), each
-// variant will get its own weight matching its specific difficulty.
 //
 // Clue-Count Ranges: define the acceptable number of given clues for
 // each difficulty level. MinimumClues is inclusive, MaximumClues is
@@ -21,12 +18,17 @@ const (
 	WeightNakedSingle    = 4
 	WeightHiddenSingle   = 14
 	WeightPointingPair   = 50
-	WeightNakedSubset    = 70
-	WeightHiddenSubset   = 100
+	WeightNakedPair      = 60
+	WeightNakedTriple    = 80
+	WeightNakedQuad      = 120
+	WeightHiddenPair     = 70
+	WeightHiddenTriple   = 100
+	WeightHiddenQuad     = 150
 	WeightXWing          = 140
 	WeightSwordfish      = 150
-	WeightSimpleColoring = 150
+	WeightJellyfish      = 300
 	WeightXYWing         = 160
+	WeightSimpleColoring = 150
 )
 
 // Clue-count ranges per difficulty level.

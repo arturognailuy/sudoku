@@ -20,15 +20,29 @@ func NewStore() Store {
 	store.complete[backtracker.GetKey()] = backtracker
 
 	// Register strategy solvers.
+	// Basic tier.
 	store.RegisterStrategy(NewNakedSingleSolver())
 	store.RegisterStrategy(NewHiddenSingleSolver())
-	store.RegisterStrategy(NewNakedSubsetSolver())
+
+	// Medium tier.
+	store.RegisterStrategy(NewNakedPairSolver())
+	store.RegisterStrategy(NewNakedTripleSolver())
 	store.RegisterStrategy(NewPointingPairSolver())
+	store.RegisterStrategy(NewHiddenPairSolver())
+
+	// Hard tier.
 	store.RegisterStrategy(NewXWingSolver())
-	store.RegisterStrategy(NewSwordfishSolver())
-	store.RegisterStrategy(NewHiddenSubsetSolver())
 	store.RegisterStrategy(NewXYWingSolver())
+	store.RegisterStrategy(NewHiddenTripleSolver())
+
+	// Expert tier.
+	store.RegisterStrategy(NewSwordfishSolver())
+	store.RegisterStrategy(NewNakedQuadSolver())
 	store.RegisterStrategy(NewSimpleColoringSolver())
+	store.RegisterStrategy(NewHiddenQuadSolver())
+
+	// Evil tier.
+	store.RegisterStrategy(NewJellyfishSolver())
 
 	return store
 }

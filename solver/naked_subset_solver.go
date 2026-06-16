@@ -7,20 +7,109 @@ import (
 	"github.com/gnailuy/sudoku/core"
 )
 
-// NakedSubsetSolver finds naked pairs and naked triples in rows, columns, and boxes.
+// NakedPairSolver finds naked pairs in rows, columns, and boxes.
 //
 // A naked pair occurs when two cells in a unit share the same two candidates —
 // those candidates can be eliminated from all other cells in the unit.
 //
-// A naked triple occurs when three cells in a unit collectively have exactly
-// three candidates — those candidates can be eliminated from all other cells
-// in the unit.
-//
 // This solver does not place values directly. Instead, it finds eliminations
 // and then checks if any elimination creates a naked single (a cell with one
 // candidate remaining), returning that as the move.
-type NakedSubsetSolver struct {
+type NakedPairSolver struct {
 	Base
+}
+
+// NewNakedPairSolver creates a NakedPairSolver and returns it.
+func NewNakedPairSolver() *NakedPairSolver {
+	return &NakedPairSolver{
+		Base: Base{
+			Key:         "naked-pair",
+			DisplayName: "Naked Pair",
+			Description: "Finds two cells in a unit sharing the same two candidates, enabling eliminations that reveal a single candidate.",
+			Weight:      WeightNakedPair,
+		},
+	}
+}
+
+// Apply scans all units for naked pairs.
+func (s *NakedPairSolver) Apply(board *core.Board) *Move {
+	units := allUnits()
+
+	for _, u := range units {
+		if move := findNakedSubsetOfSize(board, u.positions, u.name, 2, s.Key, "Naked pair"); move != nil {
+			return move
+		}
+	}
+
+	return nil
+}
+
+// NakedTripleSolver finds naked triples in rows, columns, and boxes.
+//
+// A naked triple occurs when three cells in a unit collectively have exactly
+// three candidates — those candidates can be eliminated from all other cells
+// in the unit.
+type NakedTripleSolver struct {
+	Base
+}
+
+// NewNakedTripleSolver creates a NakedTripleSolver and returns it.
+func NewNakedTripleSolver() *NakedTripleSolver {
+	return &NakedTripleSolver{
+		Base: Base{
+			Key:         "naked-triple",
+			DisplayName: "Naked Triple",
+			Description: "Finds three cells in a unit sharing the same three candidates, enabling eliminations that reveal a single candidate.",
+			Weight:      WeightNakedTriple,
+		},
+	}
+}
+
+// Apply scans all units for naked triples.
+func (s *NakedTripleSolver) Apply(board *core.Board) *Move {
+	units := allUnits()
+
+	for _, u := range units {
+		if move := findNakedSubsetOfSize(board, u.positions, u.name, 3, s.Key, "Naked triple"); move != nil {
+			return move
+		}
+	}
+
+	return nil
+}
+
+// NakedQuadSolver finds naked quads in rows, columns, and boxes.
+//
+// A naked quad occurs when four cells in a unit collectively have exactly
+// four candidates — those candidates can be eliminated from all other cells
+// in the unit.
+type NakedQuadSolver struct {
+	Base
+}
+
+// NewNakedQuadSolver creates a NakedQuadSolver and returns it.
+func NewNakedQuadSolver() *NakedQuadSolver {
+	return &NakedQuadSolver{
+		Base: Base{
+			Key:         "naked-quad",
+			DisplayName: "Naked Quad",
+			Description: "Finds four cells in a unit sharing the same four candidates, enabling eliminations that reveal a single candidate.",
+			Weight:      WeightNakedQuad,
+		},
+	}
+}
+
+// Apply scans all units for naked quads.
+func (s *NakedQuadSolver) Apply(board *core.Board) *Move {
+	units := allUnits()
+
+	for _, u := range units {
+		if move := findNakedSubsetOfSize(board, u.positions, u.name, 4, s.Key, "Naked quad"); move != nil {
+			return move
+		}
+	}
+
+	return nil
 }
 
 // nakedSubsetCell holds an empty cell's position and its candidate set.
@@ -29,35 +118,9 @@ type nakedSubsetCell struct {
 	candidates core.CandidateSet
 }
 
-// NewNakedSubsetSolver creates a NakedSubsetSolver and returns it.
-func NewNakedSubsetSolver() *NakedSubsetSolver {
-	return &NakedSubsetSolver{
-		Base: Base{
-			Key:         "naked-subset",
-			DisplayName: "Naked Pairs/Triples",
-			Description: "Finds two or three cells in a unit sharing the same candidates, enabling eliminations that reveal a single candidate.",
-			Weight:      WeightNakedSubset,
-		},
-	}
-}
-
-// Apply scans all units for naked pairs and triples. When eliminations from a
-// naked subset reduce a cell to a single candidate, that cell is returned as
-// the move.
-func (s *NakedSubsetSolver) Apply(board *core.Board) *Move {
-	units := allUnits()
-
-	for _, u := range units {
-		if move := s.findNakedSubset(board, u.positions, u.name); move != nil {
-			return move
-		}
-	}
-
-	return nil
-}
-
-// findNakedSubset checks a single unit for naked pairs and triples.
-func (s *NakedSubsetSolver) findNakedSubset(board *core.Board, positions []core.Position, unitName string) *Move {
+// findNakedSubsetOfSize is the shared logic for naked pair/triple/quad solvers.
+// It searches a single unit for naked subsets of the given size.
+func findNakedSubsetOfSize(board *core.Board, positions []core.Position, unitName string, size int, technique string, displayName string) *Move {
 	// Collect empty cells and their candidates.
 	var emptyCells []nakedSubsetCell
 	for _, pos := range positions {
@@ -67,21 +130,6 @@ func (s *NakedSubsetSolver) findNakedSubset(board *core.Board, positions []core.
 		}
 	}
 
-	// Try naked pairs (size 2).
-	if move := s.trySubsetSize(board, emptyCells, positions, unitName, 2); move != nil {
-		return move
-	}
-
-	// Try naked triples (size 3).
-	if move := s.trySubsetSize(board, emptyCells, positions, unitName, 3); move != nil {
-		return move
-	}
-
-	return nil
-}
-
-// trySubsetSize looks for naked subsets of the given size in the unit.
-func (s *NakedSubsetSolver) trySubsetSize(board *core.Board, emptyCells []nakedSubsetCell, allPositions []core.Position, unitName string, size int) *Move {
 	// Filter cells with at most 'size' candidates.
 	var eligible []nakedSubsetCell
 	for _, c := range emptyCells {
@@ -96,11 +144,11 @@ func (s *NakedSubsetSolver) trySubsetSize(board *core.Board, emptyCells []nakedS
 
 	// Generate combinations of 'size' cells from eligible.
 	indices := make([]int, size)
-	return s.combinationsSearch(eligible, allPositions, unitName, size, indices, 0, 0, board)
+	return nakedSubsetCombinationsSearch(eligible, positions, unitName, size, indices, 0, 0, board, technique, displayName)
 }
 
-// combinationsSearch recursively generates combinations and checks for naked subsets.
-func (s *NakedSubsetSolver) combinationsSearch(eligible []nakedSubsetCell, allPositions []core.Position, unitName string, size int, indices []int, start int, depth int, board *core.Board) *Move {
+// nakedSubsetCombinationsSearch recursively generates combinations and checks for naked subsets.
+func nakedSubsetCombinationsSearch(eligible []nakedSubsetCell, allPositions []core.Position, unitName string, size int, indices []int, start int, depth int, board *core.Board, technique string, displayName string) *Move {
 	if depth == size {
 		// Compute the union of candidates in the selected cells.
 		var union core.CandidateSet
@@ -148,15 +196,14 @@ func (s *NakedSubsetSolver) combinationsSearch(eligible []nakedSubsetCell, allPo
 
 			if reduced.Count() == 1 {
 				value := reduced.Values()[0]
-				subsetName := s.subsetName(size)
-				cellNames := s.cellNames(eligible, indices, size)
-				valNames := s.valNames(unionVals)
+				cellNames := nakedSubsetCellNames(eligible, indices, size)
+				valNames := nakedSubsetValNames(unionVals)
 				return &Move{
 					Cell:      core.NewCell(pos, value),
-					Technique: s.Key,
+					Technique: technique,
 					Reason: fmt.Sprintf(
 						"%s {%s} in %s at {%s} eliminates candidates, leaving %d as the only candidate for %s",
-						subsetName, valNames, unitName, cellNames, value, pos.ToString(),
+						displayName, valNames, unitName, cellNames, value, pos.ToString(),
 					),
 				}
 			}
@@ -167,7 +214,7 @@ func (s *NakedSubsetSolver) combinationsSearch(eligible []nakedSubsetCell, allPo
 
 	for i := start; i < len(eligible); i++ {
 		indices[depth] = i
-		if move := s.combinationsSearch(eligible, allPositions, unitName, size, indices, i+1, depth+1, board); move != nil {
+		if move := nakedSubsetCombinationsSearch(eligible, allPositions, unitName, size, indices, i+1, depth+1, board, technique, displayName); move != nil {
 			return move
 		}
 	}
@@ -175,20 +222,8 @@ func (s *NakedSubsetSolver) combinationsSearch(eligible []nakedSubsetCell, allPo
 	return nil
 }
 
-// subsetName returns "Naked pair" or "Naked triple" based on size.
-func (s *NakedSubsetSolver) subsetName(size int) string {
-	switch size {
-	case 2:
-		return "Naked pair"
-	case 3:
-		return "Naked triple"
-	default:
-		return fmt.Sprintf("Naked subset (%d)", size)
-	}
-}
-
-// cellNames formats the positions of the subset cells.
-func (s *NakedSubsetSolver) cellNames(eligible []nakedSubsetCell, indices []int, size int) string {
+// nakedSubsetCellNames formats the positions of the subset cells.
+func nakedSubsetCellNames(eligible []nakedSubsetCell, indices []int, size int) string {
 	names := make([]string, size)
 	for i := 0; i < size; i++ {
 		names[i] = eligible[indices[i]].pos.ToString()
@@ -196,8 +231,8 @@ func (s *NakedSubsetSolver) cellNames(eligible []nakedSubsetCell, indices []int,
 	return strings.Join(names, ", ")
 }
 
-// valNames formats a slice of values as a comma-separated string.
-func (s *NakedSubsetSolver) valNames(vals []int) string {
+// nakedSubsetValNames formats a slice of values as a comma-separated string.
+func nakedSubsetValNames(vals []int) string {
 	names := make([]string, len(vals))
 	for i, v := range vals {
 		names[i] = fmt.Sprintf("%d", v)
