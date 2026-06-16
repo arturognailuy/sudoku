@@ -96,7 +96,6 @@ var (
 	mediumKeys = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair"}
 	hardKeys   = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple"}
 	expertKeys = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "swordfish", "naked-quad", "simple-coloring", "hidden-quad"}
-	evilKeys   = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "swordfish", "naked-quad", "simple-coloring", "hidden-quad", "jellyfish"}
 )
 
 // ---------------------------------------------------------------------------
