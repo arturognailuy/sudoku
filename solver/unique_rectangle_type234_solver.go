@@ -675,7 +675,7 @@ func formatValues(vals []int) string {
 	for i, v := range vals {
 		parts[i] = fmt.Sprintf("%d", v)
 	}
-	return fmt.Sprintf("%s", join(parts, ","))
+	return join(parts, ",")
 }
 
 func join(parts []string, sep string) string {
