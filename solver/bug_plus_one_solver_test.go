@@ -25,7 +25,7 @@ func TestBUGPlusOneSolver_NoBUGPattern(t *testing.T) {
 	s := solver.NewBUGPlusOneSolver()
 	board := core.NewEmptyBoard()
 	// Set up an easy puzzle — many cells with various candidate counts.
-	board.FromString("530070000600195000098000060800060003400803001700020006060000280000419005000080079")
+	board.FromString("53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79")
 	move := s.Apply(&board)
 	if move != nil {
 		t.Error("expected nil move for non-BUG board, got a move")
@@ -40,7 +40,7 @@ func TestBUGPlusOneSolver_PureBUG(t *testing.T) {
 	// A nearly solved board with all remaining cells bivalue.
 	// This is hard to construct naturally, so we test that the solver
 	// doesn't crash and returns nil for a mostly-solved board.
-	board.FromString("123456789456789123789123456214365897365897214897214365531642978642978531978531640")
+	board.FromString("12345678945678912378912345621436589736589721489721436553164297864297853197853164.")
 	move := s.Apply(&board)
 	if move != nil {
 		t.Error("expected nil move for non-BUG+1 pattern")

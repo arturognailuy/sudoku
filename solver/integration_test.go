@@ -171,7 +171,7 @@ const evilJellyfishPuzzle = "..........17.2.8.3..3...2.4.84.537.6..........72.1.
 // Evil puzzle requiring unique-rectangle AND bug-plus-one.
 // 27 givens, 54 blanks. Expert-tier solvers stall at 10 empty cells.
 // Unique Rectangle Type 1 and BUG+1 are each required to complete the solve.
-const evilBUGURPuzzle = "000700060090060200100953700510000000403080901000000053009235004001040080050001000"
+const evilBUGURPuzzle = "...7...6..9..6.2..1..9537..51.......4.3.8.9.1.......53..9235..4..1.4..8..5...1..."
 
 // ---------------------------------------------------------------------------
 // Basic tier tests
