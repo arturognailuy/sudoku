@@ -43,6 +43,8 @@ func NewStore() Store {
 
 	// Evil tier.
 	store.RegisterStrategy(NewJellyfishSolver())
+	store.RegisterStrategy(NewBUGPlusOneSolver())
+	store.RegisterStrategy(NewUniqueRectangleSolver())
 
 	return store
 }

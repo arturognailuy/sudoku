@@ -29,13 +29,13 @@ Difficulty combines clue count with technique requirements in `generator/difficu
 | Medium | 32–44 | Intermediate | naked-pair, naked-triple, pointing-pair, hidden-pair |
 | Hard | 25–31 | Advanced | x-wing, xy-wing, hidden-triple |
 | Expert | 22–24 | Expert | swordfish, naked-quad, simple-coloring, hidden-quad |
-| Evil | 17–22 | Evil | jellyfish |
+| Evil | 17–22 | Evil | jellyfish, bug-plus-one, unique-rectangle |
 
 Each level's allowed solvers = its own SolverKeys + all solvers from lower tiers.
 During generation, the generator verifies that lower-tier solvers alone cannot solve
 the puzzle — ensuring it genuinely requires at least one technique from this tier.
 
-### Solver Inventory (14 solvers)
+### Solver Inventory (16 solvers)
 
 Solvers are split into per-size variants for accurate difficulty tiering. Shared
 algorithms use a factory/parameterized pattern — e.g., `FishSolver` (X-Wing/Swordfish/
@@ -57,6 +57,8 @@ Jellyfish) and `NakedSubsetSolver` / `HiddenSubsetSolver` (pair/triple/quad).
 | simple-coloring | Simple Coloring | 150 | Expert | Direct |
 | hidden-quad | Hidden Quad | 150 | Expert | HiddenSubsetSolver(size=4) |
 | jellyfish | Jellyfish | 300 | Evil | FishSolver(size=4) |
+| bug-plus-one | BUG+1 | 250 | Evil | Direct |
+| unique-rectangle | Unique Rectangle | 200 | Evil | Direct |
 
 ### Tier Rationale
 
@@ -69,8 +71,9 @@ Tiers are based on SudokuWiki's human-difficulty ordering (frequency × difficul
   three hidden digits in three cells (Hidden Triple).
 - **Expert:** Very hard to spot manually — 3-row/col fish patterns (Swordfish), four-cell
   subsets (Naked/Hidden Quad), graph coloring (Simple Coloring).
-- **Evil:** Near-impossible to spot manually — 4-row/col fish patterns (Jellyfish). Future
-  additions: BUG+1, Unique Rectangles.
+- **Evil:** Near-impossible to spot manually — 4-row/col fish patterns (Jellyfish),
+  bivalue universal grave detection (BUG+1), and deadly-pattern elimination
+  (Unique Rectangle Type 1).
 
 ## Difficulty Mapping
 
@@ -80,7 +83,7 @@ Tiers are based on SudokuWiki's human-difficulty ordering (frequency × difficul
 | Medium | Up to Intermediate | Requires at least one naked-pair, naked-triple, pointing-pair, or hidden-pair |
 | Hard | Up to Advanced | Requires at least one X-Wing, XY-Wing, or hidden-triple step |
 | Expert | Up to Expert | Requires at least one swordfish, naked-quad, simple-coloring, or hidden-quad step |
-| Evil | Up to Evil | Requires at least one jellyfish step |
+| Evil | Up to Evil | Requires at least one jellyfish, BUG+1, or unique-rectangle step |
 
 ### Clue Count as Secondary Constraint
 
@@ -111,7 +114,7 @@ The plumbing in `generator/difficulty.go`:
 **Expert:** `SolverKeys: ["swordfish", "naked-quad", "simple-coloring", "hidden-quad"]`.
 `LowerTierSolverKeys()` returns Easy + Medium + Hard keys.
 
-**Evil:** `SolverKeys: ["jellyfish"]`.
+**Evil:** `SolverKeys: ["jellyfish", "bug-plus-one", "unique-rectangle"]`.
 `LowerTierSolverKeys()` returns Easy + Medium + Hard + Expert keys.
 
 ## Scoring System

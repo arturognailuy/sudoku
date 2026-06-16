@@ -29,6 +29,8 @@ const (
 	WeightJellyfish      = 300
 	WeightXYWing         = 160
 	WeightSimpleColoring = 150
+	WeightBUGPlusOne      = 250
+	WeightUniqueRectangle = 200
 )
 
 // Clue-count ranges per difficulty level.
