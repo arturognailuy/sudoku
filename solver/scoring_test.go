@@ -24,7 +24,6 @@ func TestScorePuzzleSingleTechnique(t *testing.T) {
 	}
 
 	score := ScorePuzzle(store, moves)
-	// 3 × naked-single weight = 12
 	want := 3 * WeightNakedSingle
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
@@ -38,11 +37,11 @@ func TestScorePuzzleMixedTechniques(t *testing.T) {
 		{Technique: "hidden-single"},
 		{Technique: "naked-single"},
 		{Technique: "x-wing"},
-		{Technique: "naked-subset"},
+		{Technique: "naked-pair"},
 	}
 
 	score := ScorePuzzle(store, moves)
-	want := 2*WeightNakedSingle + WeightHiddenSingle + WeightXWing + WeightNakedSubset
+	want := 2*WeightNakedSingle + WeightHiddenSingle + WeightXWing + WeightNakedPair
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
 	}
@@ -57,7 +56,6 @@ func TestScorePuzzleIgnoresUnknownTechniques(t *testing.T) {
 	}
 
 	score := ScorePuzzle(store, moves)
-	// Only naked-single counts.
 	want := WeightNakedSingle
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
@@ -71,26 +69,32 @@ func TestScorePuzzleAllSolvers(t *testing.T) {
 	moves := []Move{
 		{Technique: "naked-single"},
 		{Technique: "hidden-single"},
-		{Technique: "naked-subset"},
+		{Technique: "naked-pair"},
+		{Technique: "naked-triple"},
 		{Technique: "pointing-pair"},
+		{Technique: "hidden-pair"},
 		{Technique: "x-wing"},
-		{Technique: "swordfish"},
-		{Technique: "hidden-subset"},
 		{Technique: "xy-wing"},
+		{Technique: "hidden-triple"},
+		{Technique: "swordfish"},
+		{Technique: "naked-quad"},
 		{Technique: "simple-coloring"},
+		{Technique: "hidden-quad"},
+		{Technique: "jellyfish"},
 	}
 
 	score := ScorePuzzle(store, moves)
-	want := WeightNakedSingle + WeightHiddenSingle + WeightNakedSubset +
-		WeightPointingPair + WeightXWing + WeightSwordfish +
-		WeightHiddenSubset + WeightXYWing + WeightSimpleColoring
+	want := WeightNakedSingle + WeightHiddenSingle +
+		WeightNakedPair + WeightNakedTriple + WeightPointingPair + WeightHiddenPair +
+		WeightXWing + WeightXYWing + WeightHiddenTriple +
+		WeightSwordfish + WeightNakedQuad + WeightSimpleColoring + WeightHiddenQuad +
+		WeightJellyfish
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
 	}
 }
 
 func TestSolverWeights(t *testing.T) {
-	// Verify each solver has the expected weight.
 	tests := []struct {
 		name   string
 		solver StrategySolver
@@ -98,11 +102,16 @@ func TestSolverWeights(t *testing.T) {
 	}{
 		{"naked-single", NewNakedSingleSolver(), WeightNakedSingle},
 		{"hidden-single", NewHiddenSingleSolver(), WeightHiddenSingle},
-		{"naked-subset", NewNakedSubsetSolver(), WeightNakedSubset},
+		{"naked-pair", NewNakedPairSolver(), WeightNakedPair},
+		{"naked-triple", NewNakedTripleSolver(), WeightNakedTriple},
+		{"naked-quad", NewNakedQuadSolver(), WeightNakedQuad},
 		{"pointing-pair", NewPointingPairSolver(), WeightPointingPair},
+		{"hidden-pair", NewHiddenPairSolver(), WeightHiddenPair},
+		{"hidden-triple", NewHiddenTripleSolver(), WeightHiddenTriple},
+		{"hidden-quad", NewHiddenQuadSolver(), WeightHiddenQuad},
 		{"x-wing", NewXWingSolver(), WeightXWing},
 		{"swordfish", NewSwordfishSolver(), WeightSwordfish},
-		{"hidden-subset", NewHiddenSubsetSolver(), WeightHiddenSubset},
+		{"jellyfish", NewJellyfishSolver(), WeightJellyfish},
 		{"xy-wing", NewXYWingSolver(), WeightXYWing},
 		{"simple-coloring", NewSimpleColoringSolver(), WeightSimpleColoring},
 	}

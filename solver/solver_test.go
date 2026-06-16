@@ -108,12 +108,12 @@ func TestStoreRegistersStrategySolvers(t *testing.T) {
 		t.Errorf("Expected key 'hidden-single', got %q", hidden.GetKey())
 	}
 
-	nakedSubset := store.GetStrategySolverByKey("naked-subset")
-	if nakedSubset == nil {
-		t.Fatal("Expected naked-subset solver to be registered")
+	nakedPair := store.GetStrategySolverByKey("naked-pair")
+	if nakedPair == nil {
+		t.Fatal("Expected naked-pair solver to be registered")
 	}
-	if nakedSubset.GetKey() != "naked-subset" {
-		t.Errorf("Expected key 'naked-subset', got %q", nakedSubset.GetKey())
+	if nakedPair.GetKey() != "naked-pair" {
+		t.Errorf("Expected key 'naked-pair', got %q", nakedPair.GetKey())
 	}
 
 	pointing := store.GetStrategySolverByKey("pointing-pair")
@@ -130,8 +130,8 @@ func TestStoreGetAllStrategySolverKeys(t *testing.T) {
 	store := solver.NewStore()
 	keys := store.GetAllStrategySolverKeys()
 
-	if len(keys) != 9 {
-		t.Fatalf("Expected 9 strategy solver keys, got %d: %v", len(keys), keys)
+	if len(keys) != 14 {
+		t.Fatalf("Expected 14 strategy solver keys, got %d: %v", len(keys), keys)
 	}
 
 	// Check all keys are present (order is not guaranteed from map iteration).
@@ -139,7 +139,7 @@ func TestStoreGetAllStrategySolverKeys(t *testing.T) {
 	for _, k := range keys {
 		keySet[k] = true
 	}
-	for _, expected := range []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"} {
+	for _, expected := range []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "naked-quad", "pointing-pair", "hidden-pair", "hidden-triple", "hidden-quad", "x-wing", "swordfish", "jellyfish", "xy-wing", "simple-coloring"} {
 		if !keySet[expected] {
 			t.Errorf("Expected %q in keys", expected)
 		}

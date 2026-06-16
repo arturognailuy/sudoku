@@ -26,100 +26,93 @@ Difficulty combines clue count with technique requirements in `generator/difficu
 | Level | Clues (min–max) | Strategy Tier | Solver Keys |
 |-------|-----------------|---------------|-------------|
 | Easy | 45–59 | Basic | naked-single, hidden-single |
-| Medium | 32–44 | Intermediate | naked-subset, pointing-pair |
-| Hard | 25–31 | Advanced | x-wing |
-| Expert | 22–24 | Expert | swordfish, hidden-subset |
-| Evil | 17–22 | Evil | xy-wing, simple-coloring |
+| Medium | 32–44 | Intermediate | naked-pair, naked-triple, pointing-pair, hidden-pair |
+| Hard | 25–31 | Advanced | x-wing, xy-wing, hidden-triple |
+| Expert | 22–24 | Expert | swordfish, naked-quad, simple-coloring, hidden-quad |
+| Evil | 17–22 | Evil | jellyfish |
 
 Each level's allowed solvers = its own SolverKeys + all solvers from lower tiers.
 During generation, the generator verifies that lower-tier solvers alone cannot solve
 the puzzle — ensuring it genuinely requires at least one technique from this tier.
 
-## Target Model (Strategy-Based)
+### Solver Inventory (14 solvers)
 
-Difficulty should be defined by the **hardest technique required to solve** the puzzle.
+Solvers are split into per-size variants for accurate difficulty tiering. Shared
+algorithms use a factory/parameterized pattern — e.g., `FishSolver` (X-Wing/Swordfish/
+Jellyfish) and `NakedSubsetSolver` / `HiddenSubsetSolver` (pair/triple/quad).
 
-### Strategy Tiers
+| Solver Key | Display Name | Weight | Tier | Algorithm |
+|------------|-------------|--------|------|-----------|
+| naked-single | Naked Single | 4 | Easy | Direct |
+| hidden-single | Hidden Single | 14 | Easy | Direct |
+| naked-pair | Naked Pair | 60 | Medium | NakedSubsetSolver(size=2) |
+| naked-triple | Naked Triple | 80 | Medium | NakedSubsetSolver(size=3) |
+| pointing-pair | Pointing Pair | 50 | Medium | Direct |
+| hidden-pair | Hidden Pair | 70 | Medium | HiddenSubsetSolver(size=2) |
+| x-wing | X-Wing | 140 | Hard | FishSolver(size=2) |
+| xy-wing | XY-Wing | 160 | Hard | Direct |
+| hidden-triple | Hidden Triple | 100 | Hard | HiddenSubsetSolver(size=3) |
+| swordfish | Swordfish | 150 | Expert | FishSolver(size=3) |
+| naked-quad | Naked Quad | 120 | Expert | NakedSubsetSolver(size=4) |
+| simple-coloring | Simple Coloring | 150 | Expert | Direct |
+| hidden-quad | Hidden Quad | 150 | Expert | HiddenSubsetSolver(size=4) |
+| jellyfish | Jellyfish | 300 | Evil | FishSolver(size=4) |
 
-| Tier | Techniques | CLI Level |
-|------|-----------|----------|
-| Basic | Naked singles, hidden singles | Easy |
-| Intermediate | Naked pairs/triples, pointing pairs / box-line reduction | Medium |
-| Advanced | X-Wing | Hard |
-| Expert | Swordfish, hidden pairs/triples | Expert |
-| Evil | XY-Wing, simple coloring | Evil |
+### Tier Rationale
 
-### Difficulty Mapping
+Tiers are based on SudokuWiki's human-difficulty ordering (frequency × difficulty):
+
+- **Easy:** Trivial techniques — scan for cells/units with one candidate.
+- **Medium:** Basic pattern recognition — pairs, triples, pointing pairs. Hidden pairs
+  are easier than X-Wing for humans.
+- **Hard:** Requires systematic row/column scanning (X-Wing, XY-Wing) or identifying
+  three hidden digits in three cells (Hidden Triple).
+- **Expert:** Very hard to spot manually — 3-row/col fish patterns (Swordfish), four-cell
+  subsets (Naked/Hidden Quad), graph coloring (Simple Coloring).
+- **Evil:** Near-impossible to spot manually — 4-row/col fish patterns (Jellyfish). Future
+  additions: BUG+1, Unique Rectangles.
+
+## Difficulty Mapping
 
 | Level | Required Tier | Meaning |
 |-------|---------------|--------|
 | Easy | Basic only | Solvable with naked/hidden singles alone |
-| Medium | Up to Intermediate | Requires at least one intermediate technique |
-| Hard | Up to Advanced | Requires at least one X-Wing step |
-| Expert | Up to Expert | Requires at least one swordfish or hidden-subset step |
-| Evil | Up to Evil | Requires at least one XY-Wing or simple coloring step |
+| Medium | Up to Intermediate | Requires at least one naked-pair, naked-triple, pointing-pair, or hidden-pair |
+| Hard | Up to Advanced | Requires at least one X-Wing, XY-Wing, or hidden-triple step |
+| Expert | Up to Expert | Requires at least one swordfish, naked-quad, simple-coloring, or hidden-quad step |
+| Evil | Up to Evil | Requires at least one jellyfish step |
 
 ### Clue Count as Secondary Constraint
 
 Clue-count ranges are preserved as a secondary constraint alongside technique requirements.
-A puzzle that requires a Swordfish but has 50 clues isn't fun — the strategy difficulty
-and the clue count must both fall within reasonable bounds for a satisfying experience.
 The existing clue-count ranges define the acceptable band; technique requirements define
 the minimum solving complexity.
 
-### Generation and Storage Flow
+### Architecture Support
 
-Rather than reject-and-regenerate (which is expensive and may loop indefinitely for rare
-technique requirements), puzzles are generated offline and stored:
-
-1. Generate a puzzle using the existing generator.
-2. Attempt to solve with strategy solvers in tier order (basic → intermediate → advanced → expert).
-3. Record the highest tier required and the clue count.
-4. Save the puzzle with its difficulty metadata to a database.
-5. To serve a puzzle of a given difficulty, look up the database for a match.
-
-This decouples generation (slow, offline, batch) from serving (fast, database lookup),
-and avoids the need for retry limits or fallback logic.
-
-### Architecture Support Already In Place
-
-The plumbing exists in the generator (`generator/generator.go`):
-- `Difficulty.SolverKeys` lists solver keys introduced at this tier (the only field).
-- `tierRegistry` (package-level map keyed by difficulty level name, e.g. `"easy"`, `"medium"`) + `tierOrder` (ordered slice of tier names) define the tier hierarchy. Lower-tier solver keys are derived from these — there is no separate field. This is the single source of truth for tier ordering.
-- `Difficulty.AllowedSolverKeys()` returns the full allowed set (lower tiers + this tier), computed from `tierRegistry`/`tierOrder`.
-- `Difficulty.LowerTierSolverKeys()` returns the cumulative keys from all tiers below, derived from `tierRegistry`/`tierOrder`.
-- During cell removal, the generator calls `solver.Apply()` on each allowed solver before confirming a removal.
-- After generation, `requiresThisTierSolver()` checks that lower-tier solvers alone can't solve the puzzle.
+The plumbing in `generator/difficulty.go`:
+- `tierRegistry` (map) + `tierOrder` (slice) define the tier hierarchy — single source of truth.
+- `Difficulty.SolverKeys` lists solver keys introduced at this tier.
+- `Difficulty.AllowedSolverKeys()` returns the full allowed set (lower tiers + this tier).
+- `Difficulty.LowerTierSolverKeys()` returns cumulative keys from all tiers below.
+- During cell removal, the generator calls `solver.Apply()` on each allowed solver.
+- After generation, `requiresThisTierSolver()` verifies lower-tier solvers alone can't solve.
 - `Store` maps solver keys to implementations.
 
-**Easy difficulty:** `SolverKeys: ["naked-single", "hidden-single"]`.
-The generator produces Easy puzzles solvable using only naked and hidden singles.
-As the lowest tier in `tierOrder`, `LowerTierSolverKeys()` returns nil.
+**Easy:** `SolverKeys: ["naked-single", "hidden-single"]`.
+`LowerTierSolverKeys()` returns nil (lowest tier).
 
-**Medium difficulty:** `SolverKeys: ["naked-subset", "pointing-pair"]`.
-`LowerTierSolverKeys()` returns `["naked-single", "hidden-single"]` (derived from Easy tier in registry/tierOrder).
-Allowed set = all four solvers. The generator produces Medium puzzles that genuinely
-require at least one intermediate technique — basic techniques alone cannot solve them.
+**Medium:** `SolverKeys: ["naked-pair", "naked-triple", "pointing-pair", "hidden-pair"]`.
+`LowerTierSolverKeys()` returns Easy keys.
 
-**Hard difficulty:** `SolverKeys: ["x-wing"]`.
-`LowerTierSolverKeys()` returns `["naked-single", "hidden-single", "naked-subset", "pointing-pair"]`
-(derived from Easy + Medium tiers in registry/tierOrder).
-Allowed set = all five solvers. The generator produces Hard puzzles that genuinely
-require at least one X-Wing step — basic and intermediate techniques alone cannot solve them.
+**Hard:** `SolverKeys: ["x-wing", "xy-wing", "hidden-triple"]`.
+`LowerTierSolverKeys()` returns Easy + Medium keys.
 
-**Expert difficulty:** `SolverKeys: ["swordfish", "hidden-subset"]`.
-`LowerTierSolverKeys()` returns `["naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"]`
-(derived from Easy + Medium + Hard tiers in registry/tierOrder).
-Allowed set = all seven solvers. The generator produces Expert puzzles that genuinely
-require at least one expert technique — lower-tier techniques alone cannot solve them.
+**Expert:** `SolverKeys: ["swordfish", "naked-quad", "simple-coloring", "hidden-quad"]`.
+`LowerTierSolverKeys()` returns Easy + Medium + Hard keys.
 
-**Evil difficulty:** `SolverKeys: ["xy-wing", "simple-coloring"]`.
-`LowerTierSolverKeys()` returns `["naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"]`
-(derived from Easy + Medium + Hard + Expert tiers in registry/tierOrder).
-Allowed set = all nine solvers. The generator produces Evil puzzles that genuinely
-require at least one evil technique — lower-tier techniques alone cannot solve them.
-
-All five difficulty levels are now fully strategy-based with technique requirements.
+**Evil:** `SolverKeys: ["jellyfish"]`.
+`LowerTierSolverKeys()` returns Easy + Medium + Hard + Expert keys.
 
 ## Scoring System
 
@@ -134,17 +127,11 @@ score = Σ(weight[technique] × times_used)
 The `ScorePuzzle(store, moves)` function in `solver/scoring.go` computes the score
 from a list of moves. Moves from unknown techniques (e.g., backtracker) contribute zero.
 
-### Solver Weights
+### Configuration
 
 All tunable parameters — solver weights and clue-count ranges — are centralized in
 `solver/config.go`. This is the single file to update when tuning parameters or
-calibrating the difficulty system. Each solver constructor references these constants
-rather than declaring weights inline.
-
-Weights are based on HoDoKu's established values, ranging from low (naked-single)
-to high (xy-wing). Combined solvers (naked-subset, hidden-subset) use representative
-midpoints; when split into per-size solvers (Phase 3.5), each variant will get its
-own weight matching its specific human difficulty.
+calibrating the difficulty system.
 
 ### Future: Score-Based Difficulty Ranges
 

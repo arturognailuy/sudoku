@@ -9,7 +9,7 @@ import "github.com/gnailuy/sudoku/solver"
 // all solvers from lower tiers, derived from tierRegistry/tierOrder.
 // For example:
 //   - Easy:   SolverKeys = [naked-single, hidden-single]
-//   - Medium: SolverKeys = [naked-subset, pointing-pair]
+//   - Medium: SolverKeys = [naked-pair, naked-triple, pointing-pair, hidden-pair]
 //     Allowed = Easy.SolverKeys + Medium.SolverKeys
 //
 // During generation, the generator uses AllowedSolverKeys (the
@@ -36,10 +36,10 @@ var tierOrder = []string{"easy", "medium", "hard", "expert", "evil"}
 // and this map.
 var tierRegistry = map[string][]string{
 	"easy":   {"naked-single", "hidden-single"},
-	"medium": {"naked-subset", "pointing-pair"},
-	"hard":   {"x-wing"},
-	"expert": {"swordfish", "hidden-subset"},
-	"evil":   {"xy-wing", "simple-coloring"},
+	"medium": {"naked-pair", "naked-triple", "pointing-pair", "hidden-pair"},
+	"hard":   {"x-wing", "xy-wing", "hidden-triple"},
+	"expert": {"swordfish", "naked-quad", "simple-coloring", "hidden-quad"},
+	"evil":   {"jellyfish"},
 }
 
 // lowerTierSolverKeys returns the cumulative solver keys from all tiers
@@ -108,8 +108,9 @@ func NewEasyDifficulty() Difficulty {
 }
 
 // NewMediumDifficulty creates the medium difficulty level.
-// Medium puzzles require at least one intermediate technique (naked-subset
-// or pointing-pair) — basic techniques alone won't suffice.
+// Medium puzzles require at least one intermediate technique (naked-pair,
+// naked-triple, pointing-pair, or hidden-pair) — basic techniques alone
+// won't suffice.
 func NewMediumDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues: solver.MediumMinClues,
@@ -119,8 +120,8 @@ func NewMediumDifficulty() Difficulty {
 }
 
 // NewHardDifficulty creates the hard difficulty level.
-// Hard puzzles require at least one advanced technique (X-Wing) —
-// basic and intermediate techniques alone won't suffice.
+// Hard puzzles require at least one hard technique (X-Wing, XY-Wing, or
+// hidden-triple) — medium-tier techniques alone won't suffice.
 func NewHardDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues: solver.HardMinClues,
@@ -130,8 +131,9 @@ func NewHardDifficulty() Difficulty {
 }
 
 // NewExpertDifficulty creates the expert difficulty level.
-// Expert puzzles require at least one expert technique (swordfish or
-// hidden-subset) — lower-tier techniques alone won't suffice.
+// Expert puzzles require at least one expert technique (swordfish,
+// naked-quad, simple-coloring, or hidden-quad) — hard-tier techniques
+// alone won't suffice.
 func NewExpertDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues: solver.ExpertMinClues,
@@ -141,8 +143,8 @@ func NewExpertDifficulty() Difficulty {
 }
 
 // NewEvilDifficulty creates the evil difficulty level.
-// Evil puzzles require at least one evil-tier technique (XY-Wing or
-// Simple Coloring) — expert-tier techniques alone won't suffice.
+// Evil puzzles require at least one evil technique (jellyfish) —
+// expert-tier techniques alone won't suffice.
 func NewEvilDifficulty() Difficulty {
 	return Difficulty{
 		MinimumClues: solver.EvilMinClues,

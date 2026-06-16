@@ -10,7 +10,10 @@ import (
 // These integration tests verify the solver pipeline end-to-end using real
 // puzzles. They cover:
 // - Basic tier: puzzles solvable by naked/hidden singles only
-// - Intermediate tier: puzzles that require naked-subset or pointing-pair
+// - Medium tier: puzzles that require naked-pair/triple or pointing-pair
+// - Hard tier: puzzles that require X-Wing, XY-Wing, or hidden-triple
+// - Expert tier: puzzles that require swordfish, naked-quad, simple-coloring, or hidden-quad
+// - Evil tier: puzzles that require jellyfish
 // - Solver ordering: simpler techniques fire before complex ones
 // - Hint pipeline: strategy solvers produce Move structs with technique metadata
 
@@ -85,13 +88,24 @@ func countPlacements(moves []*solver.Move) int {
 }
 
 // ---------------------------------------------------------------------------
+// Solver key definitions (matching the new tier registry)
+// ---------------------------------------------------------------------------
+
+var (
+	basicKeys  = []string{"naked-single", "hidden-single"}
+	mediumKeys = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair"}
+	hardKeys   = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple"}
+	expertKeys = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "swordfish", "naked-quad", "simple-coloring", "hidden-quad"}
+)
+
+// ---------------------------------------------------------------------------
 // Test puzzles
 // ---------------------------------------------------------------------------
 
 // A classic Easy puzzle — solvable entirely with naked singles and hidden singles.
 const easyPuzzle = "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
 
-// Medium puzzle requiring naked-subset technique.
+// Medium puzzle requiring naked-pair (formerly naked-subset) technique.
 // At step 12, a naked pair {2,6} in box 5 eliminates candidates, unblocking the rest.
 const nakedSubsetPuzzle = ".5..4....4.1.....3.8753.1.48............8..7..7...1.497.39....5..84.2937945....2."
 
@@ -105,28 +119,54 @@ const pointingPairPuzzle = "9.574....62..5..4.7...6...5....136.9..9....5.562...8
 const xWingPuzzle = "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1.....7....9....97...3..."
 
 // Expert puzzle requiring swordfish technique.
-// Provided by Yuliang (sourced from the internet for reliable testing).
+// Sourced from the internet for reliable testing.
 // Contains a Swordfish pattern that eliminates candidates and enables
 // subsequent techniques to complete the puzzle.
 const swordfishPuzzle = "3...4.........7.48......9.7.1...3.8.4...5..2..5...8.7.5..3............9.6.9.253.."
 
-// Expert puzzle requiring hidden-subset technique.
-// Provided by Yuliang (sourced from the internet for reliable testing).
-// Fully solvable by our 7 strategy solvers alone (55 moves, 0 empty);
-// genuinely requires hidden-subset — without it, only 10 moves are possible.
+// Expert puzzle requiring hidden-subset technique (now hidden-pair/triple/quad).
+// Sourced from the internet for reliable testing.
+// Fully solvable by strategy solvers alone; genuinely requires hidden-subset
+// techniques — without them, only a few moves are possible.
 const hiddenSubsetPuzzle = ".........231.9.....65..31....8924...1...5...6...1367....93..57.....1.843........."
 
-// Evil puzzle requiring xy-wing technique.
-// Expert solvers get stuck at 33 placements. With all 9 solvers including
-// xy-wing, the puzzle is fully solvable (56 placements, 0 empty).
-// Cannot be solved without xy-wing even with simple-coloring available.
+// Expert puzzle requiring xy-wing technique (re-tiered from Evil to Hard,
+// but this particular puzzle also needs expert-tier techniques to solve fully).
+// Hard-tier solvers make progress but get stuck. Expert-tier completes it.
 const xyWingPuzzle = ".23.......4..9.63..7.8.2.1..581..9....2....5.4....93..9..6.5.....7.8...6........."
 
-// Evil puzzle requiring simple-coloring technique.
-// Expert solvers get stuck at 27 placements. With all 9 solvers including
-// simple-coloring, the puzzle is fully solvable (57 placements, 0 empty).
-// Cannot be solved without simple-coloring even with xy-wing available.
+// Expert puzzle requiring simple-coloring technique (re-tiered from Evil to Expert).
+// Hard solvers get stuck. With expert-tier solvers including
+// simple-coloring, the puzzle is fully solvable.
 const simpleColoringPuzzle = "12...6.8.7.8............3..2...8..3..8..2...5...9....7....93...31.57.....5...89.."
+
+// ---------------------------------------------------------------------------
+// Additional test puzzles (sourced from the internet, verified 2026-06-16)
+// ---------------------------------------------------------------------------
+
+// Hard puzzle requiring xy-wing.
+// 39 givens, 42 blanks. Requires xy-wing (2 uses), hidden-pair, naked-triple.
+// Solvable with hard-tier solvers.
+const hardXYWingPuzzle = ".......4..93.....8.4.7.....1.9.6..8..8.9....6465..8..3276391854918654237..48....9"
+
+// Hard puzzle requiring hidden-pair.
+// 28 givens, 53 blanks. Requires hidden-pair (3 uses), hidden-triple, x-wing.
+// Solvable with hard-tier solvers.
+const hardHiddenPairPuzzle = ".5.......1...39.4...67.....6..1...9...39..8.1.19.8.....6.8.2..7...6.7.1..4.3.52.."
+
+// Expert puzzle requiring hidden-quad AND simple-coloring.
+// 35 givens, 46 blanks. Both techniques independently required — without
+// either one, the puzzle cannot be solved.
+const expertHiddenQuadColoringPuzzle = ".6.58...99.124...8.8.9.7..4..9658432.58..2..62.6..9.......95..36938.4............"
+
+// Expert puzzle requiring hidden-quad, simple-coloring AND xy-wing.
+// 52 givens, 29 blanks. All three expert-level techniques independently required.
+const expertTripleRequirementPuzzle = "...72.5.9.27....64.9.4.8271.7.845..6........736..72..5456293718738514692219687453"
+
+// Evil puzzle requiring jellyfish AND xy-wing.
+// 29 givens, 52 blanks. Expert-tier solvers make 0 placements without
+// jellyfish. Outstanding jellyfish test — the technique fires at step 1.
+const evilJellyfishPuzzle = "..........17.2.8.3..3...2.4.84.537.6..........72.1...5.48.715.2.35.4.6.1........."
 
 // ---------------------------------------------------------------------------
 // Basic tier tests
@@ -136,7 +176,6 @@ const simpleColoringPuzzle = "12...6.8.7.8............3..2...8..3..8..2...5...9.
 // solved entirely by basic techniques (naked singles + hidden singles).
 func TestIntegration_EasySolvableByBasicOnly(t *testing.T) {
 	store := solver.NewStore()
-	basicKeys := []string{"naked-single", "hidden-single"}
 
 	board := boardFromString(t, easyPuzzle)
 	moves := solveWithStrategies(t, &board, store, basicKeys)
@@ -156,43 +195,39 @@ func TestIntegration_EasySolvableByBasicOnly(t *testing.T) {
 		len(moves), techniqueCount(moves, "naked-single"), techniqueCount(moves, "hidden-single"))
 }
 
-// TestIntegration_EasyDoesNotRequireIntermediate verifies that easy puzzles
-// don't need intermediate solvers — adding them doesn't change the result.
-func TestIntegration_EasyDoesNotRequireIntermediate(t *testing.T) {
+// TestIntegration_EasyDoesNotRequireMedium verifies that easy puzzles
+// don't need medium solvers — adding them doesn't change the result.
+func TestIntegration_EasyDoesNotRequireMedium(t *testing.T) {
 	store := solver.NewStore()
-	basicKeys := []string{"naked-single", "hidden-single"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}
 
 	boardBasic := boardFromString(t, easyPuzzle)
 	movesBasic := solveWithStrategies(t, &boardBasic, store, basicKeys)
 
 	boardAll := boardFromString(t, easyPuzzle)
-	movesAll := solveWithStrategies(t, &boardAll, store, allKeys)
+	movesAll := solveWithStrategies(t, &boardAll, store, mediumKeys)
 
 	if len(movesBasic) != len(movesAll) {
-		t.Errorf("Expected same move count with or without intermediate solvers: basic=%d, all=%d",
+		t.Errorf("Expected same move count with or without medium solvers: basic=%d, all=%d",
 			len(movesBasic), len(movesAll))
 	}
 
-	// No intermediate techniques should have fired.
+	// No medium techniques should have fired.
 	for _, m := range movesAll {
-		if m.Technique == "naked-subset" || m.Technique == "pointing-pair" {
-			t.Errorf("Intermediate technique %q fired on easy puzzle", m.Technique)
+		if m.Technique == "naked-pair" || m.Technique == "naked-triple" || m.Technique == "pointing-pair" || m.Technique == "hidden-pair" {
+			t.Errorf("Medium technique %q fired on easy puzzle", m.Technique)
 		}
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Intermediate tier tests
+// Medium tier tests
 // ---------------------------------------------------------------------------
 
-// TestIntegration_NakedSubsetRequired verifies that a real puzzle requires the
-// naked-subset solver. Basic solvers alone cannot solve it, but basic +
-// intermediate solvers can.
-func TestIntegration_NakedSubsetRequired(t *testing.T) {
+// TestIntegration_NakedPairRequired verifies that a real puzzle requires the
+// naked-pair solver. Basic solvers alone cannot solve it, but basic +
+// medium solvers can.
+func TestIntegration_NakedPairRequired(t *testing.T) {
 	store := solver.NewStore()
-	basicKeys := []string{"naked-single", "hidden-single"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}
 
 	// Basic solvers alone cannot solve this puzzle.
 	basicBoard := boardFromString(t, nakedSubsetPuzzle)
@@ -201,17 +236,17 @@ func TestIntegration_NakedSubsetRequired(t *testing.T) {
 		t.Fatal("Expected puzzle to be unsolvable by basic techniques alone")
 	}
 
-	// Full intermediate solvers can solve it.
+	// Full medium solvers can solve it.
 	fullBoard := boardFromString(t, nakedSubsetPuzzle)
-	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	moves := solveWithStrategies(t, &fullBoard, store, mediumKeys)
 	if !fullBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be solvable with intermediate solvers")
+		t.Fatal("Expected puzzle to be solvable with medium solvers")
 	}
 
-	// Verify naked-subset technique was used.
-	nsCount := techniqueCount(moves, "naked-subset")
-	if nsCount == 0 {
-		t.Error("Expected at least one naked-subset move")
+	// Verify naked-pair technique was used.
+	npCount := techniqueCount(moves, "naked-pair")
+	if npCount == 0 {
+		t.Error("Expected at least one naked-pair move")
 	}
 
 	// No backtracker should be needed.
@@ -219,16 +254,14 @@ func TestIntegration_NakedSubsetRequired(t *testing.T) {
 		t.Errorf("Expected zero backtracker moves, got %d", bc)
 	}
 
-	t.Logf("Solved in %d moves, %d naked-subset", len(moves), nsCount)
+	t.Logf("Solved in %d moves, %d naked-pair", len(moves), npCount)
 }
 
 // TestIntegration_PointingPairRequired verifies that a real puzzle requires
-// the pointing-pair solver. Without it, the puzzle cannot be solved by basic
-// techniques plus naked-subset alone.
+// the pointing-pair solver.
 func TestIntegration_PointingPairRequired(t *testing.T) {
 	store := solver.NewStore()
-	noPointingKeys := []string{"naked-single", "hidden-single", "naked-subset"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}
+	noPointingKeys := []string{"naked-single", "hidden-single", "naked-pair", "naked-triple"}
 
 	// Without pointing-pair, the puzzle cannot be solved.
 	noBoard := boardFromString(t, pointingPairPuzzle)
@@ -239,9 +272,9 @@ func TestIntegration_PointingPairRequired(t *testing.T) {
 
 	// With pointing-pair, the puzzle can be solved.
 	fullBoard := boardFromString(t, pointingPairPuzzle)
-	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	moves := solveWithStrategies(t, &fullBoard, store, mediumKeys)
 	if !fullBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be solvable with all intermediate solvers")
+		t.Fatal("Expected puzzle to be solvable with all medium solvers")
 	}
 
 	// Verify pointing-pair technique was used.
@@ -259,29 +292,26 @@ func TestIntegration_PointingPairRequired(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Advanced tier tests
+// Hard tier tests
 // ---------------------------------------------------------------------------
 
 // TestIntegration_XWingRequired verifies that a real puzzle requires the
-// x-wing solver. Without it, intermediate solvers alone cannot solve it,
-// but adding x-wing solves it completely.
+// x-wing solver.
 func TestIntegration_XWingRequired(t *testing.T) {
 	store := solver.NewStore()
-	intermediateKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
 
-	// Intermediate solvers alone cannot solve this puzzle.
-	intBoard := boardFromString(t, xWingPuzzle)
-	solveWithStrategies(t, &intBoard, store, intermediateKeys)
-	if intBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be unsolvable by intermediate techniques alone")
+	// Medium solvers alone cannot solve this puzzle.
+	medBoard := boardFromString(t, xWingPuzzle)
+	solveWithStrategies(t, &medBoard, store, mediumKeys)
+	if medBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
 	}
 
-	// With x-wing added, the puzzle can be solved completely.
+	// With hard solvers added, the puzzle can be solved completely.
 	fullBoard := boardFromString(t, xWingPuzzle)
-	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	moves := solveWithStrategies(t, &fullBoard, store, hardKeys)
 	if !fullBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be solvable with x-wing solver")
+		t.Fatal("Expected puzzle to be solvable with hard solvers")
 	}
 
 	// Verify x-wing technique was used.
@@ -298,17 +328,54 @@ func TestIntegration_XWingRequired(t *testing.T) {
 	t.Logf("Solved in %d moves, %d x-wing", len(moves), xwCount)
 }
 
+// TestIntegration_XYWingRequired verifies that a real puzzle requires the
+// xy-wing solver (now in Hard tier). This particular puzzle also needs
+// expert-tier techniques to fully solve.
+func TestIntegration_XYWingRequired(t *testing.T) {
+	store := solver.NewStore()
+	// Medium solvers alone cannot solve this puzzle.
+	medBoard := boardFromString(t, xyWingPuzzle)
+	solveWithStrategies(t, &medBoard, store, mediumKeys)
+	if medBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
+	}
+
+	// Hard-tier solvers make progress but can't finish it.
+	hardBoard := boardFromString(t, xyWingPuzzle)
+	solveWithStrategies(t, &hardBoard, store, hardKeys)
+	if hardBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by hard techniques alone")
+	}
+
+	// With expert solvers, the puzzle can be solved completely.
+	fullBoard := boardFromString(t, xyWingPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with expert solvers")
+	}
+
+	// Verify xy-wing technique was used.
+	xywCount := techniqueCount(moves, "xy-wing")
+	if xywCount == 0 {
+		t.Error("Expected at least one xy-wing move")
+	}
+
+	// No backtracker should be needed.
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d xy-wing", len(moves), xywCount)
+}
+
 // ---------------------------------------------------------------------------
 // Expert tier tests
 // ---------------------------------------------------------------------------
 
 // TestIntegration_SwordfishRequired verifies that a real puzzle requires the
-// swordfish solver. Without it, hard-tier solvers alone cannot solve it,
-// but adding expert solvers solves it completely.
+// swordfish solver.
 func TestIntegration_SwordfishRequired(t *testing.T) {
 	store := solver.NewStore()
-	hardKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
 
 	// Hard-tier solvers alone cannot solve this puzzle.
 	hardBoard := boardFromString(t, swordfishPuzzle)
@@ -319,7 +386,7 @@ func TestIntegration_SwordfishRequired(t *testing.T) {
 
 	// With expert solvers added, the puzzle can be solved completely.
 	fullBoard := boardFromString(t, swordfishPuzzle)
-	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
 	if !fullBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be solvable with expert solvers")
 	}
@@ -338,41 +405,42 @@ func TestIntegration_SwordfishRequired(t *testing.T) {
 	t.Logf("Solved in %d moves, %d swordfish", len(moves), sfCount)
 }
 
-// TestIntegration_HiddenSubsetRequired verifies that a real puzzle requires the
-// hidden-subset solver. Without it, hard-tier solvers alone get stuck after very
-// few moves. With all expert solvers, the puzzle is fully solvable.
+// TestIntegration_HiddenSubsetRequired verifies that a real puzzle requires
+// hidden-subset techniques (hidden-pair/triple/quad). Without them, medium-tier
+// solvers alone get stuck.
 func TestIntegration_HiddenSubsetRequired(t *testing.T) {
 	store := solver.NewStore()
-	hardKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
 
-	// Hard-tier solvers alone cannot solve this puzzle.
-	hardBoard := boardFromString(t, hiddenSubsetPuzzle)
-	hardMoves := solveWithStrategies(t, &hardBoard, store, hardKeys)
-	if hardBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be unsolvable by hard-tier techniques alone")
+	// Medium-tier solvers alone cannot solve this puzzle.
+	medBoard := boardFromString(t, hiddenSubsetPuzzle)
+	medMoves := solveWithStrategies(t, &medBoard, store, mediumKeys)
+	if medBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by medium-tier techniques alone")
 	}
 
-	// With expert solvers, the puzzle is fully solvable.
+	// With hard-tier or expert-tier solvers, the puzzle is fully solvable.
 	fullBoard := boardFromString(t, hiddenSubsetPuzzle)
-	fullMoves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	fullMoves := solveWithStrategies(t, &fullBoard, store, expertKeys)
 
 	if !fullBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be fully solvable with expert techniques")
 	}
 
-	// Verify hidden-subset technique was used.
-	hsCount := techniqueCount(fullMoves, "hidden-subset")
-	if hsCount == 0 {
-		t.Error("Expected at least one hidden-subset move")
+	// Verify at least one hidden-pair, hidden-triple, or hidden-quad technique was used.
+	hpCount := techniqueCount(fullMoves, "hidden-pair")
+	htCount := techniqueCount(fullMoves, "hidden-triple")
+	hqCount := techniqueCount(fullMoves, "hidden-quad")
+	totalHidden := hpCount + htCount + hqCount
+	if totalHidden == 0 {
+		t.Error("Expected at least one hidden-pair/triple/quad move")
 	}
 
-	// Expert solvers should make more progress than hard-tier alone.
-	hardPlacements := countPlacements(hardMoves)
+	// Expert solvers should make more progress than medium-tier alone.
+	medPlacements := countPlacements(medMoves)
 	fullPlacements := countPlacements(fullMoves)
-	if fullPlacements <= hardPlacements {
-		t.Errorf("Expected expert solvers to place more values (%d) than hard-tier alone (%d)",
-			fullPlacements, hardPlacements)
+	if fullPlacements <= medPlacements {
+		t.Errorf("Expected expert solvers to place more values (%d) than medium-tier alone (%d)",
+			fullPlacements, medPlacements)
 	}
 
 	// No backtracker should be involved.
@@ -380,57 +448,15 @@ func TestIntegration_HiddenSubsetRequired(t *testing.T) {
 		t.Errorf("Expected zero backtracker moves, got %d", bc)
 	}
 
-	t.Logf("Hard-tier: %d placements, Expert: %d placements (%d hidden-subset)",
-		hardPlacements, fullPlacements, hsCount)
-}
-
-// ---------------------------------------------------------------------------
-// Evil tier tests
-// ---------------------------------------------------------------------------
-
-// TestIntegration_XYWingRequired verifies that a real puzzle requires the
-// xy-wing solver. Without it, expert-tier solvers alone cannot solve it,
-// but adding evil-tier solvers solves it completely.
-func TestIntegration_XYWingRequired(t *testing.T) {
-	store := solver.NewStore()
-	expertKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}
-
-	// Expert-tier solvers alone cannot solve this puzzle.
-	expertBoard := boardFromString(t, xyWingPuzzle)
-	solveWithStrategies(t, &expertBoard, store, expertKeys)
-	if expertBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be unsolvable by expert-tier techniques alone")
-	}
-
-	// With evil-tier solvers added, the puzzle can be solved completely.
-	fullBoard := boardFromString(t, xyWingPuzzle)
-	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
-	if !fullBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be solvable with evil-tier solvers")
-	}
-
-	// Verify xy-wing technique was used.
-	xywCount := techniqueCount(moves, "xy-wing")
-	if xywCount == 0 {
-		t.Error("Expected at least one xy-wing move")
-	}
-
-	// No backtracker should be needed.
-	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
-		t.Errorf("Expected zero backtracker moves, got %d", bc)
-	}
-
-	t.Logf("Solved in %d moves, %d xy-wing", len(moves), xywCount)
+	t.Logf("Medium-tier: %d placements, Expert: %d placements (hidden-pair=%d, hidden-triple=%d, hidden-quad=%d)",
+		medPlacements, fullPlacements, hpCount, htCount, hqCount)
 }
 
 // TestIntegration_SimpleColoringRequired verifies that a real puzzle requires
-// the simple-coloring solver. Without it, expert-tier solvers plus xy-wing
-// alone cannot solve it, but adding simple-coloring solves it completely.
+// the simple-coloring solver (now in Expert tier).
 func TestIntegration_SimpleColoringRequired(t *testing.T) {
 	store := solver.NewStore()
-	noColorKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing"}
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}
+	noColorKeys := []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "swordfish", "naked-quad", "hidden-quad"}
 
 	// Without simple-coloring, the puzzle cannot be solved.
 	noColorBoard := boardFromString(t, simpleColoringPuzzle)
@@ -441,9 +467,9 @@ func TestIntegration_SimpleColoringRequired(t *testing.T) {
 
 	// With simple-coloring, the puzzle can be solved.
 	fullBoard := boardFromString(t, simpleColoringPuzzle)
-	moves := solveWithStrategies(t, &fullBoard, store, allKeys)
+	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
 	if !fullBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be solvable with all evil-tier solvers")
+		t.Fatal("Expected puzzle to be solvable with all expert-tier solvers")
 	}
 
 	// Verify simple-coloring technique was used.
@@ -461,12 +487,209 @@ func TestIntegration_SimpleColoringRequired(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Hard-tier puzzle tests (internet-sourced)
+// ---------------------------------------------------------------------------
+
+// TestIntegration_HardXYWingPuzzle verifies the hard xy-wing puzzle requires
+// xy-wing. Medium solvers alone cannot solve it; hard solvers can.
+func TestIntegration_HardXYWingPuzzle(t *testing.T) {
+	store := solver.NewStore()
+
+	// Medium solvers alone cannot solve this puzzle.
+	medBoard := boardFromString(t, hardXYWingPuzzle)
+	solveWithStrategies(t, &medBoard, store, mediumKeys)
+	if medBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
+	}
+
+	// Hard-tier solvers can solve it completely.
+	fullBoard := boardFromString(t, hardXYWingPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, hardKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with hard solvers")
+	}
+
+	xywCount := techniqueCount(moves, "xy-wing")
+	if xywCount == 0 {
+		t.Error("Expected at least one xy-wing move")
+	}
+
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d xy-wing", len(moves), xywCount)
+}
+
+// TestIntegration_HardHiddenPairPuzzle verifies the hard hidden-pair puzzle
+// requires hidden-pair. Medium solvers alone cannot solve it; hard solvers can.
+func TestIntegration_HardHiddenPairPuzzle(t *testing.T) {
+	store := solver.NewStore()
+
+	// Medium solvers alone cannot solve this puzzle.
+	medBoard := boardFromString(t, hardHiddenPairPuzzle)
+	solveWithStrategies(t, &medBoard, store, mediumKeys)
+	if medBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
+	}
+
+	// Hard-tier solvers can solve it completely.
+	fullBoard := boardFromString(t, hardHiddenPairPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, hardKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with hard solvers")
+	}
+
+	hpCount := techniqueCount(moves, "hidden-pair")
+	if hpCount == 0 {
+		t.Error("Expected at least one hidden-pair move")
+	}
+
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d hidden-pair", len(moves), hpCount)
+}
+
+// ---------------------------------------------------------------------------
+// Expert-tier puzzle tests (internet-sourced)
+// ---------------------------------------------------------------------------
+
+// TestIntegration_ExpertHiddenQuadColoringPuzzle verifies the expert puzzle
+// requires both hidden-quad AND simple-coloring. Hard solvers get stuck;
+// expert solvers solve it.
+func TestIntegration_ExpertHiddenQuadColoringPuzzle(t *testing.T) {
+	store := solver.NewStore()
+
+	// Hard-tier solvers alone cannot solve this puzzle.
+	hardBoard := boardFromString(t, expertHiddenQuadColoringPuzzle)
+	solveWithStrategies(t, &hardBoard, store, hardKeys)
+	if hardBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by hard techniques alone")
+	}
+
+	// Expert-tier solvers can solve it completely.
+	fullBoard := boardFromString(t, expertHiddenQuadColoringPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with expert solvers")
+	}
+
+	hqCount := techniqueCount(moves, "hidden-quad")
+	scCount := techniqueCount(moves, "simple-coloring")
+	if hqCount == 0 {
+		t.Error("Expected at least one hidden-quad move")
+	}
+	if scCount == 0 {
+		t.Error("Expected at least one simple-coloring move")
+	}
+
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d hidden-quad, %d simple-coloring", len(moves), hqCount, scCount)
+}
+
+// TestIntegration_ExpertTripleRequirementPuzzle verifies the expert puzzle
+// requires hidden-quad, simple-coloring AND xy-wing. Hard solvers get stuck;
+// expert solvers solve it.
+func TestIntegration_ExpertTripleRequirementPuzzle(t *testing.T) {
+	store := solver.NewStore()
+
+	// Hard-tier solvers alone cannot solve this puzzle.
+	hardBoard := boardFromString(t, expertTripleRequirementPuzzle)
+	solveWithStrategies(t, &hardBoard, store, hardKeys)
+	if hardBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by hard techniques alone")
+	}
+
+	// Expert-tier solvers can solve it completely.
+	fullBoard := boardFromString(t, expertTripleRequirementPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with expert solvers")
+	}
+
+	hqCount := techniqueCount(moves, "hidden-quad")
+	scCount := techniqueCount(moves, "simple-coloring")
+	xywCount := techniqueCount(moves, "xy-wing")
+	if hqCount == 0 {
+		t.Error("Expected at least one hidden-quad move")
+	}
+	if scCount == 0 {
+		t.Error("Expected at least one simple-coloring move")
+	}
+	if xywCount == 0 {
+		t.Error("Expected at least one xy-wing move")
+	}
+
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d hidden-quad, %d simple-coloring, %d xy-wing",
+		len(moves), hqCount, scCount, xywCount)
+}
+
+// ---------------------------------------------------------------------------
+// Evil-tier puzzle tests (internet-sourced)
+// ---------------------------------------------------------------------------
+
+// evilKeys includes all 14 strategy solvers (expert + jellyfish).
+var evilKeys = []string{
+	"naked-single", "hidden-single",
+	"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
+	"x-wing", "xy-wing", "hidden-triple",
+	"swordfish", "naked-quad", "simple-coloring", "hidden-quad",
+	"jellyfish",
+}
+
+// TestIntegration_EvilJellyfishPuzzle verifies the evil jellyfish puzzle
+// requires jellyfish. Expert-tier solvers make zero placements; with
+// jellyfish the puzzle is fully solvable.
+func TestIntegration_EvilJellyfishPuzzle(t *testing.T) {
+	store := solver.NewStore()
+
+	// Expert-tier solvers alone cannot solve this puzzle.
+	expertBoard := boardFromString(t, evilJellyfishPuzzle)
+	expertMoves := solveWithStrategies(t, &expertBoard, store, expertKeys)
+	if expertBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by expert techniques alone")
+	}
+	expertPlacements := countPlacements(expertMoves)
+	if expertPlacements != 0 {
+		t.Errorf("Expected expert-tier solvers to make 0 placements, got %d", expertPlacements)
+	}
+
+	// With jellyfish (evil tier), the puzzle can be solved completely.
+	fullBoard := boardFromString(t, evilJellyfishPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, evilKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with evil-tier solvers")
+	}
+
+	jfCount := techniqueCount(moves, "jellyfish")
+	if jfCount == 0 {
+		t.Error("Expected at least one jellyfish move")
+	}
+
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Expert-tier: %d placements. Evil-tier: solved in %d moves, %d jellyfish",
+		expertPlacements, len(moves), jfCount)
+}
+
+// ---------------------------------------------------------------------------
 // Hint pipeline tests
 // ---------------------------------------------------------------------------
 
 // TestIntegration_HintsPreferStrategySolvers simulates what Game.Hint() does:
 // try strategy solvers in order, then fall back to the backtracker. Verifies
-// that strategy solvers handle the first N hints on easy and intermediate puzzles.
+// that strategy solvers handle the first N hints on each difficulty's puzzles.
 func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -474,13 +697,18 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 		keys   []string
 		hints  int
 	}{
-		{"EasyHints", easyPuzzle, []string{"naked-single", "hidden-single"}, 10},
-		{"MediumHints", nakedSubsetPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}, 10},
-		{"HardHints", xWingPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing"}, 10},
-		{"ExpertSwordfishHints", swordfishPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}, 10},
-		{"ExpertHiddenSubsetHints", hiddenSubsetPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset"}, 10},
-		{"EvilXYWingHints", xyWingPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}, 10},
-		{"EvilSimpleColoringHints", simpleColoringPuzzle, []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}, 10},
+		{"EasyHints", easyPuzzle, basicKeys, 10},
+		{"MediumHints", nakedSubsetPuzzle, mediumKeys, 10},
+		{"HardXWingHints", xWingPuzzle, hardKeys, 10},
+		{"HardXYWingHints", xyWingPuzzle, hardKeys, 10},
+		{"ExpertSwordfishHints", swordfishPuzzle, expertKeys, 10},
+		{"ExpertHiddenSubsetHints", hiddenSubsetPuzzle, expertKeys, 10},
+		{"ExpertSimpleColoringHints", simpleColoringPuzzle, expertKeys, 10},
+		{"HardXYWingHints", hardXYWingPuzzle, hardKeys, 10},
+		{"HardHiddenPairHints", hardHiddenPairPuzzle, hardKeys, 10},
+		{"ExpertHiddenQuadColoringHints", expertHiddenQuadColoringPuzzle, expertKeys, 10},
+		{"ExpertTripleRequirementHints", expertTripleRequirementPuzzle, expertKeys, 10},
+		{"EvilJellyfishHints", evilJellyfishPuzzle, evilKeys, 10},
 	}
 
 	for _, tt := range tests {
@@ -533,10 +761,9 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 // strategy solver has both Technique and Reason populated.
 func TestIntegration_MoveHasTechniqueAndReason(t *testing.T) {
 	store := solver.NewStore()
-	allKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair"}
 	board := boardFromString(t, nakedSubsetPuzzle)
 
-	moves := solveWithStrategies(t, &board, store, allKeys)
+	moves := solveWithStrategies(t, &board, store, mediumKeys)
 	for i, m := range moves {
 		if m.Technique == "" {
 			t.Errorf("Move %d has empty Technique", i)
@@ -555,14 +782,11 @@ func TestIntegration_MoveHasTechniqueAndReason(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 // TestIntegration_SolverOrderingMatters verifies that solver ordering affects
-// which technique fires first. Naked singles are simpler and should fire
-// before hidden singles on cells where both could apply.
+// which technique fires first.
 func TestIntegration_SolverOrderingMatters(t *testing.T) {
 	store := solver.NewStore()
 	board := boardFromString(t, easyPuzzle)
 
-	// With naked-single first, the first move should be a naked single
-	// (assuming there's a naked single available).
 	ns := store.GetStrategySolverByKey("naked-single")
 	move := ns.Apply(&board)
 	if move != nil && move.Technique != "naked-single" {
@@ -578,7 +802,13 @@ func TestIntegration_SolverOrderingMatters(t *testing.T) {
 // are registered in the store.
 func TestIntegration_AllSolversRegistered(t *testing.T) {
 	store := solver.NewStore()
-	expected := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing", "simple-coloring"}
+	expected := []string{
+		"naked-single", "hidden-single",
+		"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
+		"x-wing", "xy-wing", "hidden-triple",
+		"swordfish", "naked-quad", "simple-coloring", "hidden-quad",
+		"jellyfish",
+	}
 
 	for _, key := range expected {
 		s := store.GetStrategySolverByKey(key)
@@ -593,14 +823,19 @@ func TestIntegration_AllSolversRegistered(t *testing.T) {
 func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
 	store := solver.NewStore()
 	puzzles := map[string]string{
-		"easy":             easyPuzzle,
-		"naked-subset":     nakedSubsetPuzzle,
-		"pointing-pair":    pointingPairPuzzle,
-		"x-wing":           xWingPuzzle,
-		"swordfish":        swordfishPuzzle,
-		"hidden-subset":    hiddenSubsetPuzzle,
-		"xy-wing":          xyWingPuzzle,
-		"simple-coloring":  simpleColoringPuzzle,
+		"easy":                       easyPuzzle,
+		"naked-pair":                 nakedSubsetPuzzle,
+		"pointing-pair":              pointingPairPuzzle,
+		"x-wing":                     xWingPuzzle,
+		"swordfish":                  swordfishPuzzle,
+		"hidden-subset":              hiddenSubsetPuzzle,
+		"xy-wing":                    xyWingPuzzle,
+		"simple-coloring":            simpleColoringPuzzle,
+		"hard-xy-wing":               hardXYWingPuzzle,
+		"hard-hidden-pair":           hardHiddenPairPuzzle,
+		"expert-hidden-quad-color":   expertHiddenQuadColoringPuzzle,
+		"expert-triple-requirement":  expertTripleRequirementPuzzle,
+		"evil-jellyfish":             evilJellyfishPuzzle,
 	}
 
 	for name, p := range puzzles {

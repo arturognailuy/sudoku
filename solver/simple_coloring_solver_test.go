@@ -8,23 +8,30 @@ import (
 )
 
 // TestSimpleColoringSolver_FindsPattern tests that the solver detects a simple
-// coloring pattern on a real evil-tier puzzle.
+// coloring pattern on a real puzzle.
 func TestSimpleColoringSolver_FindsPattern(t *testing.T) {
 	s := solver.NewSimpleColoringSolver()
 
 	// This puzzle requires simple-coloring to solve completely. Apply lower-
-	// tier solvers (including xy-wing) first to reach a state where coloring
-	// is needed.
+	// tier solvers first to reach a state where coloring is needed.
 	puzzle := "12...6.8.7.8............3..2...8..3..8..2...5...9....7....93...31.57.....5...89.."
 	board := core.NewEmptyBoard()
 	board.FromString(puzzle)
 
 	store := solver.NewStore()
-	lowerKeys := []string{"naked-single", "hidden-single", "naked-subset", "pointing-pair", "x-wing", "swordfish", "hidden-subset", "xy-wing"}
+	lowerKeys := []string{
+		"naked-single", "hidden-single",
+		"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
+		"x-wing", "xy-wing", "hidden-triple",
+		"swordfish", "naked-quad", "hidden-quad",
+	}
 	for {
 		var found *solver.Move
 		for _, k := range lowerKeys {
 			sv := store.GetStrategySolverByKey(k)
+			if sv == nil {
+				t.Fatalf("Solver key %q not found in store", k)
+			}
 			m := sv.Apply(&board)
 			if m != nil {
 				found = m
@@ -41,7 +48,7 @@ func TestSimpleColoringSolver_FindsPattern(t *testing.T) {
 
 	// Lower-tier solvers should be stuck (not solved).
 	if board.IsSolved() {
-		t.Fatal("Lower-tier solvers (including xy-wing) should not be able to solve this puzzle alone")
+		t.Fatal("Lower-tier solvers should not be able to solve this puzzle alone")
 	}
 
 	// Simple coloring solver should find a move.

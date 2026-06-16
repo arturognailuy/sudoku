@@ -16,7 +16,7 @@ import (
 // is confined to a single box, that candidate can be eliminated from the rest
 // of that box.
 //
-// Like NakedSubsetSolver, this solver finds eliminations and returns a move
+// Like the naked subset solvers, this solver finds eliminations and returns a move
 // only when an elimination creates a naked single.
 type PointingPairSolver struct {
 	Base
