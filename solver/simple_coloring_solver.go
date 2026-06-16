@@ -41,7 +41,7 @@ func NewSimpleColoringSolver() *SimpleColoringSolver {
 			Key:         "simple-coloring",
 			DisplayName: "Simple Coloring",
 			Description: "Tracks conjugate pair chains for a digit, assigning alternating colors. Eliminates the digit from cells that see both colors or from an invalid color group.",
-			Weight:      150,
+			Weight:      WeightSimpleColoring,
 		},
 	}
 }

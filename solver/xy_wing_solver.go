@@ -34,7 +34,7 @@ func NewXYWingSolver() *XYWingSolver {
 			Key:         "xy-wing",
 			DisplayName: "XY-Wing",
 			Description: "Finds a pivot-wing pattern where a pivot with {X,Y} connects to wings with {X,Z} and {Y,Z}, enabling elimination of Z from cells that see both wings.",
-			Weight:      160,
+			Weight:      WeightXYWing,
 		},
 	}
 }

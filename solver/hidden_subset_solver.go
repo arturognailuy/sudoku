@@ -40,7 +40,7 @@ func NewHiddenSubsetSolver() *HiddenSubsetSolver {
 			Key:         "hidden-subset",
 			DisplayName: "Hidden Pairs/Triples/Quads",
 			Description: "Finds two, three, or four candidates confined to the same cells in a unit, enabling eliminations that reveal a single candidate.",
-			Weight:      100,
+			Weight:      WeightHiddenSubset,
 		},
 	}
 }

@@ -20,7 +20,7 @@ func NewHiddenSingleSolver() *HiddenSingleSolver {
 			Key:         "hidden-single",
 			DisplayName: "Hidden Single",
 			Description: "Finds a candidate that appears in only one cell within a row, column, or box.",
-			Weight:      14,
+			Weight:      WeightHiddenSingle,
 		},
 	}
 }

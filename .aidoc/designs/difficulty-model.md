@@ -131,15 +131,15 @@ of all technique weights used during solving:
 score = Σ(weight[technique] × times_used)
 ```
 
-Scoring is purely additive infrastructure — it does not change any existing behavior.
 The `ScorePuzzle(store, moves)` function in `solver/scoring.go` computes the score
 from a list of moves. Moves from unknown techniques (e.g., backtracker) contribute zero.
 
 ### Solver Weights
 
-Each solver declares its own `Weight` in its constructor (the `Base.Weight` field).
-See the individual solver source files in `solver/` — each `New*()` function sets
-its weight. This is the single source of truth for weight values.
+All tunable parameters — solver weights and clue-count ranges — are centralized in
+`solver/config.go`. This is the single file to update when tuning parameters or
+calibrating the difficulty system. Each solver constructor references these constants
+rather than declaring weights inline.
 
 Weights are based on HoDoKu's established values, ranging from low (naked-single)
 to high (xy-wing). Combined solvers (naked-subset, hidden-subset) use representative

@@ -1,0 +1,45 @@
+// Package solver — config.go is the single centralized file for all
+// tunable parameters in the Sudoku program. Update this file when
+// calibrating difficulty, adjusting scoring weights, or changing
+// clue-count ranges.
+//
+// Solver Weights: based on HoDoKu's established values. Each weight
+// represents the difficulty cost per application of a technique.
+// Combined solvers (naked-subset, hidden-subset) use representative
+// midpoints; when split into per-size solvers (Phase 3.5), each
+// variant will get its own weight matching its specific difficulty.
+//
+// Clue-Count Ranges: define the acceptable number of given clues for
+// each difficulty level. MinimumClues is inclusive, MaximumClues is
+// exclusive. These serve as secondary constraints alongside technique
+// requirements — a puzzle must fall within both the clue range and
+// the technique tier for its difficulty level.
+package solver
+
+// Solver weights — difficulty cost per application.
+const (
+	WeightNakedSingle    = 4
+	WeightHiddenSingle   = 14
+	WeightPointingPair   = 50
+	WeightNakedSubset    = 70
+	WeightHiddenSubset   = 100
+	WeightXWing          = 140
+	WeightSwordfish      = 150
+	WeightSimpleColoring = 150
+	WeightXYWing         = 160
+)
+
+// Clue-count ranges per difficulty level.
+// MinimumClues is inclusive; MaximumClues is exclusive.
+const (
+	EasyMinClues   = 45
+	EasyMaxClues   = 60
+	MediumMinClues = 32
+	MediumMaxClues = 45
+	HardMinClues   = 25
+	HardMaxClues   = 32
+	ExpertMinClues = 22
+	ExpertMaxClues = 25
+	EvilMinClues   = 17
+	EvilMaxClues   = 22
+)

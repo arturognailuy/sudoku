@@ -24,8 +24,8 @@ func TestScorePuzzleSingleTechnique(t *testing.T) {
 	}
 
 	score := ScorePuzzle(store, moves)
-	// 3 × naked-single weight (4) = 12
-	want := 3 * 4
+	// 3 × naked-single weight = 12
+	want := 3 * WeightNakedSingle
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
 	}
@@ -42,8 +42,7 @@ func TestScorePuzzleMixedTechniques(t *testing.T) {
 	}
 
 	score := ScorePuzzle(store, moves)
-	// 2×4 + 1×14 + 1×140 + 1×70 = 8 + 14 + 140 + 70 = 232
-	want := 2*4 + 14 + 140 + 70
+	want := 2*WeightNakedSingle + WeightHiddenSingle + WeightXWing + WeightNakedSubset
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
 	}
@@ -58,8 +57,8 @@ func TestScorePuzzleIgnoresUnknownTechniques(t *testing.T) {
 	}
 
 	score := ScorePuzzle(store, moves)
-	// Only naked-single counts: 1×4 = 4
-	want := 4
+	// Only naked-single counts.
+	want := WeightNakedSingle
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
 	}
@@ -82,8 +81,9 @@ func TestScorePuzzleAllSolvers(t *testing.T) {
 	}
 
 	score := ScorePuzzle(store, moves)
-	// 4 + 14 + 70 + 50 + 140 + 150 + 100 + 160 + 150 = 838
-	want := 4 + 14 + 70 + 50 + 140 + 150 + 100 + 160 + 150
+	want := WeightNakedSingle + WeightHiddenSingle + WeightNakedSubset +
+		WeightPointingPair + WeightXWing + WeightSwordfish +
+		WeightHiddenSubset + WeightXYWing + WeightSimpleColoring
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
 	}
@@ -96,15 +96,15 @@ func TestSolverWeights(t *testing.T) {
 		solver StrategySolver
 		want   int
 	}{
-		{"naked-single", NewNakedSingleSolver(), 4},
-		{"hidden-single", NewHiddenSingleSolver(), 14},
-		{"naked-subset", NewNakedSubsetSolver(), 70},
-		{"pointing-pair", NewPointingPairSolver(), 50},
-		{"x-wing", NewXWingSolver(), 140},
-		{"swordfish", NewSwordfishSolver(), 150},
-		{"hidden-subset", NewHiddenSubsetSolver(), 100},
-		{"xy-wing", NewXYWingSolver(), 160},
-		{"simple-coloring", NewSimpleColoringSolver(), 150},
+		{"naked-single", NewNakedSingleSolver(), WeightNakedSingle},
+		{"hidden-single", NewHiddenSingleSolver(), WeightHiddenSingle},
+		{"naked-subset", NewNakedSubsetSolver(), WeightNakedSubset},
+		{"pointing-pair", NewPointingPairSolver(), WeightPointingPair},
+		{"x-wing", NewXWingSolver(), WeightXWing},
+		{"swordfish", NewSwordfishSolver(), WeightSwordfish},
+		{"hidden-subset", NewHiddenSubsetSolver(), WeightHiddenSubset},
+		{"xy-wing", NewXYWingSolver(), WeightXYWing},
+		{"simple-coloring", NewSimpleColoringSolver(), WeightSimpleColoring},
 	}
 
 	for _, tt := range tests {
