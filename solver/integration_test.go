@@ -119,13 +119,13 @@ const pointingPairPuzzle = "9.574....62..5..4.7...6...5....136.9..9....5.562...8
 const xWingPuzzle = "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1.....7....9....97...3..."
 
 // Expert puzzle requiring swordfish technique.
-// Provided by Yuliang (sourced from the internet for reliable testing).
+// Sourced from the internet for reliable testing.
 // Contains a Swordfish pattern that eliminates candidates and enables
 // subsequent techniques to complete the puzzle.
 const swordfishPuzzle = "3...4.........7.48......9.7.1...3.8.4...5..2..5...8.7.5..3............9.6.9.253.."
 
 // Expert puzzle requiring hidden-subset technique (now hidden-pair/triple/quad).
-// Provided by Yuliang (sourced from the internet for reliable testing).
+// Sourced from the internet for reliable testing.
 // Fully solvable by strategy solvers alone; genuinely requires hidden-subset
 // techniques — without them, only a few moves are possible.
 const hiddenSubsetPuzzle = ".........231.9.....65..31....8924...1...5...6...1367....93..57.....1.843........."
@@ -141,32 +141,32 @@ const xyWingPuzzle = ".23.......4..9.63..7.8.2.1..581..9....2....5.4....93..9..6
 const simpleColoringPuzzle = "12...6.8.7.8............3..2...8..3..8..2...5...9....7....93...31.57.....5...89.."
 
 // ---------------------------------------------------------------------------
-// Yuliang's test puzzles (sourced from the internet, verified 2026-06-16)
+// Additional test puzzles (sourced from the internet, verified 2026-06-16)
 // ---------------------------------------------------------------------------
 
-// Hard puzzle requiring xy-wing (Yuliang's puzzle 1).
+// Hard puzzle requiring xy-wing.
 // 39 givens, 42 blanks. Requires xy-wing (2 uses), hidden-pair, naked-triple.
 // Solvable with hard-tier solvers.
-const yuliangXYWingPuzzle = ".......4..93.....8.4.7.....1.9.6..8..8.9....6465..8..3276391854918654237..48....9"
+const hardXYWingPuzzle = ".......4..93.....8.4.7.....1.9.6..8..8.9....6465..8..3276391854918654237..48....9"
 
-// Hard puzzle requiring hidden-pair (Yuliang's puzzle 2).
+// Hard puzzle requiring hidden-pair.
 // 28 givens, 53 blanks. Requires hidden-pair (3 uses), hidden-triple, x-wing.
 // Solvable with hard-tier solvers.
-const yuliangHiddenPairPuzzle = ".5.......1...39.4...67.....6..1...9...39..8.1.19.8.....6.8.2..7...6.7.1..4.3.52.."
+const hardHiddenPairPuzzle = ".5.......1...39.4...67.....6..1...9...39..8.1.19.8.....6.8.2..7...6.7.1..4.3.52.."
 
-// Expert puzzle requiring hidden-quad AND simple-coloring (Yuliang's puzzle 3).
+// Expert puzzle requiring hidden-quad AND simple-coloring.
 // 35 givens, 46 blanks. Both techniques independently required — without
 // either one, the puzzle cannot be solved.
-const yuliangHiddenQuadColoringPuzzle = ".6.58...99.124...8.8.9.7..4..9658432.58..2..62.6..9.......95..36938.4............"
+const expertHiddenQuadColoringPuzzle = ".6.58...99.124...8.8.9.7..4..9658432.58..2..62.6..9.......95..36938.4............"
 
-// Expert puzzle requiring hidden-quad, simple-coloring AND xy-wing (Yuliang's puzzle 4).
+// Expert puzzle requiring hidden-quad, simple-coloring AND xy-wing.
 // 52 givens, 29 blanks. All three expert-level techniques independently required.
-const yuliangTripleExpertPuzzle = "...72.5.9.27....64.9.4.8271.7.845..6........736..72..5456293718738514692219687453"
+const expertTripleRequirementPuzzle = "...72.5.9.27....64.9.4.8271.7.845..6........736..72..5456293718738514692219687453"
 
-// Evil puzzle requiring jellyfish AND xy-wing (Yuliang's puzzle 10).
+// Evil puzzle requiring jellyfish AND xy-wing.
 // 29 givens, 52 blanks. Expert-tier solvers make 0 placements without
 // jellyfish. Outstanding jellyfish test — the technique fires at step 1.
-const yuliangJellyfishPuzzle = "..........17.2.8.3..3...2.4.84.537.6..........72.1...5.48.715.2.35.4.6.1........."
+const evilJellyfishPuzzle = "..........17.2.8.3..3...2.4.84.537.6..........72.1...5.48.715.2.35.4.6.1........."
 
 // ---------------------------------------------------------------------------
 // Basic tier tests
@@ -487,23 +487,23 @@ func TestIntegration_SimpleColoringRequired(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Yuliang's puzzle tests — Hard tier
+// Hard-tier puzzle tests (internet-sourced)
 // ---------------------------------------------------------------------------
 
-// TestIntegration_YuliangXYWingPuzzle verifies Yuliang's puzzle 1 requires
+// TestIntegration_HardXYWingPuzzle verifies the hard xy-wing puzzle requires
 // xy-wing. Medium solvers alone cannot solve it; hard solvers can.
-func TestIntegration_YuliangXYWingPuzzle(t *testing.T) {
+func TestIntegration_HardXYWingPuzzle(t *testing.T) {
 	store := solver.NewStore()
 
 	// Medium solvers alone cannot solve this puzzle.
-	medBoard := boardFromString(t, yuliangXYWingPuzzle)
+	medBoard := boardFromString(t, hardXYWingPuzzle)
 	solveWithStrategies(t, &medBoard, store, mediumKeys)
 	if medBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
 	}
 
 	// Hard-tier solvers can solve it completely.
-	fullBoard := boardFromString(t, yuliangXYWingPuzzle)
+	fullBoard := boardFromString(t, hardXYWingPuzzle)
 	moves := solveWithStrategies(t, &fullBoard, store, hardKeys)
 	if !fullBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be solvable with hard solvers")
@@ -521,20 +521,20 @@ func TestIntegration_YuliangXYWingPuzzle(t *testing.T) {
 	t.Logf("Solved in %d moves, %d xy-wing", len(moves), xywCount)
 }
 
-// TestIntegration_YuliangHiddenPairPuzzle verifies Yuliang's puzzle 2 requires
-// hidden-pair. Medium solvers alone cannot solve it; hard solvers can.
-func TestIntegration_YuliangHiddenPairPuzzle(t *testing.T) {
+// TestIntegration_HardHiddenPairPuzzle verifies the hard hidden-pair puzzle
+// requires hidden-pair. Medium solvers alone cannot solve it; hard solvers can.
+func TestIntegration_HardHiddenPairPuzzle(t *testing.T) {
 	store := solver.NewStore()
 
 	// Medium solvers alone cannot solve this puzzle.
-	medBoard := boardFromString(t, yuliangHiddenPairPuzzle)
+	medBoard := boardFromString(t, hardHiddenPairPuzzle)
 	solveWithStrategies(t, &medBoard, store, mediumKeys)
 	if medBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
 	}
 
 	// Hard-tier solvers can solve it completely.
-	fullBoard := boardFromString(t, yuliangHiddenPairPuzzle)
+	fullBoard := boardFromString(t, hardHiddenPairPuzzle)
 	moves := solveWithStrategies(t, &fullBoard, store, hardKeys)
 	if !fullBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be solvable with hard solvers")
@@ -553,24 +553,24 @@ func TestIntegration_YuliangHiddenPairPuzzle(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Yuliang's puzzle tests — Expert tier
+// Expert-tier puzzle tests (internet-sourced)
 // ---------------------------------------------------------------------------
 
-// TestIntegration_YuliangHiddenQuadColoringPuzzle verifies Yuliang's puzzle 3
+// TestIntegration_ExpertHiddenQuadColoringPuzzle verifies the expert puzzle
 // requires both hidden-quad AND simple-coloring. Hard solvers get stuck;
 // expert solvers solve it.
-func TestIntegration_YuliangHiddenQuadColoringPuzzle(t *testing.T) {
+func TestIntegration_ExpertHiddenQuadColoringPuzzle(t *testing.T) {
 	store := solver.NewStore()
 
 	// Hard-tier solvers alone cannot solve this puzzle.
-	hardBoard := boardFromString(t, yuliangHiddenQuadColoringPuzzle)
+	hardBoard := boardFromString(t, expertHiddenQuadColoringPuzzle)
 	solveWithStrategies(t, &hardBoard, store, hardKeys)
 	if hardBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be unsolvable by hard techniques alone")
 	}
 
 	// Expert-tier solvers can solve it completely.
-	fullBoard := boardFromString(t, yuliangHiddenQuadColoringPuzzle)
+	fullBoard := boardFromString(t, expertHiddenQuadColoringPuzzle)
 	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
 	if !fullBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be solvable with expert solvers")
@@ -592,21 +592,21 @@ func TestIntegration_YuliangHiddenQuadColoringPuzzle(t *testing.T) {
 	t.Logf("Solved in %d moves, %d hidden-quad, %d simple-coloring", len(moves), hqCount, scCount)
 }
 
-// TestIntegration_YuliangTripleExpertPuzzle verifies Yuliang's puzzle 4
+// TestIntegration_ExpertTripleRequirementPuzzle verifies the expert puzzle
 // requires hidden-quad, simple-coloring AND xy-wing. Hard solvers get stuck;
 // expert solvers solve it.
-func TestIntegration_YuliangTripleExpertPuzzle(t *testing.T) {
+func TestIntegration_ExpertTripleRequirementPuzzle(t *testing.T) {
 	store := solver.NewStore()
 
 	// Hard-tier solvers alone cannot solve this puzzle.
-	hardBoard := boardFromString(t, yuliangTripleExpertPuzzle)
+	hardBoard := boardFromString(t, expertTripleRequirementPuzzle)
 	solveWithStrategies(t, &hardBoard, store, hardKeys)
 	if hardBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be unsolvable by hard techniques alone")
 	}
 
 	// Expert-tier solvers can solve it completely.
-	fullBoard := boardFromString(t, yuliangTripleExpertPuzzle)
+	fullBoard := boardFromString(t, expertTripleRequirementPuzzle)
 	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
 	if !fullBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be solvable with expert solvers")
@@ -634,7 +634,7 @@ func TestIntegration_YuliangTripleExpertPuzzle(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Yuliang's puzzle tests — Evil tier
+// Evil-tier puzzle tests (internet-sourced)
 // ---------------------------------------------------------------------------
 
 // evilKeys includes all 14 strategy solvers (expert + jellyfish).
@@ -646,14 +646,14 @@ var evilKeys = []string{
 	"jellyfish",
 }
 
-// TestIntegration_YuliangJellyfishPuzzle verifies Yuliang's puzzle 10 requires
-// jellyfish. Expert-tier solvers make zero placements; with jellyfish the
-// puzzle is fully solvable.
-func TestIntegration_YuliangJellyfishPuzzle(t *testing.T) {
+// TestIntegration_EvilJellyfishPuzzle verifies the evil jellyfish puzzle
+// requires jellyfish. Expert-tier solvers make zero placements; with
+// jellyfish the puzzle is fully solvable.
+func TestIntegration_EvilJellyfishPuzzle(t *testing.T) {
 	store := solver.NewStore()
 
 	// Expert-tier solvers alone cannot solve this puzzle.
-	expertBoard := boardFromString(t, yuliangJellyfishPuzzle)
+	expertBoard := boardFromString(t, evilJellyfishPuzzle)
 	expertMoves := solveWithStrategies(t, &expertBoard, store, expertKeys)
 	if expertBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be unsolvable by expert techniques alone")
@@ -664,7 +664,7 @@ func TestIntegration_YuliangJellyfishPuzzle(t *testing.T) {
 	}
 
 	// With jellyfish (evil tier), the puzzle can be solved completely.
-	fullBoard := boardFromString(t, yuliangJellyfishPuzzle)
+	fullBoard := boardFromString(t, evilJellyfishPuzzle)
 	moves := solveWithStrategies(t, &fullBoard, store, evilKeys)
 	if !fullBoard.IsSolved() {
 		t.Fatal("Expected puzzle to be solvable with evil-tier solvers")
@@ -704,11 +704,11 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 		{"ExpertSwordfishHints", swordfishPuzzle, expertKeys, 10},
 		{"ExpertHiddenSubsetHints", hiddenSubsetPuzzle, expertKeys, 10},
 		{"ExpertSimpleColoringHints", simpleColoringPuzzle, expertKeys, 10},
-		{"YuliangXYWingHints", yuliangXYWingPuzzle, hardKeys, 10},
-		{"YuliangHiddenPairHints", yuliangHiddenPairPuzzle, hardKeys, 10},
-		{"YuliangHiddenQuadColoringHints", yuliangHiddenQuadColoringPuzzle, expertKeys, 10},
-		{"YuliangTripleExpertHints", yuliangTripleExpertPuzzle, expertKeys, 10},
-		{"YuliangJellyfishHints", yuliangJellyfishPuzzle, evilKeys, 10},
+		{"HardXYWingHints", hardXYWingPuzzle, hardKeys, 10},
+		{"HardHiddenPairHints", hardHiddenPairPuzzle, hardKeys, 10},
+		{"ExpertHiddenQuadColoringHints", expertHiddenQuadColoringPuzzle, expertKeys, 10},
+		{"ExpertTripleRequirementHints", expertTripleRequirementPuzzle, expertKeys, 10},
+		{"EvilJellyfishHints", evilJellyfishPuzzle, evilKeys, 10},
 	}
 
 	for _, tt := range tests {
@@ -831,11 +831,11 @@ func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
 		"hidden-subset":              hiddenSubsetPuzzle,
 		"xy-wing":                    xyWingPuzzle,
 		"simple-coloring":            simpleColoringPuzzle,
-		"yuliang-xy-wing":            yuliangXYWingPuzzle,
-		"yuliang-hidden-pair":        yuliangHiddenPairPuzzle,
-		"yuliang-hidden-quad-color":  yuliangHiddenQuadColoringPuzzle,
-		"yuliang-triple-expert":      yuliangTripleExpertPuzzle,
-		"yuliang-jellyfish":          yuliangJellyfishPuzzle,
+		"hard-xy-wing":               hardXYWingPuzzle,
+		"hard-hidden-pair":           hardHiddenPairPuzzle,
+		"expert-hidden-quad-color":   expertHiddenQuadColoringPuzzle,
+		"expert-triple-requirement":  expertTripleRequirementPuzzle,
+		"evil-jellyfish":             evilJellyfishPuzzle,
 	}
 
 	for name, p := range puzzles {
