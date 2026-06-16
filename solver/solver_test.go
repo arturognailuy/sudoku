@@ -130,8 +130,8 @@ func TestStoreGetAllStrategySolverKeys(t *testing.T) {
 	store := solver.NewStore()
 	keys := store.GetAllStrategySolverKeys()
 
-	if len(keys) != 14 {
-		t.Fatalf("Expected 14 strategy solver keys, got %d: %v", len(keys), keys)
+	if len(keys) != 16 {
+		t.Fatalf("Expected 16 strategy solver keys, got %d: %v", len(keys), keys)
 	}
 
 	// Check all keys are present (order is not guaranteed from map iteration).
@@ -139,7 +139,7 @@ func TestStoreGetAllStrategySolverKeys(t *testing.T) {
 	for _, k := range keys {
 		keySet[k] = true
 	}
-	for _, expected := range []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "naked-quad", "pointing-pair", "hidden-pair", "hidden-triple", "hidden-quad", "x-wing", "swordfish", "jellyfish", "xy-wing", "simple-coloring"} {
+	for _, expected := range []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "naked-quad", "pointing-pair", "hidden-pair", "hidden-triple", "hidden-quad", "x-wing", "swordfish", "jellyfish", "xy-wing", "simple-coloring", "bug-plus-one", "unique-rectangle"} {
 		if !keySet[expected] {
 			t.Errorf("Expected %q in keys", expected)
 		}

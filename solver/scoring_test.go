@@ -81,6 +81,8 @@ func TestScorePuzzleAllSolvers(t *testing.T) {
 		{Technique: "simple-coloring"},
 		{Technique: "hidden-quad"},
 		{Technique: "jellyfish"},
+		{Technique: "bug-plus-one"},
+		{Technique: "unique-rectangle"},
 	}
 
 	score := ScorePuzzle(store, moves)
@@ -88,7 +90,7 @@ func TestScorePuzzleAllSolvers(t *testing.T) {
 		WeightNakedPair + WeightNakedTriple + WeightPointingPair + WeightHiddenPair +
 		WeightXWing + WeightXYWing + WeightHiddenTriple +
 		WeightSwordfish + WeightNakedQuad + WeightSimpleColoring + WeightHiddenQuad +
-		WeightJellyfish
+		WeightJellyfish + WeightBUGPlusOne + WeightUniqueRectangle
 	if score != want {
 		t.Errorf("ScorePuzzle = %d, want %d", score, want)
 	}
@@ -114,6 +116,8 @@ func TestSolverWeights(t *testing.T) {
 		{"jellyfish", NewJellyfishSolver(), WeightJellyfish},
 		{"xy-wing", NewXYWingSolver(), WeightXYWing},
 		{"simple-coloring", NewSimpleColoringSolver(), WeightSimpleColoring},
+		{"bug-plus-one", NewBUGPlusOneSolver(), WeightBUGPlusOne},
+		{"unique-rectangle", NewUniqueRectangleSolver(), WeightUniqueRectangle},
 	}
 
 	for _, tt := range tests {

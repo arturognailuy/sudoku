@@ -168,6 +168,11 @@ const expertTripleRequirementPuzzle = "...72.5.9.27....64.9.4.8271.7.845..6.....
 // jellyfish. Outstanding jellyfish test — the technique fires at step 1.
 const evilJellyfishPuzzle = "..........17.2.8.3..3...2.4.84.537.6..........72.1...5.48.715.2.35.4.6.1........."
 
+// Evil puzzle requiring unique-rectangle AND bug-plus-one.
+// 27 givens, 54 blanks. Expert-tier solvers stall at 10 empty cells.
+// Unique Rectangle Type 1 and BUG+1 are each required to complete the solve.
+const evilBUGURPuzzle = "000700060090060200100953700510000000403080901000000053009235004001040080050001000"
+
 // ---------------------------------------------------------------------------
 // Basic tier tests
 // ---------------------------------------------------------------------------
@@ -637,13 +642,13 @@ func TestIntegration_ExpertTripleRequirementPuzzle(t *testing.T) {
 // Evil-tier puzzle tests (internet-sourced)
 // ---------------------------------------------------------------------------
 
-// evilKeys includes all 14 strategy solvers (expert + jellyfish).
+// evilKeys includes all 16 strategy solvers (expert + evil tier).
 var evilKeys = []string{
 	"naked-single", "hidden-single",
 	"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
 	"x-wing", "xy-wing", "hidden-triple",
 	"swordfish", "naked-quad", "simple-coloring", "hidden-quad",
-	"jellyfish",
+	"jellyfish", "bug-plus-one", "unique-rectangle",
 }
 
 // TestIntegration_EvilJellyfishPuzzle verifies the evil jellyfish puzzle
@@ -683,6 +688,44 @@ func TestIntegration_EvilJellyfishPuzzle(t *testing.T) {
 		expertPlacements, len(moves), jfCount)
 }
 
+// TestIntegration_EvilBUGURPuzzle verifies the evil BUG+1 / unique-rectangle
+// puzzle requires evil-tier techniques. Expert-tier solvers stall at 10 empty
+// cells; adding BUG+1 and Unique Rectangle Type 1 enables a full solve.
+func TestIntegration_EvilBUGURPuzzle(t *testing.T) {
+	store := solver.NewStore()
+
+	// Expert-tier solvers alone cannot solve this puzzle.
+	expertBoard := boardFromString(t, evilBUGURPuzzle)
+	expertMoves := solveWithStrategies(t, &expertBoard, store, expertKeys)
+	if expertBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by expert techniques alone")
+	}
+	expertPlacements := countPlacements(expertMoves)
+
+	// With evil-tier solvers (including BUG+1 and unique-rectangle), it's solvable.
+	fullBoard := boardFromString(t, evilBUGURPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, evilKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with evil-tier solvers")
+	}
+
+	urCount := techniqueCount(moves, "unique-rectangle")
+	bugCount := techniqueCount(moves, "bug-plus-one")
+	if urCount == 0 {
+		t.Error("Expected at least one unique-rectangle move")
+	}
+	if bugCount == 0 {
+		t.Error("Expected at least one bug-plus-one move")
+	}
+
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Expert-tier: %d placements. Evil-tier: solved in %d moves, %d unique-rectangle, %d bug-plus-one",
+		expertPlacements, len(moves), urCount, bugCount)
+}
+
 // ---------------------------------------------------------------------------
 // Hint pipeline tests
 // ---------------------------------------------------------------------------
@@ -709,6 +752,7 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 		{"ExpertHiddenQuadColoringHints", expertHiddenQuadColoringPuzzle, expertKeys, 10},
 		{"ExpertTripleRequirementHints", expertTripleRequirementPuzzle, expertKeys, 10},
 		{"EvilJellyfishHints", evilJellyfishPuzzle, evilKeys, 10},
+		{"EvilBUGURHints", evilBUGURPuzzle, evilKeys, 10},
 	}
 
 	for _, tt := range tests {
@@ -807,7 +851,7 @@ func TestIntegration_AllSolversRegistered(t *testing.T) {
 		"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
 		"x-wing", "xy-wing", "hidden-triple",
 		"swordfish", "naked-quad", "simple-coloring", "hidden-quad",
-		"jellyfish",
+		"jellyfish", "bug-plus-one", "unique-rectangle",
 	}
 
 	for _, key := range expected {
@@ -836,6 +880,7 @@ func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
 		"expert-hidden-quad-color":   expertHiddenQuadColoringPuzzle,
 		"expert-triple-requirement":  expertTripleRequirementPuzzle,
 		"evil-jellyfish":             evilJellyfishPuzzle,
+		"evil-bug-ur":                evilBUGURPuzzle,
 	}
 
 	for name, p := range puzzles {

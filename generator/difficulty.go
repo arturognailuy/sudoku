@@ -39,7 +39,7 @@ var tierRegistry = map[string][]string{
 	"medium": {"naked-pair", "naked-triple", "pointing-pair", "hidden-pair"},
 	"hard":   {"x-wing", "xy-wing", "hidden-triple"},
 	"expert": {"swordfish", "naked-quad", "simple-coloring", "hidden-quad"},
-	"evil":   {"jellyfish"},
+	"evil":   {"jellyfish", "bug-plus-one", "unique-rectangle"},
 }
 
 // lowerTierSolverKeys returns the cumulative solver keys from all tiers
