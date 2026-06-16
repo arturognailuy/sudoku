@@ -36,6 +36,7 @@ func NewNakedSubsetSolver() *NakedSubsetSolver {
 			Key:         "naked-subset",
 			DisplayName: "Naked Pairs/Triples",
 			Description: "Finds two or three cells in a unit sharing the same candidates, enabling eliminations that reveal a single candidate.",
+			Weight:      70,
 		},
 	}
 }

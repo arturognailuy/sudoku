@@ -32,6 +32,7 @@ func NewSwordfishSolver() *SwordfishSolver {
 			Key:         "swordfish",
 			DisplayName: "Swordfish",
 			Description: "Finds a candidate confined to the same three columns in three rows (or same three rows in three columns), enabling eliminations that reveal a single candidate.",
+			Weight:      150,
 		},
 	}
 }

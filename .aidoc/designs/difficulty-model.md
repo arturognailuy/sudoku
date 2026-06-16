@@ -120,3 +120,43 @@ Allowed set = all nine solvers. The generator produces Evil puzzles that genuine
 require at least one evil technique — lower-tier techniques alone cannot solve them.
 
 All five difficulty levels are now fully strategy-based with technique requirements.
+
+## Scoring System
+
+Each solver carries a `Weight` field representing its difficulty cost per application,
+based on HoDoKu's established weights. A puzzle's total difficulty score is the sum
+of all technique weights used during solving:
+
+```
+score = Σ(weight[technique] × times_used)
+```
+
+Scoring is purely additive infrastructure — it does not change any existing behavior.
+The `ScorePuzzle(store, moves)` function in `solver/scoring.go` computes the score
+from a list of moves. Moves from unknown techniques (e.g., backtracker) contribute zero.
+
+### Current Solver Weights
+
+| Solver | Key | Weight | Rationale |
+|--------|-----|--------|----------|
+| Naked Single | naked-single | 4 | Trivial — scan cells |
+| Hidden Single | hidden-single | 14 | Easy — scan units |
+| Pointing Pairs / Box-Line | pointing-pair | 50 | Easy — box/line intersection |
+| Naked Pairs/Triples | naked-subset | 70 | Moderate — combined pair+triple solver |
+| Hidden Pairs/Triples/Quads | hidden-subset | 100 | Hard — combined subset solver |
+| X-Wing | x-wing | 140 | Hard — row/column pattern scanning |
+| Swordfish | swordfish | 150 | Very Hard — 3×3 fish pattern |
+| Simple Coloring | simple-coloring | 150 | Hard — graph 2-coloring |
+| XY-Wing | xy-wing | 160 | Hard — pivot + two pincers |
+| Backtracker | default | 0 | Not scored — fallback solver |
+
+Weights for combined solvers (naked-subset, hidden-subset) use representative midpoints.
+When these are split into per-size solvers (Phase 3.5), each variant will get its own
+weight matching its specific human difficulty.
+
+### Future: Score-Based Difficulty Ranges
+
+`MinScore` and `MaxScore` fields on `Difficulty` will be added in Phase 4,
+when the puzzle database provides enough data to calibrate score ranges.
+The scoring infrastructure is ready — each new solver just sets its weight
+in the constructor.

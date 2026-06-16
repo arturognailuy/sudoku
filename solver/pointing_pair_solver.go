@@ -29,6 +29,7 @@ func NewPointingPairSolver() *PointingPairSolver {
 			Key:         "pointing-pair",
 			DisplayName: "Pointing Pairs / Box-Line Reduction",
 			Description: "Finds candidates confined to a single row or column within a box (or vice versa), enabling eliminations that reveal a single candidate.",
+			Weight:      50,
 		},
 	}
 }
