@@ -135,24 +135,16 @@ Scoring is purely additive infrastructure — it does not change any existing be
 The `ScorePuzzle(store, moves)` function in `solver/scoring.go` computes the score
 from a list of moves. Moves from unknown techniques (e.g., backtracker) contribute zero.
 
-### Current Solver Weights
+### Solver Weights
 
-| Solver | Key | Weight | Rationale |
-|--------|-----|--------|----------|
-| Naked Single | naked-single | 4 | Trivial — scan cells |
-| Hidden Single | hidden-single | 14 | Easy — scan units |
-| Pointing Pairs / Box-Line | pointing-pair | 50 | Easy — box/line intersection |
-| Naked Pairs/Triples | naked-subset | 70 | Moderate — combined pair+triple solver |
-| Hidden Pairs/Triples/Quads | hidden-subset | 100 | Hard — combined subset solver |
-| X-Wing | x-wing | 140 | Hard — row/column pattern scanning |
-| Swordfish | swordfish | 150 | Very Hard — 3×3 fish pattern |
-| Simple Coloring | simple-coloring | 150 | Hard — graph 2-coloring |
-| XY-Wing | xy-wing | 160 | Hard — pivot + two pincers |
-| Backtracker | default | 0 | Not scored — fallback solver |
+Each solver declares its own `Weight` in its constructor (the `Base.Weight` field).
+See the individual solver source files in `solver/` — each `New*()` function sets
+its weight. This is the single source of truth for weight values.
 
-Weights for combined solvers (naked-subset, hidden-subset) use representative midpoints.
-When these are split into per-size solvers (Phase 3.5), each variant will get its own
-weight matching its specific human difficulty.
+Weights are based on HoDoKu's established values, ranging from low (naked-single)
+to high (xy-wing). Combined solvers (naked-subset, hidden-subset) use representative
+midpoints; when split into per-size solvers (Phase 3.5), each variant will get its
+own weight matching its specific human difficulty.
 
 ### Future: Score-Based Difficulty Ranges
 
