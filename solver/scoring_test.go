@@ -118,6 +118,13 @@ func TestSolverWeights(t *testing.T) {
 		{"simple-coloring", NewSimpleColoringSolver(), WeightSimpleColoring},
 		{"bug-plus-one", NewBUGPlusOneSolver(), WeightBUGPlusOne},
 		{"unique-rectangle", NewUniqueRectangleSolver(), WeightUniqueRectangle},
+		{"w-wing", NewWWingSolver(), WeightWWing},
+		{"xyz-wing", NewXYZWingSolver(), WeightXYZWing},
+		{"unique-rectangle-2", NewUniqueRectangleType2Solver(), WeightUniqueRectangle2},
+		{"unique-rectangle-3", NewUniqueRectangleType3Solver(), WeightUniqueRectangle3},
+		{"unique-rectangle-4", NewUniqueRectangleType4Solver(), WeightUniqueRectangle4},
+		{"x-cycles", NewXCyclesSolver(), WeightXCycles},
+		{"xy-chain", NewXYChainSolver(), WeightXYChain},
 	}
 
 	for _, tt := range tests {

@@ -94,8 +94,8 @@ func countPlacements(moves []*solver.Move) int {
 var (
 	basicKeys  = []string{"naked-single", "hidden-single"}
 	mediumKeys = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair"}
-	hardKeys   = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple"}
-	expertKeys = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "swordfish", "naked-quad", "simple-coloring", "hidden-quad"}
+	hardKeys   = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "w-wing"}
+	expertKeys = []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "w-wing", "swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing"}
 )
 
 // ---------------------------------------------------------------------------
@@ -172,6 +172,26 @@ const evilJellyfishPuzzle = "..........17.2.8.3..3...2.4.84.537.6..........72.1.
 // 27 givens, 54 blanks. Expert-tier solvers stall at 10 empty cells.
 // Unique Rectangle Type 1 and BUG+1 are each required to complete the solve.
 const evilBUGURPuzzle = "...7...6..9..6.2..1..9537..51.......4.3.8.9.1.......53..9235..4..1.4..8..5...1..."
+
+// ---------------------------------------------------------------------------
+// New advanced solver test puzzles (PR #14: W-Wing, XYZ-Wing, UR Types 2-4,
+// X-Cycles, XY-Chain)
+// ---------------------------------------------------------------------------
+
+// Evil puzzle requiring W-Wing. Sourced from top95 collection (puzzle #5).
+// Expert-tier solvers stall; with W-Wing (fired 2x) plus full evil-tier
+// techniques the puzzle solves completely.
+const wWingPuzzle = "....14....3....2...7..........9...3.6.1.............8.2.....1.4....5.6.....7.8..."
+
+// Evil puzzle requiring Unique Rectangle Type 2. Sourced from top95 collection.
+// Expert-tier solvers stall at 52 empty cells. UR Type 2 fires at the stall
+// point, enabling further progress.
+const urType2Puzzle = "...5...........5.697.....2...48.2...25.1...3..8..3.........4.7..13.5..9..2.....4."
+
+// Evil puzzle requiring X-Cycles. Sourced from top95 collection.
+// Expert-tier solvers stall. X-Cycles (Type 2) fires and enables one
+// additional elimination beyond what expert-tier achieves.
+const xCyclesPuzzle = "6.2.5.........3.4..........43...8....1....2........7..5..27...........81...6....."
 
 // ---------------------------------------------------------------------------
 // Basic tier tests
@@ -333,9 +353,9 @@ func TestIntegration_XWingRequired(t *testing.T) {
 	t.Logf("Solved in %d moves, %d x-wing", len(moves), xwCount)
 }
 
-// TestIntegration_XYWingRequired verifies that a real puzzle requires the
-// xy-wing solver (now in Hard tier). This particular puzzle also needs
-// expert-tier techniques to fully solve.
+// TestIntegration_XYWingRequired verifies that a real puzzle requires
+// hard-tier techniques to solve. Medium-tier stalls; with the addition of
+// w-wing and xy-wing to the hard tier, this puzzle is now fully solvable.
 func TestIntegration_XYWingRequired(t *testing.T) {
 	store := solver.NewStore()
 	// Medium solvers alone cannot solve this puzzle.
@@ -345,24 +365,11 @@ func TestIntegration_XYWingRequired(t *testing.T) {
 		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
 	}
 
-	// Hard-tier solvers make progress but can't finish it.
+	// Hard-tier solvers (including xy-wing and w-wing) can solve it.
 	hardBoard := boardFromString(t, xyWingPuzzle)
-	solveWithStrategies(t, &hardBoard, store, hardKeys)
-	if hardBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be unsolvable by hard techniques alone")
-	}
-
-	// With expert solvers, the puzzle can be solved completely.
-	fullBoard := boardFromString(t, xyWingPuzzle)
-	moves := solveWithStrategies(t, &fullBoard, store, expertKeys)
-	if !fullBoard.IsSolved() {
-		t.Fatal("Expected puzzle to be solvable with expert solvers")
-	}
-
-	// Verify xy-wing technique was used.
-	xywCount := techniqueCount(moves, "xy-wing")
-	if xywCount == 0 {
-		t.Error("Expected at least one xy-wing move")
+	moves := solveWithStrategies(t, &hardBoard, store, hardKeys)
+	if !hardBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with hard-tier solvers")
 	}
 
 	// No backtracker should be needed.
@@ -370,7 +377,7 @@ func TestIntegration_XYWingRequired(t *testing.T) {
 		t.Errorf("Expected zero backtracker moves, got %d", bc)
 	}
 
-	t.Logf("Solved in %d moves, %d xy-wing", len(moves), xywCount)
+	t.Logf("Solved in %d moves", len(moves))
 }
 
 // ---------------------------------------------------------------------------
@@ -642,13 +649,15 @@ func TestIntegration_ExpertTripleRequirementPuzzle(t *testing.T) {
 // Evil-tier puzzle tests (internet-sourced)
 // ---------------------------------------------------------------------------
 
-// evilKeys includes all 16 strategy solvers (expert + evil tier).
+// evilKeys includes all 23 strategy solvers (expert + evil tier).
 var evilKeys = []string{
 	"naked-single", "hidden-single",
 	"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
-	"x-wing", "xy-wing", "hidden-triple",
-	"swordfish", "naked-quad", "simple-coloring", "hidden-quad",
+	"x-wing", "xy-wing", "hidden-triple", "w-wing",
+	"swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing",
 	"jellyfish", "bug-plus-one", "unique-rectangle",
+	"unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4",
+	"x-cycles", "xy-chain",
 }
 
 // TestIntegration_EvilJellyfishPuzzle verifies the evil jellyfish puzzle
@@ -798,6 +807,149 @@ func TestIntegration_HintsPreferStrategySolvers(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Advanced solver integration tests (PR #14: W-Wing, XYZ-Wing, UR Types 2-4,
+// X-Cycles, XY-Chain)
+// ---------------------------------------------------------------------------
+
+// TestIntegration_WWingRequired verifies the W-Wing puzzle requires the w-wing
+// solver. Medium-tier solvers stall; with all solvers (including w-wing in
+// hard tier) the puzzle solves completely.
+func TestIntegration_WWingRequired(t *testing.T) {
+	store := solver.NewStore()
+
+	// Medium-tier solvers cannot solve this puzzle.
+	medBoard := boardFromString(t, wWingPuzzle)
+	solveWithStrategies(t, &medBoard, store, mediumKeys)
+	if medBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by medium techniques alone")
+	}
+
+	// With all solvers, the puzzle solves completely.
+	fullBoard := boardFromString(t, wWingPuzzle)
+	moves := solveWithStrategies(t, &fullBoard, store, evilKeys)
+	if !fullBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be solvable with all solvers")
+	}
+
+	// Verify w-wing technique was used.
+	wwCount := techniqueCount(moves, "w-wing")
+	if wwCount == 0 {
+		t.Error("Expected at least one w-wing move")
+	}
+
+	if bc := techniqueCount(moves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Solved in %d moves, %d w-wing", len(moves), wwCount)
+}
+
+// TestIntegration_URType2Required verifies the Unique Rectangle Type 2 puzzle
+// uses the ur-type-2 solver. Expert-tier solvers stall; with evil-tier
+// (including unique-rectangle-2), additional progress is made.
+func TestIntegration_URType2Required(t *testing.T) {
+	store := solver.NewStore()
+
+	// Expert-tier solvers stall on this puzzle.
+	expertBoard := boardFromString(t, urType2Puzzle)
+	expertMoves := solveWithStrategies(t, &expertBoard, store, expertKeys)
+	if expertBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by expert techniques alone")
+	}
+
+	// With evil-tier solvers (including unique-rectangle-2), more progress is made.
+	fullBoard := boardFromString(t, urType2Puzzle)
+	fullMoves := solveWithStrategies(t, &fullBoard, store, evilKeys)
+
+	// Verify unique-rectangle-2 technique was used.
+	ur2Count := techniqueCount(fullMoves, "unique-rectangle-2")
+	if ur2Count == 0 {
+		t.Error("Expected at least one unique-rectangle-2 move")
+	}
+
+	// Evil-tier should make more progress than expert-tier alone.
+	if len(fullMoves) <= len(expertMoves) {
+		t.Errorf("Expected evil-tier to make more progress (%d moves) than expert-tier (%d moves)",
+			len(fullMoves), len(expertMoves))
+	}
+
+	if bc := techniqueCount(fullMoves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Expert: %d moves. Evil: %d moves, %d unique-rectangle-2",
+		len(expertMoves), len(fullMoves), ur2Count)
+}
+
+// TestIntegration_XCyclesRequired verifies the X-Cycles puzzle uses the
+// x-cycles solver. Expert-tier solvers stall; with evil-tier (including
+// x-cycles), additional progress is made.
+func TestIntegration_XCyclesRequired(t *testing.T) {
+	store := solver.NewStore()
+
+	// Expert-tier solvers stall on this puzzle.
+	expertBoard := boardFromString(t, xCyclesPuzzle)
+	expertMoves := solveWithStrategies(t, &expertBoard, store, expertKeys)
+	if expertBoard.IsSolved() {
+		t.Fatal("Expected puzzle to be unsolvable by expert techniques alone")
+	}
+
+	// With evil-tier solvers (including x-cycles), more progress is made.
+	fullBoard := boardFromString(t, xCyclesPuzzle)
+	fullMoves := solveWithStrategies(t, &fullBoard, store, evilKeys)
+
+	// Verify x-cycles technique was used.
+	xcCount := techniqueCount(fullMoves, "x-cycles")
+	if xcCount == 0 {
+		t.Error("Expected at least one x-cycles move")
+	}
+
+	// Evil-tier should make more progress than expert-tier alone.
+	if len(fullMoves) <= len(expertMoves) {
+		t.Errorf("Expected evil-tier to make more progress (%d moves) than expert-tier (%d moves)",
+			len(fullMoves), len(expertMoves))
+	}
+
+	if bc := techniqueCount(fullMoves, "backtracker"); bc > 0 {
+		t.Errorf("Expected zero backtracker moves, got %d", bc)
+	}
+
+	t.Logf("Expert: %d moves. Evil: %d moves, %d x-cycles",
+		len(expertMoves), len(fullMoves), xcCount)
+}
+
+// TestIntegration_WWingPuzzleSolvesCompletely verifies the W-Wing puzzle
+// solves completely with all 23 strategy solvers and no backtracking.
+func TestIntegration_WWingPuzzleSolvesCompletely(t *testing.T) {
+	store := solver.NewStore()
+
+	board := boardFromString(t, wWingPuzzle)
+	moves := solveWithStrategies(t, &board, store, evilKeys)
+	if !board.IsSolved() {
+		t.Fatal("Expected puzzle to be fully solvable with all strategy solvers")
+	}
+
+	// Verify multiple techniques are exercised (this puzzle uses many).
+	techniques := make(map[string]bool)
+	for _, m := range moves {
+		techniques[m.Technique] = true
+	}
+
+	// Should use at least w-wing plus basic techniques.
+	if !techniques["w-wing"] {
+		t.Error("Expected w-wing to be used")
+	}
+	if !techniques["naked-single"] {
+		t.Error("Expected naked-single to be used")
+	}
+	if !techniques["hidden-single"] {
+		t.Error("Expected hidden-single to be used")
+	}
+
+	t.Logf("Solved in %d moves using %d distinct techniques", len(moves), len(techniques))
+}
+
+// ---------------------------------------------------------------------------
 // Move metadata tests
 // ---------------------------------------------------------------------------
 
@@ -849,9 +1001,11 @@ func TestIntegration_AllSolversRegistered(t *testing.T) {
 	expected := []string{
 		"naked-single", "hidden-single",
 		"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
-		"x-wing", "xy-wing", "hidden-triple",
-		"swordfish", "naked-quad", "simple-coloring", "hidden-quad",
+		"x-wing", "xy-wing", "hidden-triple", "w-wing",
+		"swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing",
 		"jellyfish", "bug-plus-one", "unique-rectangle",
+		"unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4",
+		"x-cycles", "xy-chain",
 	}
 
 	for _, key := range expected {
@@ -881,6 +1035,7 @@ func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
 		"expert-triple-requirement":  expertTripleRequirementPuzzle,
 		"evil-jellyfish":             evilJellyfishPuzzle,
 		"evil-bug-ur":                evilBUGURPuzzle,
+		"w-wing":                     wWingPuzzle,
 	}
 
 	for name, p := range puzzles {

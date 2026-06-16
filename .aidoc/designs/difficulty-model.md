@@ -27,15 +27,15 @@ Difficulty combines clue count with technique requirements in `generator/difficu
 |-------|-----------------|---------------|-------------|
 | Easy | 45–59 | Basic | naked-single, hidden-single |
 | Medium | 32–44 | Intermediate | naked-pair, naked-triple, pointing-pair, hidden-pair |
-| Hard | 25–31 | Advanced | x-wing, xy-wing, hidden-triple |
-| Expert | 22–24 | Expert | swordfish, naked-quad, simple-coloring, hidden-quad |
-| Evil | 17–22 | Evil | jellyfish, bug-plus-one, unique-rectangle |
+| Hard | 25–31 | Advanced | x-wing, xy-wing, hidden-triple, w-wing |
+| Expert | 22–24 | Expert | swordfish, naked-quad, simple-coloring, hidden-quad, xyz-wing |
+| Evil | 17–22 | Evil | jellyfish, bug-plus-one, unique-rectangle, unique-rectangle-2, unique-rectangle-3, unique-rectangle-4, x-cycles, xy-chain |
 
 Each level's allowed solvers = its own SolverKeys + all solvers from lower tiers.
 During generation, the generator verifies that lower-tier solvers alone cannot solve
 the puzzle — ensuring it genuinely requires at least one technique from this tier.
 
-### Solver Inventory (16 solvers)
+### Solver Inventory (23 solvers)
 
 Solvers are split into per-size variants for accurate difficulty tiering. Shared
 algorithms use a factory/parameterized pattern — e.g., `FishSolver` (X-Wing/Swordfish/
@@ -52,13 +52,20 @@ Jellyfish) and `NakedSubsetSolver` / `HiddenSubsetSolver` (pair/triple/quad).
 | x-wing | X-Wing | 140 | Hard | FishSolver(size=2) |
 | xy-wing | XY-Wing | 160 | Hard | Direct |
 | hidden-triple | Hidden Triple | 100 | Hard | HiddenSubsetSolver(size=3) |
+| w-wing | W-Wing | 150 | Hard | Direct |
 | swordfish | Swordfish | 150 | Expert | FishSolver(size=3) |
 | naked-quad | Naked Quad | 120 | Expert | NakedSubsetSolver(size=4) |
 | simple-coloring | Simple Coloring | 150 | Expert | Direct |
 | hidden-quad | Hidden Quad | 150 | Expert | HiddenSubsetSolver(size=4) |
+| xyz-wing | XYZ-Wing | 180 | Expert | Direct |
 | jellyfish | Jellyfish | 300 | Evil | FishSolver(size=4) |
 | bug-plus-one | BUG+1 | 250 | Evil | Direct |
-| unique-rectangle | Unique Rectangle | 200 | Evil | Direct |
+| unique-rectangle | Unique Rectangle Type 1 | 200 | Evil | Direct |
+| unique-rectangle-2 | Unique Rectangle Type 2 | 220 | Evil | Direct |
+| unique-rectangle-3 | Unique Rectangle Type 3 | 240 | Evil | Direct |
+| unique-rectangle-4 | Unique Rectangle Type 4 | 250 | Evil | Direct |
+| x-cycles | X-Cycles | 280 | Evil | Direct (DFS chain search) |
+| xy-chain | XY-Chain | 300 | Evil | Direct (DFS chain search) |
 
 ### Tier Rationale
 
@@ -68,12 +75,15 @@ Tiers are based on SudokuWiki's human-difficulty ordering (frequency × difficul
 - **Medium:** Basic pattern recognition — pairs, triples, pointing pairs. Hidden pairs
   are easier than X-Wing for humans.
 - **Hard:** Requires systematic row/column scanning (X-Wing, XY-Wing) or identifying
-  three hidden digits in three cells (Hidden Triple).
+  three hidden digits in three cells (Hidden Triple). W-Wing uses bi-value cells
+  connected by a strong link.
 - **Expert:** Very hard to spot manually — 3-row/col fish patterns (Swordfish), four-cell
-  subsets (Naked/Hidden Quad), graph coloring (Simple Coloring).
+  subsets (Naked/Hidden Quad), graph coloring (Simple Coloring). XYZ-Wing extends
+  XY-Wing with a three-candidate pivot.
 - **Evil:** Near-impossible to spot manually — 4-row/col fish patterns (Jellyfish),
-  bivalue universal grave detection (BUG+1), and deadly-pattern elimination
-  (Unique Rectangle Type 1).
+  bivalue universal grave detection (BUG+1), deadly-pattern elimination
+  (Unique Rectangle Types 1–4), single-digit alternating inference chains
+  (X-Cycles), and multi-cell bi-value chains (XY-Chain).
 
 ## Difficulty Mapping
 
@@ -108,13 +118,13 @@ The plumbing in `generator/difficulty.go`:
 **Medium:** `SolverKeys: ["naked-pair", "naked-triple", "pointing-pair", "hidden-pair"]`.
 `LowerTierSolverKeys()` returns Easy keys.
 
-**Hard:** `SolverKeys: ["x-wing", "xy-wing", "hidden-triple"]`.
+**Hard:** `SolverKeys: ["x-wing", "xy-wing", "hidden-triple", "w-wing"]`.
 `LowerTierSolverKeys()` returns Easy + Medium keys.
 
-**Expert:** `SolverKeys: ["swordfish", "naked-quad", "simple-coloring", "hidden-quad"]`.
+**Expert:** `SolverKeys: ["swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing"]`.
 `LowerTierSolverKeys()` returns Easy + Medium + Hard keys.
 
-**Evil:** `SolverKeys: ["jellyfish", "bug-plus-one", "unique-rectangle"]`.
+**Evil:** `SolverKeys: ["jellyfish", "bug-plus-one", "unique-rectangle", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain"]`.
 `LowerTierSolverKeys()` returns Easy + Medium + Hard + Expert keys.
 
 ## Scoring System

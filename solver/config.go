@@ -31,6 +31,13 @@ const (
 	WeightSimpleColoring = 150
 	WeightBUGPlusOne      = 250
 	WeightUniqueRectangle = 200
+	WeightWWing           = 150
+	WeightXYZWing         = 180
+	WeightUniqueRectangle2 = 220
+	WeightUniqueRectangle3 = 240
+	WeightUniqueRectangle4 = 250
+	WeightXCycles         = 280
+	WeightXYChain         = 300
 )
 
 // Clue-count ranges per difficulty level.

@@ -34,17 +34,24 @@ func NewStore() Store {
 	store.RegisterStrategy(NewXWingSolver())
 	store.RegisterStrategy(NewXYWingSolver())
 	store.RegisterStrategy(NewHiddenTripleSolver())
+	store.RegisterStrategy(NewWWingSolver())
 
 	// Expert tier.
 	store.RegisterStrategy(NewSwordfishSolver())
 	store.RegisterStrategy(NewNakedQuadSolver())
 	store.RegisterStrategy(NewSimpleColoringSolver())
 	store.RegisterStrategy(NewHiddenQuadSolver())
+	store.RegisterStrategy(NewXYZWingSolver())
 
 	// Evil tier.
 	store.RegisterStrategy(NewJellyfishSolver())
 	store.RegisterStrategy(NewBUGPlusOneSolver())
 	store.RegisterStrategy(NewUniqueRectangleSolver())
+	store.RegisterStrategy(NewUniqueRectangleType2Solver())
+	store.RegisterStrategy(NewUniqueRectangleType3Solver())
+	store.RegisterStrategy(NewUniqueRectangleType4Solver())
+	store.RegisterStrategy(NewXCyclesSolver())
+	store.RegisterStrategy(NewXYChainSolver())
 
 	return store
 }
