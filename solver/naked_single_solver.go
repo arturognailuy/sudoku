@@ -20,6 +20,7 @@ func NewNakedSingleSolver() *NakedSingleSolver {
 			Key:         "naked-single",
 			DisplayName: "Naked Single",
 			Description: "Finds cells where all but one candidate have been eliminated by row, column, and box peers.",
+			Weight:      WeightNakedSingle,
 		},
 	}
 }

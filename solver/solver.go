@@ -12,6 +12,9 @@ type Solver interface {
 
 	// GetDescription returns a description of the solver's approach.
 	GetDescription() string
+
+	// GetWeight returns the difficulty weight per application (for puzzle scoring).
+	GetWeight() int
 }
 
 // StrategySolver applies a single solving technique. It is not guaranteed
@@ -46,6 +49,7 @@ type Base struct {
 	Key         string // The unique key of the solver.
 	DisplayName string // The display name of the solver.
 	Description string // The description of the solver.
+	Weight      int    // Difficulty weight per application (for puzzle scoring).
 }
 
 // GetKey returns the key of the solver.
@@ -61,4 +65,9 @@ func (b Base) GetDisplayName() string {
 // GetDescription returns the description of the solver.
 func (b Base) GetDescription() string {
 	return b.Description
+}
+
+// GetWeight returns the difficulty weight of the solver.
+func (b Base) GetWeight() int {
+	return b.Weight
 }

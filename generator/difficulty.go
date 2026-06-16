@@ -1,5 +1,7 @@
 package generator
 
+import "github.com/gnailuy/sudoku/solver"
+
 // Difficulty defines the difficulty level of a Sudoku problem.
 //
 // SolverKeys lists the strategy solvers introduced at this tier.
@@ -99,8 +101,8 @@ func (d Difficulty) LowerTierSolverKeys() []string {
 // Easy puzzles are solvable using only naked singles and hidden singles.
 func NewEasyDifficulty() Difficulty {
 	return Difficulty{
-		MinimumClues: 45,
-		MaximumClues: 60,
+		MinimumClues: solver.EasyMinClues,
+		MaximumClues: solver.EasyMaxClues,
 		SolverKeys:   tierRegistry["easy"],
 	}
 }
@@ -110,8 +112,8 @@ func NewEasyDifficulty() Difficulty {
 // or pointing-pair) — basic techniques alone won't suffice.
 func NewMediumDifficulty() Difficulty {
 	return Difficulty{
-		MinimumClues: 32,
-		MaximumClues: 45,
+		MinimumClues: solver.MediumMinClues,
+		MaximumClues: solver.MediumMaxClues,
 		SolverKeys:   tierRegistry["medium"],
 	}
 }
@@ -121,8 +123,8 @@ func NewMediumDifficulty() Difficulty {
 // basic and intermediate techniques alone won't suffice.
 func NewHardDifficulty() Difficulty {
 	return Difficulty{
-		MinimumClues: 25,
-		MaximumClues: 32,
+		MinimumClues: solver.HardMinClues,
+		MaximumClues: solver.HardMaxClues,
 		SolverKeys:   tierRegistry["hard"],
 	}
 }
@@ -132,8 +134,8 @@ func NewHardDifficulty() Difficulty {
 // hidden-subset) — lower-tier techniques alone won't suffice.
 func NewExpertDifficulty() Difficulty {
 	return Difficulty{
-		MinimumClues: 22,
-		MaximumClues: 25,
+		MinimumClues: solver.ExpertMinClues,
+		MaximumClues: solver.ExpertMaxClues,
 		SolverKeys:   tierRegistry["expert"],
 	}
 }
@@ -143,8 +145,8 @@ func NewExpertDifficulty() Difficulty {
 // Simple Coloring) — expert-tier techniques alone won't suffice.
 func NewEvilDifficulty() Difficulty {
 	return Difficulty{
-		MinimumClues: 17,
-		MaximumClues: 22,
+		MinimumClues: solver.EvilMinClues,
+		MaximumClues: solver.EvilMaxClues,
 		SolverKeys:   tierRegistry["evil"],
 	}
 }

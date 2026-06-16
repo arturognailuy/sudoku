@@ -30,6 +30,7 @@ func NewXWingSolver() *XWingSolver {
 			Key:         "x-wing",
 			DisplayName: "X-Wing",
 			Description: "Finds a candidate confined to the same two columns in two rows (or same two rows in two columns), enabling eliminations that reveal a single candidate.",
+			Weight:      WeightXWing,
 		},
 	}
 }
