@@ -2,8 +2,6 @@ module github.com/gnailuy/sudoku
 
 go 1.23
 
-toolchain go1.25.7
-
 require (
 	github.com/spf13/pflag v1.0.5
 	github.com/thediveo/enumflag/v2 v2.0.5
