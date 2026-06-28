@@ -18,12 +18,13 @@ go build && go test ./...
 
 ```
 .
-├── main.go              # Entry point — CLI parsing → game loop
+├── main.go              # Entry point — CLI parsing, fallback flow, auto-store
 ├── cli/                 # CLI controller, flag parsing, signal handling
 ├── core/                # Board, cell, position, validator, normalizer, string serialization
-├── solver/              # Solver interfaces, solver store, backtracking solver
-├── generator/           # Puzzle generation — solved board + cell removal with uniqueness checks
+├── solver/              # Solver interfaces, solver store, backtracking solver, classification
+├── generator/           # Puzzle generation — solved board + cell removal, best-effort with limits
 ├── game/                # Game state — pure logic (undo/redo/hints), no I/O
+├── db/                  # SQLite puzzle database — schema, CRUD, random query, dedup
 ├── util/                # Random shuffle, array helpers
 ├── .aidoc/              # AI-native documentation
 │   ├── INDEX.md

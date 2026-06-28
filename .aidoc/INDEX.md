@@ -25,7 +25,12 @@ This index provides reading chains for common starting points and a complete doc
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
 2. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
-3. `generator/generator.go` — board generation and cell removal logic
+3. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
+4. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
+5. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
+6. `db/db.go` — SQLite database open/close/migrate
+7. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
+8. `main.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — future phases: generator + puzzle database, UI-ready engine
@@ -50,3 +55,6 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
 | `.aidoc/designs/roadmap.md` | Future phases: core refactoring, strategy solvers, puzzle database, UI-ready engine |
 | `README.md` | Human-facing project summary |
+| `db/db.go` | SQLite puzzle database — open, close, schema migration |
+| `db/puzzle.go` | Puzzle CRUD, random query by difficulty, statistics |
+| `solver/classify.go` | Puzzle classification — difficulty tier, score, max technique |
