@@ -2,6 +2,7 @@ package generator
 
 import (
 	"errors"
+	"time"
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/solver"
@@ -191,6 +192,116 @@ func requiresThisTierSolver(board core.Board, options Options) bool {
 	// If lower-tier solvers alone can solve it, the puzzle doesn't
 	// require any solver from this tier.
 	return !testBoard.IsSolved()
+}
+
+// GenerationResult holds the output of a best-effort generation attempt.
+type GenerationResult struct {
+	Puzzle         core.Board             // The generated puzzle.
+	Classification solver.Classification  // Difficulty classification of the puzzle.
+	Matched        bool                   // Whether the puzzle matched the requested difficulty.
+	RoundsUsed     int                    // Number of generation rounds attempted.
+	DurationMs     int64                  // Wall-clock time used in milliseconds.
+}
+
+// GenerateBestEffort generates a puzzle at the target difficulty using
+// time/round limits. It returns whatever it has when the budget is
+// exhausted, even if the difficulty tier doesn't match.
+//
+// The caller decides whether to use the result or fall back to the
+// database.
+func GenerateBestEffort(opts BestEffortOptions) GenerationResult {
+	startTime := time.Now()
+	maxRounds := opts.MaxRounds
+	if maxRounds <= 0 {
+		maxRounds = 10 // safety default
+	}
+
+	var bestResult *GenerationResult
+
+	for round := 1; round <= maxRounds; round++ {
+		// Check time limit.
+		elapsed := time.Since(startTime).Milliseconds()
+		if opts.MaxDurationMs > 0 && elapsed >= opts.MaxDurationMs {
+			break
+		}
+
+		solvedBoard := GenerateNormalizedSolvedBoard(opts.Options)
+		solvedBoard.Randomize()
+
+		problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, opts.Options)
+		classification := solver.ClassifyPuzzle(opts.solverStore, problem)
+
+		result := GenerationResult{
+			Puzzle:         problem,
+			Classification: classification,
+			RoundsUsed:     round,
+			DurationMs:     time.Since(startTime).Milliseconds(),
+		}
+
+		// Check if the puzzle matches the target difficulty.
+		targetLevel := difficultyLevelName(opts.Difficulty)
+		if classification.Difficulty == targetLevel && requiresThisTierSolver(problem, opts.Options) {
+			result.Matched = true
+			return result
+		}
+
+		// Keep the best result (closest to the target difficulty).
+		if bestResult == nil {
+			bestResult = &result
+		} else if isBetterMatch(classification.Difficulty, bestResult.Classification.Difficulty, targetLevel) {
+			bestResult = &result
+		}
+	}
+
+	if bestResult != nil {
+		bestResult.DurationMs = time.Since(startTime).Milliseconds()
+		return *bestResult
+	}
+
+	// Shouldn't happen, but generate a fallback.
+	problem := GenerateSudokuProblemFromSolvedBoard(
+		GenerateNormalizedSolvedBoard(opts.Options), opts.Options,
+	)
+	classification := solver.ClassifyPuzzle(opts.solverStore, problem)
+	return GenerationResult{
+		Puzzle:         problem,
+		Classification: classification,
+		RoundsUsed:     maxRounds,
+		DurationMs:     time.Since(startTime).Milliseconds(),
+	}
+}
+
+// difficultyLevelName returns the level name for a Difficulty by matching
+// its SolverKeys against the tier registry.
+func difficultyLevelName(d Difficulty) string {
+	for _, name := range tierOrder {
+		tier := tierRegistry[name]
+		if matchesTier(tier, d.SolverKeys) {
+			return name
+		}
+	}
+	return "easy" // fallback for unconstrained
+}
+
+// tierIndex returns the position of a difficulty level in the tier ordering.
+var tierIndexMap = map[string]int{
+	"easy": 0, "medium": 1, "hard": 2, "expert": 3, "evil": 4,
+}
+
+// isBetterMatch returns true if candidate is a better match than current
+// for the target difficulty level (closer in tier distance).
+func isBetterMatch(candidate, current, target string) bool {
+	targetIdx := tierIndexMap[target]
+	candidateDist := abs(tierIndexMap[candidate] - targetIdx)
+	currentDist := abs(tierIndexMap[current] - targetIdx)
+	return candidateDist < currentDist
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // Function to generate a Sudoku problem from an input string.

@@ -2,6 +2,13 @@
 
 A CLI Sudoku game in Go. Generate puzzles at various difficulty levels, solve them, and play interactively with undo/redo and hints.
 
+Features:
+- 23 strategy solvers across 5 difficulty tiers (Easy → Evil)
+- Strategy-based difficulty classification with HoDoKu-weighted scoring
+- Best-effort puzzle generator with time/round limits
+- SQLite puzzle database with automatic storage, dedup, and fallback lookup
+- Interactive play with undo/redo and technique-aware hints
+
 ## Build
 
 ```bash
