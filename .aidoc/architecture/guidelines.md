@@ -30,11 +30,11 @@ The generator already has plumbing for strategy-based validation — it calls `S
 ## Layer Boundaries
 
 ```
-CLI (flags + controller) → main.go → Generator (create puzzle) → Game (pure state)
-                                ↓                                     ↓
-                            DB (SQLite)                          Solver Store → Solver implementations
-                                                                     ↓
-                                                                Core (board, cell, position, validation)
+cmd/ (cobra commands) → cli/ (interactive controller) → Generator (create puzzle) → Game (pure state)
+       ↓                                                        ↓                          ↓
+   DB (SQLite)                                               DB (SQLite)           Solver Store → Solver implementations
+                                                                                        ↓
+                                                                                   Core (board, cell, position, validation)
 ```
 
 **Dependency rules:**
@@ -43,8 +43,9 @@ CLI (flags + controller) → main.go → Generator (create puzzle) → Game (pur
 - `db` depends on `core` and `solver` (for normalization and classification). Does **not** depend on `generator`, `game`, or `cli`.
 - `generator` depends on `core`, `solver`, and `util`.
 - `game` depends on `core` and `solver`. Does **not** depend on `cli` or `generator`. Contains pure game logic — no I/O imports (`fmt` for string formatting only; no `os`, `bufio`, or terminal I/O).
-- `cli` depends on `generator` (for difficulty enum) and `game` (for the controller). Owns all terminal I/O: flag parsing, board display, input handling, signal handling.
-- `main.go` wires `db`, `generator`, `solver`, `game`, and `cli` together — it owns the fallback flow (best-effort generator → DB lookup → graceful degradation).
+- `cli` depends on `game` (for the controller). Owns interactive terminal I/O: board display, input handling, signal handling.
+- `cmd` depends on `cli`, `core`, `db`, `game`, `generator`, and `solver`. Owns all CLI command definitions (cobra), flag parsing, fallback flow, batch generation, and import logic.
+- `main.go` delegates to `cmd.Execute()` — minimal entry point.
 - `util` has no internal dependencies (pure helpers).
 
 Violations of these boundaries indicate a design problem.

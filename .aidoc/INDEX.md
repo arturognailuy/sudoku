@@ -30,7 +30,9 @@ This index provides reading chains for common starting points and a complete doc
 5. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
 6. `db/db.go` — SQLite database open/close/migrate
 7. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
-8. `main.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
+8. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
+9. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
+10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — future phases: generator + puzzle database, UI-ready engine
@@ -53,8 +55,12 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Future phases: core refactoring, strategy solvers, puzzle database, UI-ready engine |
+| `.aidoc/designs/roadmap.md` | Future phases: puzzle database, batch generation, import, UI-ready engine |
 | `README.md` | Human-facing project summary |
+| `cmd/root.go` | Cobra root command and shared state |
+| `cmd/play.go` | Interactive play mode, fallback flow, auto-store |
+| `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
+| `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
 | `db/db.go` | SQLite puzzle database — open, close, schema migration |
 | `db/puzzle.go` | Puzzle CRUD, random query by difficulty, statistics |
 | `solver/classify.go` | Puzzle classification — difficulty tier, score, max technique |

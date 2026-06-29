@@ -18,8 +18,9 @@ go build && go test ./...
 
 ```
 .
-├── main.go              # Entry point — CLI parsing, fallback flow, auto-store
-├── cli/                 # CLI controller, flag parsing, signal handling
+├── main.go              # Entry point — delegates to cmd package
+├── cmd/                 # Cobra CLI commands (play, generate, import)
+├── cli/                 # CLI controller, signal handling (interactive play)
 ├── core/                # Board, cell, position, validator, normalizer, string serialization
 ├── solver/              # Solver interfaces, solver store, backtracking solver, classification
 ├── generator/           # Puzzle generation — solved board + cell removal, best-effort with limits
