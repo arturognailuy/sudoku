@@ -111,8 +111,12 @@ func TestDBFallbackPath(t *testing.T) {
 func TestGenerateInvalidCount(t *testing.T) {
 	cmd := generateCmd
 
-	cmd.Flags().Set("count", "0")
-	cmd.Flags().Set("difficulty", "easy")
+	if err := cmd.Flags().Set("count", "0"); err != nil {
+		t.Fatalf("set count flag: %v", err)
+	}
+	if err := cmd.Flags().Set("difficulty", "easy"); err != nil {
+		t.Fatalf("set difficulty flag: %v", err)
+	}
 
 	err := runGenerate(cmd)
 	if err == nil {
