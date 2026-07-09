@@ -56,6 +56,7 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
 | `.aidoc/designs/roadmap.md` | Future phases: puzzle database, batch generation, import, UI-ready engine |
+| `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |
 | `cmd/play.go` | Interactive play mode, fallback flow, auto-store |

@@ -211,6 +211,99 @@ func TestRepair(t *testing.T) {
 	}
 }
 
+func TestClear(t *testing.T) {
+	g := newTestGame()
+	pos := core.NewPosition(0, 2)
+
+	// Add a value to an empty cell.
+	cell := core.NewCell(pos, 4)
+	_ = g.AddInputAndRecordHistory(cell)
+	if g.Get(pos) != 4 {
+		t.Fatalf("Expected 4 after add, got %d", g.Get(pos))
+	}
+
+	// Clear the cell (add value 0).
+	clearCell := core.NewCell(pos, 0)
+	err := g.AddInputAndRecordHistory(clearCell)
+	if err != nil {
+		t.Fatalf("Clear returned error: %v", err)
+	}
+	if g.Get(pos) != 0 {
+		t.Errorf("Expected 0 after clear, got %d", g.Get(pos))
+	}
+}
+
+func TestCheckValid(t *testing.T) {
+	g := newTestGame()
+
+	// No user input — board should be valid.
+	if !g.IsValid() {
+		t.Error("Initial board should be valid")
+	}
+
+	// Solve to find the correct value for an empty cell.
+	solvedGame := newTestGame()
+	solvedGame.Solve()
+	pos := core.NewPosition(0, 2)
+	correctValue := solvedGame.PlayBoard.Get(pos)
+
+	// Add the correct value.
+	cell := core.NewCell(pos, correctValue)
+	_ = g.AddInputAndRecordHistory(cell)
+
+	if !g.IsValid() {
+		t.Error("Board should be valid after adding correct value")
+	}
+}
+
+func TestCheckInvalid(t *testing.T) {
+	g := newTestGame()
+
+	// Solve to find the correct value, then add a wrong one.
+	solvedGame := newTestGame()
+	solvedGame.Solve()
+	pos := core.NewPosition(0, 2)
+	correctValue := solvedGame.PlayBoard.Get(pos)
+
+	wrongValue := (correctValue % 9) + 1
+	if wrongValue == correctValue {
+		wrongValue = (wrongValue % 9) + 1
+	}
+
+	cell := core.NewCell(pos, wrongValue)
+	_ = g.AddInputAndRecordHistory(cell)
+
+	if g.IsValid() {
+		t.Error("Board should be invalid after adding wrong value")
+	}
+}
+
+func TestMultipleSolutionPuzzle(t *testing.T) {
+	// A puzzle with multiple solutions — derived from the test puzzle
+	// with cells (0,0) and (0,1) cleared to break uniqueness.
+	multiPuzzle := "....7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
+	var board core.Board
+	board.FromString(multiPuzzle)
+
+	store := solver.NewStore()
+	solutionCount := store.GetDefaultSolver().CountSolutions(&board)
+	if solutionCount <= 1 {
+		t.Skipf("test puzzle has %d solution(s), expected >1 — skipping", solutionCount)
+	}
+
+	// Board should still be valid.
+	if !board.IsValid() {
+		t.Fatal("Board with multiple solutions should still be valid")
+	}
+
+	// Game should be creatable and not pre-solved.
+	opts := NewDefaultOptions(store)
+	g := NewGame(board, opts)
+	if g.IsSolved() {
+		t.Error("Game should not be solved at start")
+	}
+}
+
 func TestToString(t *testing.T) {
 	g := newTestGame()
 
