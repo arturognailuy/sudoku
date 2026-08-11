@@ -3,8 +3,7 @@ module github.com/gnailuy/sudoku
 go 1.23
 
 require (
-	github.com/spf13/pflag v1.0.5
-	github.com/thediveo/enumflag/v2 v2.0.5
+	github.com/spf13/cobra v1.7.0
 	modernc.org/sqlite v1.34.5
 )
 
@@ -15,7 +14,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/spf13/cobra v1.7.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
