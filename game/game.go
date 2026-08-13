@@ -7,10 +7,17 @@ import (
 	"github.com/gnailuy/sudoku/solver"
 )
 
-// MoveRecord stores a player move along with the previous cell value for undo support.
-type MoveRecord struct {
-	Input         core.Cell
-	PreviousValue int
+// sessionState is the complete player-controlled state restored by undo and
+// redo. Boards and note arrays are values, so history entries are detached.
+type sessionState struct {
+	playBoard    core.Board
+	invalidInput core.Board
+	notes        [9][9]core.CandidateSet
+}
+
+type historyRecord struct {
+	before sessionState
+	after  sessionState
 }
 
 // Game holds the state for an interactive Sudoku session.
@@ -18,8 +25,9 @@ type Game struct {
 	problemBoard    core.Board
 	playBoard       core.Board
 	invalidInput    core.Board              // Put the invalid input in another board to keep the play board solvable.
-	inputSequence   []MoveRecord            // User input sequence.
-	inputCursor     int                     // The cursor of the current user input.
+	notes           [9][9]core.CandidateSet // Manual player notes, independent of solver candidates.
+	inputSequence   []historyRecord         // Atomic value and note transitions.
+	inputCursor     int                     // The cursor of the current transition.
 	completeSolver  solver.CompleteSolver   // The complete solver for judging input and solving, must be reliable.
 	strategySolvers []solver.StrategySolver // An optional list of strategy solvers to give hints.
 }
@@ -34,7 +42,7 @@ func NewGame(problem core.Board, options Options) Game {
 		problemBoard:    problem,
 		playBoard:       problem.Copy(),
 		invalidInput:    core.NewEmptyBoard(),
-		inputSequence:   []MoveRecord{},
+		inputSequence:   []historyRecord{},
 		inputCursor:     -1,
 		completeSolver:  options.solverStore.GetDefaultSolver(),
 		strategySolvers: options.GetStrategySolvers(),
@@ -124,24 +132,13 @@ func (game *Game) AddInputAndRecordHistory(input core.Cell) (err error) {
 		return invalidCellError(input.Position, input.Value)
 	}
 
-	previousValue := game.Get(input.Position)
-
+	before := game.captureState()
 	err = game.AddInput(input)
 	if err != nil {
 		return
 	}
-
-	// On new input, we remove all the input after the cursor.
-	if len(game.inputSequence) > game.inputCursor+1 {
-		game.inputSequence = game.inputSequence[:game.inputCursor+1]
-	}
-
-	// Then append the new input to the input sequence.
-	game.inputSequence = append(game.inputSequence, MoveRecord{
-		Input:         input,
-		PreviousValue: previousValue,
-	})
-	game.inputCursor++
+	game.applyValueNoteCleanup(input)
+	game.recordTransition(before)
 
 	return
 }
@@ -152,13 +149,9 @@ func (game *Game) Undo() (err error) {
 		return &EngineError{Code: ErrorNoUndo, Detail: "no input to undo"}
 	}
 
-	lastInput := game.inputSequence[game.inputCursor]
+	record := game.inputSequence[game.inputCursor]
 	game.inputCursor--
-
-	_ = game.AddInput(core.Cell{
-		Position: lastInput.Input.Position,
-		Value:    lastInput.PreviousValue,
-	})
+	game.restoreState(record.before)
 
 	return
 }
@@ -170,9 +163,8 @@ func (game *Game) Redo() (err error) {
 	}
 
 	game.inputCursor++
-	nextInput := game.inputSequence[game.inputCursor]
-
-	_ = game.AddInput(nextInput.Input)
+	record := game.inputSequence[game.inputCursor]
+	game.restoreState(record.after)
 
 	return
 }
@@ -191,8 +183,52 @@ func (game *Game) Repair() (undoSteps int) {
 func (game *Game) Reset() {
 	game.playBoard = game.problemBoard.Copy()
 	game.invalidInput = core.NewEmptyBoard()
-	game.inputSequence = []MoveRecord{}
+	game.notes = [9][9]core.CandidateSet{}
+	game.inputSequence = []historyRecord{}
 	game.inputCursor = -1
+}
+
+func (game *Game) captureState() sessionState {
+	return sessionState{
+		playBoard:    game.playBoard.Copy(),
+		invalidInput: game.invalidInput.Copy(),
+		notes:        game.notes,
+	}
+}
+
+func (game *Game) restoreState(state sessionState) {
+	game.playBoard = state.playBoard.Copy()
+	game.invalidInput = state.invalidInput.Copy()
+	game.notes = state.notes
+}
+
+func (game *Game) recordTransition(before sessionState) {
+	if len(game.inputSequence) > game.inputCursor+1 {
+		game.inputSequence = game.inputSequence[:game.inputCursor+1]
+	}
+	game.inputSequence = append(game.inputSequence, historyRecord{
+		before: before,
+		after:  game.captureState(),
+	})
+	game.inputCursor++
+}
+
+func (game *Game) applyValueNoteCleanup(input core.Cell) {
+	row, column := input.Position.Row, input.Position.Column
+	game.notes[row][column] = 0
+	if input.Value == 0 {
+		return
+	}
+	for index := 0; index < 9; index++ {
+		game.notes[row][index].Remove(input.Value)
+		game.notes[index][column].Remove(input.Value)
+	}
+	boxRow, boxColumn := row-row%3, column-column%3
+	for r := boxRow; r < boxRow+3; r++ {
+		for c := boxColumn; c < boxColumn+3; c++ {
+			game.notes[r][c].Remove(input.Value)
+		}
+	}
 }
 
 // Function to solve the game.

@@ -20,12 +20,13 @@ const (
 type ErrorCode string
 
 const (
-	ErrorInvalidAction ErrorCode = "invalid-action"
-	ErrorInvalidCell   ErrorCode = "invalid-cell"
-	ErrorImmutableCell ErrorCode = "immutable-cell"
-	ErrorNoUndo        ErrorCode = "no-undo"
-	ErrorNoRedo        ErrorCode = "no-redo"
-	ErrorNoHint        ErrorCode = "no-hint"
+	ErrorInvalidAction  ErrorCode = "invalid-action"
+	ErrorInvalidCell    ErrorCode = "invalid-cell"
+	ErrorImmutableCell  ErrorCode = "immutable-cell"
+	ErrorNoteNotAllowed ErrorCode = "note-not-allowed"
+	ErrorNoUndo         ErrorCode = "no-undo"
+	ErrorNoRedo         ErrorCode = "no-redo"
+	ErrorNoHint         ErrorCode = "no-hint"
 )
 
 // EngineError is returned for invalid player actions. The game is unchanged
@@ -59,6 +60,8 @@ const (
 	ActionUndo       ActionKind = "undo"
 	ActionRedo       ActionKind = "redo"
 	ActionApplyHint  ActionKind = "apply-hint"
+	ActionToggleNote ActionKind = "toggle-note"
+	ActionClearNotes ActionKind = "clear-notes"
 )
 
 // Action is a typed player intent. Its unexported method keeps the set of
@@ -100,12 +103,26 @@ type ApplyHint struct{}
 
 func (ApplyHint) actionKind() ActionKind { return ActionApplyHint }
 
+// ToggleNote adds or removes one manual note on an editable empty cell.
+type ToggleNote struct {
+	Position core.Position
+	Value    int
+}
+
+func (ToggleNote) actionKind() ActionKind { return ActionToggleNote }
+
+// ClearNotes removes all manual notes from an editable empty cell.
+type ClearNotes struct{ Position core.Position }
+
+func (ClearNotes) actionKind() ActionKind { return ActionClearNotes }
+
 // Snapshot is a detached read model. Its arrays may be modified by a caller
 // without mutating the Game that produced it.
 type Snapshot struct {
 	Givens  [9][9]int
 	Values  [9][9]int
 	Invalid [9][9]bool
+	Notes   [9][9]core.CandidateSet
 	Status  Status
 	CanUndo bool
 	CanRedo bool
@@ -118,6 +135,8 @@ type CellChange struct {
 	After         int
 	InvalidBefore bool
 	InvalidAfter  bool
+	NotesBefore   core.CandidateSet
+	NotesAfter    core.CandidateSet
 }
 
 // Result describes an accepted transition.
@@ -138,6 +157,7 @@ func (game *Game) Snapshot() Snapshot {
 			snapshot.Givens[row][column] = game.problemBoard.Get(position)
 			snapshot.Values[row][column] = game.Get(position)
 			snapshot.Invalid[row][column] = game.invalidInput.Get(position) != 0
+			snapshot.Notes[row][column] = game.notes[row][column]
 		}
 	}
 	snapshot.Status = game.status()
@@ -186,6 +206,10 @@ func (game *Game) Apply(action Action) (Result, error) {
 		} else {
 			err = game.AddInputAndRecordHistory(hint.Cell)
 		}
+	case ToggleNote:
+		err = game.toggleNote(typed.Position, typed.Value)
+	case ClearNotes:
+		err = game.clearNotes(typed.Position)
 	default:
 		return Result{}, &EngineError{Code: ErrorInvalidAction, Detail: fmt.Sprintf("unsupported action %T", action)}
 	}
@@ -218,7 +242,8 @@ func resultFromSnapshots(kind ActionKind, before, after Snapshot) Result {
 	for row := 0; row < 9; row++ {
 		for column := 0; column < 9; column++ {
 			if before.Values[row][column] == after.Values[row][column] &&
-				before.Invalid[row][column] == after.Invalid[row][column] {
+				before.Invalid[row][column] == after.Invalid[row][column] &&
+				before.Notes[row][column] == after.Notes[row][column] {
 				continue
 			}
 			result.Changes = append(result.Changes, CellChange{
@@ -227,10 +252,53 @@ func resultFromSnapshots(kind ActionKind, before, after Snapshot) Result {
 				After:         after.Values[row][column],
 				InvalidBefore: before.Invalid[row][column],
 				InvalidAfter:  after.Invalid[row][column],
+				NotesBefore:   before.Notes[row][column],
+				NotesAfter:    after.Notes[row][column],
 			})
 		}
 	}
 	return result
+}
+
+func (game *Game) toggleNote(position core.Position, value int) error {
+	if !position.IsValid() || value < 1 || value > 9 {
+		return invalidCellError(position, value)
+	}
+	if err := game.validateNoteCell(position); err != nil {
+		return err
+	}
+	before := game.captureState()
+	if game.notes[position.Row][position.Column].Has(value) {
+		game.notes[position.Row][position.Column].Remove(value)
+	} else {
+		game.notes[position.Row][position.Column].Add(value)
+	}
+	game.recordTransition(before)
+	return nil
+}
+
+func (game *Game) clearNotes(position core.Position) error {
+	if !position.IsValid() {
+		return invalidCellError(position, 0)
+	}
+	if err := game.validateNoteCell(position); err != nil {
+		return err
+	}
+	before := game.captureState()
+	game.notes[position.Row][position.Column] = 0
+	game.recordTransition(before)
+	return nil
+}
+
+func (game *Game) validateNoteCell(position core.Position) error {
+	positionCopy := position
+	if game.problemBoard.Get(position) != 0 {
+		return &EngineError{Code: ErrorImmutableCell, Position: &positionCopy, Detail: "cannot add notes to a problem cell"}
+	}
+	if game.Get(position) != 0 {
+		return &EngineError{Code: ErrorNoteNotAllowed, Position: &positionCopy, Detail: "notes are allowed only on empty cells"}
+	}
+	return nil
 }
 
 func invalidCellError(position core.Position, value int) *EngineError {
