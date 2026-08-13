@@ -3,6 +3,8 @@ domain: Designs
 status: Draft
 entry_points:
   - game/game.go
+  - game/contract.go
+  - game/serialization.go
 dependencies:
   - .aidoc/architecture/guidelines.md
   - .aidoc/designs/roadmap.md
@@ -75,11 +77,21 @@ The engine does not automatically fill all legal candidates or continuously sync
 
 ## Serialization Contract
 
-Serialized state is a versioned data contract, not formatted CLI output. The representation includes the original puzzle, player values, invalid entries, notes, action history, and history cursor so a restored game preserves undo/redo behavior.
+`Game.Serialize()` returns the complete session as versioned JSON. `game.Restore(data, options)` validates that JSON and returns a newly constructed game. The host supplies `Options` during restoration because solver configuration is executable host policy, not persisted player state.
 
-Restoration validates the schema version, puzzle, positions, values, notes, and history before constructing a game. Solver configuration is supplied by the host during restoration rather than embedded as executable configuration. Unknown future schema versions fail explicitly; migrations can be added per version.
+Version 1 has these fields:
 
-`Game.ToString` remains diagnostic text and is not a persistence format.
+- `version`: schema version, currently `1`;
+- `puzzle`: the original 81-character puzzle string;
+- `current`: the current player-controlled state;
+- `history`: ordered before/after state records;
+- `cursor`: the applied history record, or `-1` when no record is applied.
+
+Each player-controlled state stores separate 81-character `values` and `invalid` grids plus sparse `notes` records containing a zero-based row, zero-based column, and note digits. `values` excludes puzzle givens. Separating invalid entries keeps player mistakes visible without contaminating the solver board. Before/after history records use the same complete state shape, so restoration preserves mixed value/note undo and redo exactly.
+
+Restoration rejects malformed JSON, unknown fields, unsupported versions, invalid or unsolvable puzzles, edits to givens, overlapping valid/invalid entries, invalid note records, unsolvable accepted values, entries incorrectly marked invalid, disconnected history, and out-of-range cursors. Current state is stored independently from the cursor because temporary compatibility adapters may change state outside the stable action history; restoration preserves that state and the adapter's existing undo/redo behavior. All validation completes before a `Game` is returned, so corrupt input cannot produce a partially initialized session. Failures use `StateError` and its stable code: `malformed-state`, `unsupported-version`, `invalid-puzzle`, `invalid-session`, or `invalid-history`.
+
+Unknown future schema versions fail explicitly; migrations can be added per version. `Game.ToString` remains diagnostic text and is not a persistence format.
 
 ## Compatibility and Failure Boundaries
 

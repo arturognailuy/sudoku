@@ -234,6 +234,8 @@ func (game *Game) applyValueNoteCleanup(input core.Cell) {
 // Function to solve the game.
 func (game *Game) Solve() {
 	game.completeSolver.Solve(&game.playBoard)
+	game.invalidInput = core.NewEmptyBoard()
+	game.notes = [9][9]core.CandidateSet{}
 }
 
 // Hint returns the next recommended move.
