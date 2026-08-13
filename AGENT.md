@@ -68,4 +68,4 @@ go build && go test ./...
 
 ## Domain Context
 
-This is a Sudoku puzzle game with 23 strategy solvers across five difficulty tiers (Easy through Evil). Difficulty is determined by the hardest solving technique required, with clue count as a secondary constraint. A scoring system (HoDoKu-based weights) quantifies puzzle difficulty. The next milestone is a UI-ready game engine with a stable action/snapshot API, note-taking, unified undo/redo, and versioned serialization. See `.aidoc/designs/ui-ready-engine.md` for the design and `.aidoc/designs/roadmap.md` for the delivery plan.
+This is a Sudoku puzzle game with 23 strategy solvers across five difficulty tiers (Easy through Evil). Difficulty is determined by the hardest solving technique required, with clue count as a secondary constraint. A scoring system (HoDoKu-based weights) quantifies puzzle difficulty. The next milestone is a reusable game engine with a stable action/snapshot API, note-taking, unified undo/redo, and versioned serialization. See `.aidoc/designs/game-engine.md` for the design and `.aidoc/designs/roadmap.md` for the delivery plan.

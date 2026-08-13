@@ -9,7 +9,7 @@ dependencies:
   - .aidoc/designs/e2e-test-scenarios.md
 ---
 
-# UI-Ready Game Engine
+# Game Engine
 
 Phase 5 turns `game.Game` into a stable, reusable engine for the CLI and future TUI, web, or mobile frontends. The engine owns game rules and state transitions; frontends own input, rendering, navigation, and persistence transport.
 

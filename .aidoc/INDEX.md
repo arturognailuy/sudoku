@@ -19,8 +19,9 @@ This index provides reading chains for common starting points and a complete doc
 5. `solver/solver.go` — `Solver`, `StrategySolver`, `CompleteSolver` interfaces and `Base`
 6. `solver/move.go` — `Move` struct (cell + technique + reason)
 7. `solver/store.go` — solver registry with typed access
-8. `game/game.go` — `Game` struct (pure state, no I/O)
-9. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
+8. `game/game.go` — private session state and compatibility adapters
+9. `game/contract.go` — typed actions, detached snapshots, results, and engine errors
+10. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -36,7 +37,7 @@ This index provides reading chains for common starting points and a complete doc
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — Phase 5 scope, delivery order, and exit criteria
-2. `.aidoc/designs/ui-ready-engine.md` — stable engine API, notes, history, and serialization design
+2. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
 3. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
 4. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility scenarios
 
@@ -57,7 +58,7 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
 | `.aidoc/designs/roadmap.md` | Phase 5 scope, delivery plan, and exit criteria |
-| `.aidoc/designs/ui-ready-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
+| `.aidoc/designs/game-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |
@@ -66,4 +67,5 @@ This index provides reading chains for common starting points and a complete doc
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
 | `db/db.go` | SQLite puzzle database — open, close, schema migration |
 | `db/puzzle.go` | Puzzle CRUD, random query by difficulty, statistics |
+| `game/contract.go` | Stable engine actions, snapshots, results, and typed errors |
 | `solver/classify.go` | Puzzle classification — difficulty tier, score, max technique |
