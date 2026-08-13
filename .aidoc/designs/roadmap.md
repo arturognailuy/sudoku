@@ -4,7 +4,7 @@ status: Active
 entry_points:
   - game/game.go
 dependencies:
-  - .aidoc/designs/ui-ready-engine.md
+  - .aidoc/designs/game-engine.md
   - .aidoc/architecture/guidelines.md
   - .aidoc/designs/e2e-test-scenarios.md
 ---
@@ -17,7 +17,7 @@ The next milestone is Phase 5: formalize the existing pure game logic as a stabl
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/ui-ready-engine.md` | Canonical Phase 5 behavior and constraints |
+| `.aidoc/designs/game-engine.md` | Canonical Phase 5 behavior and constraints |
 | `.aidoc/architecture/guidelines.md` | Current package and dependency boundaries |
 | `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility contract for the CLI |
 

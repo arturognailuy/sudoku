@@ -19,7 +19,7 @@ This doc captures the design constraints, layer boundaries, and solver contract 
 |----------|-------------|
 | `.aidoc/INDEX.md` | Discovery index with reading chains |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model design and target state |
-| `.aidoc/designs/ui-ready-engine.md` | Canonical game-engine boundary and Phase 5 invariants |
+| `.aidoc/designs/game-engine.md` | Canonical game-engine boundary and Phase 5 invariants |
 | `AGENT.md` | Operational rules for AI agents working on this repo |
 
 ## Why This Structure
