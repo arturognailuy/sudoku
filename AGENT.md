@@ -51,6 +51,7 @@ go build && go test ./...
 ### Testing
 
 - Every new solver must have tests.
+- Every feature and bug-fix PR must update `.aidoc/designs/e2e-test-scenarios.md` when user-visible behavior or coverage changes, then run all applicable black-box E2E scenarios against a built binary.
 - Run `go test ./...` before committing.
 - Run `go vet ./...` to catch issues.
 - CI must pass before merge.

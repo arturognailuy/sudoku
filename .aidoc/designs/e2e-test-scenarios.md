@@ -1,8 +1,27 @@
+---
+domain: Designs
+status: Active
+entry_points:
+  - main.go
+  - cmd/root.go
+dependencies:
+  - .aidoc/INDEX.md
+  - .aidoc/designs/game-engine.md
+---
+
 # E2E Test Scenarios
 
 End-to-end test scenarios that treat the Sudoku CLI as a black box. Each scenario describes what a regular user would do, the expected behavior, and how to verify it.
 
 These scenarios are designed to be run manually or via shell scripts against a built binary. They are **not** Go test files — E2E testing operates outside the codebase, treating it as a black box.
+
+## Related Docs
+
+| Document | Relationship |
+|----------|-------------|
+| `.aidoc/INDEX.md` | Discovery index and project reading chains |
+| `.aidoc/designs/game-engine.md` | Engine actions and state that frontends expose to users |
+| `AGENT.md` | Required verification discipline for feature and bug-fix PRs |
 
 ## Prerequisites
 
@@ -94,7 +113,7 @@ For these scenarios, start a game with a known puzzle:
 
 ### 2.4 Redo (`redo` / `r`)
 **Input:** After undo: `redo` or `r`
-**Expected:** Undone move is re-applied.
+**Expected:** Undone move is re-applied, including whether the value is valid or invalid.
 
 ### 2.5 Check Board (`check` / `c`)
 **Input:** `check` or `c`
@@ -124,6 +143,10 @@ For these scenarios, start a game with a known puzzle:
 ### 2.11 Shorthand Digit Input
 **Input:** `1 2 3` (no `add` prefix)
 **Expected:** Treated as `add 1 2 3`. Cell (1,2) is set to 3.
+
+### 2.12 Divergent Input Truncates Redo History
+**Input:** Add a value, undo it, add a different value, then run `redo`.
+**Expected:** The different value remains in the cell and the abandoned value does not reappear because the new action replaced the old redo branch.
 
 ---
 
@@ -288,3 +311,6 @@ These scenarios should be added as the project evolves:
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).
 - **Played tracking:** Mark puzzles as played → DB query skips played puzzles.
 - **Concurrent DB access:** Multiple generate workers writing to the same DB → no corruption (WAL mode).
+- **Manual notes:** After a frontend exposes note actions, toggle and clear notes through that frontend and verify the rendered candidates.
+- **Automatic peer-note cleanup:** Add the same note to row, column, box, and non-peer cells; set the value and verify only target and peer notes are removed.
+- **Unified note history:** Toggle or clear notes, set a value that removes peer notes, then undo and redo; verify values, invalid markers, and notes restore atomically.

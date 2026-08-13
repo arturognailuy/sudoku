@@ -55,7 +55,9 @@ Violations of these boundaries indicate a design problem.
 
 `game.Game` owns mutable session state and never exposes its internal boards. `game.Game.ProblemBoard`, `game.Game.PlayBoard`, and `game.Game.Snapshot` return detached values so frontend rendering cannot mutate the session accidentally.
 
-Player transitions enter through typed actions in `game/contract.go`. `game.Game.Apply` returns structured changes and typed `game.EngineError` values; rejected actions leave the complete visible state unchanged. The legacy command-shaped methods remain compatibility adapters until the CLI migration described in `.aidoc/designs/roadmap.md` is complete.
+Player transitions enter through typed actions in `game/contract.go`. `game.Game.Apply` returns structured value and note changes plus typed `game.EngineError` values; rejected actions leave the complete visible state unchanged. The legacy command-shaped methods remain compatibility adapters until the CLI migration described in `.aidoc/designs/roadmap.md` is complete.
+
+Manual notes are engine state rather than solver candidates. Value actions clear notes on the changed cell and remove the value from peer notes as one atomic transition. The unified history restores boards, invalid markers, and notes together, which prevents frontends from reconstructing note cleanup during undo or redo.
 
 `game.Game.Hint` is a query even when a strategy solver uses candidate elimination internally. Hint search operates on a board copy; only `game.ApplyHint` records and applies the recommended value.
 
@@ -111,7 +113,7 @@ Extends `Solver`. Used by solvers that can fully solve any valid board (e.g., ba
 
 ## Design Constraints
 
-- **Interface naming:** Types follow Go conventions. Examples: `Solver` (base interface), `StrategySolver`, `CompleteSolver`, `Base`, `Backtracker`, `Store`, `Move`, `Board`, `Game`, `Difficulty`, `Options`, `MoveRecord`, `CandidateSet`.
+- **Interface naming:** Types follow Go conventions. Examples: `Solver` (base interface), `StrategySolver`, `CompleteSolver`, `Base`, `Backtracker`, `Store`, `Move`, `Board`, `Game`, `Difficulty`, `Options`, `CandidateSet`.
 - **Candidate computation:** `Board.Candidates(pos)` computes valid candidates on the fly by scanning row, column, and box peers. The `CandidateSet` bitfield type provides compact representation (`uint16`, bits 1–9) for the result. Board itself stores only the grid — no cached candidate state to maintain. Strategy solvers call `board.Candidates(pos)` when they need candidates.
 - **Error vs panic:** Methods called with invalid state from within the system `panic` (bug detection). Methods processing user input return errors. This split is intentional.
 - **Geometric distribution stop:** The generator uses `util.RandomBool(0.125)` to probabilistically stop cell removal after reaching the target clue range. This produces natural variation within a difficulty band.
