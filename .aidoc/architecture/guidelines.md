@@ -19,6 +19,7 @@ This doc captures the design constraints, layer boundaries, and solver contract 
 |----------|-------------|
 | `.aidoc/INDEX.md` | Discovery index with reading chains |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model design and target state |
+| `.aidoc/designs/ui-ready-engine.md` | Canonical game-engine boundary and Phase 5 invariants |
 | `AGENT.md` | Operational rules for AI agents working on this repo |
 
 ## Why This Structure
@@ -42,13 +43,21 @@ cmd/ (cobra commands) → cli/ (interactive controller) → Generator (create pu
 - `solver` depends only on `core` and `util`.
 - `db` depends on `core` and `solver` (for normalization and classification). Does **not** depend on `generator`, `game`, or `cli`.
 - `generator` depends on `core`, `solver`, and `util`.
-- `game` depends on `core` and `solver`. Does **not** depend on `cli` or `generator`. Contains pure game logic — no I/O imports (`fmt` for string formatting only; no `os`, `bufio`, or terminal I/O).
+- `game` depends on `core` and `solver`. Does **not** depend on `cli` or `generator`. Contains pure game logic — no I/O imports (`fmt` for string formatting only; no `os`, `bufio`, or terminal I/O). `game.Game.Apply` is the stable mutation boundary; `game.Game.Snapshot` is the detached rendering boundary.
 - `cli` depends on `game` (for the controller). Owns interactive terminal I/O: board display, input handling, signal handling.
 - `cmd` depends on `cli`, `core`, `db`, `game`, `generator`, and `solver`. Owns all CLI command definitions (cobra), flag parsing, fallback flow, batch generation, and import logic.
 - `main.go` delegates to `cmd.Execute()` — minimal entry point.
 - `util` has no internal dependencies (pure helpers).
 
 Violations of these boundaries indicate a design problem.
+
+## Game Engine Boundary
+
+`game.Game` owns mutable session state and never exposes its internal boards. `game.Game.ProblemBoard`, `game.Game.PlayBoard`, and `game.Game.Snapshot` return detached values so frontend rendering cannot mutate the session accidentally.
+
+Player transitions enter through typed actions in `game/contract.go`. `game.Game.Apply` returns structured changes and typed `game.EngineError` values; rejected actions leave the complete visible state unchanged. The legacy command-shaped methods remain compatibility adapters until the CLI migration described in `.aidoc/designs/roadmap.md` is complete.
+
+`game.Game.Hint` is a query even when a strategy solver uses candidate elimination internally. Hint search operates on a board copy; only `game.ApplyHint` records and applies the recommended value.
 
 ## Solver Interface Contract
 

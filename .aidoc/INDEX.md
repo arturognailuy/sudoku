@@ -19,8 +19,9 @@ This index provides reading chains for common starting points and a complete doc
 5. `solver/solver.go` — `Solver`, `StrategySolver`, `CompleteSolver` interfaces and `Base`
 6. `solver/move.go` — `Move` struct (cell + technique + reason)
 7. `solver/store.go` — solver registry with typed access
-8. `game/game.go` — `Game` struct (pure state, no I/O)
-9. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
+8. `game/game.go` — private session state and compatibility adapters
+9. `game/contract.go` — typed actions, detached snapshots, results, and engine errors
+10. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -66,4 +67,5 @@ This index provides reading chains for common starting points and a complete doc
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
 | `db/db.go` | SQLite puzzle database — open, close, schema migration |
 | `db/puzzle.go` | Puzzle CRUD, random query by difficulty, statistics |
+| `game/contract.go` | Stable engine actions, snapshots, results, and typed errors |
 | `solver/classify.go` | Puzzle classification — difficulty tier, score, max technique |

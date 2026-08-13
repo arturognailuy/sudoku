@@ -21,16 +21,20 @@ func newTestGame() Game {
 	return NewGame(testProblem(), NewDefaultOptions(store))
 }
 
+func boardValue(board core.Board, position core.Position) int {
+	return board.Get(position)
+}
+
 func TestNewGame(t *testing.T) {
 	g := newTestGame()
 
 	// Problem board should be preserved.
-	if g.ProblemBoard.Get(core.NewPosition(0, 0)) != 5 {
+	if boardValue(g.ProblemBoard(), core.NewPosition(0, 0)) != 5 {
 		t.Error("Expected problem cell (0,0) = 5")
 	}
 
 	// Play board should be a copy of the problem.
-	if g.PlayBoard.Get(core.NewPosition(0, 0)) != 5 {
+	if boardValue(g.PlayBoard(), core.NewPosition(0, 0)) != 5 {
 		t.Error("Expected play cell (0,0) = 5")
 	}
 
@@ -50,7 +54,7 @@ func TestAddInputAndRecordHistory(t *testing.T) {
 
 	// Find an empty cell — (0,2) should be 0 in the problem.
 	pos := core.NewPosition(0, 2)
-	if g.ProblemBoard.Get(pos) != 0 {
+	if boardValue(g.ProblemBoard(), pos) != 0 {
 		t.Fatal("Expected (0,2) to be empty in problem")
 	}
 
@@ -182,7 +186,7 @@ func TestRepair(t *testing.T) {
 	// Solve the game to know the correct answer for cell (0,2).
 	solvedGame := newTestGame()
 	solvedGame.Solve()
-	correctValue := solvedGame.PlayBoard.Get(core.NewPosition(0, 2))
+	correctValue := boardValue(solvedGame.PlayBoard(), core.NewPosition(0, 2))
 
 	// Pick a wrong value for (0,2).
 	wrongValue := 1
@@ -245,7 +249,7 @@ func TestCheckValid(t *testing.T) {
 	solvedGame := newTestGame()
 	solvedGame.Solve()
 	pos := core.NewPosition(0, 2)
-	correctValue := solvedGame.PlayBoard.Get(pos)
+	correctValue := boardValue(solvedGame.PlayBoard(), pos)
 
 	// Add the correct value.
 	cell := core.NewCell(pos, correctValue)
@@ -263,7 +267,7 @@ func TestCheckInvalid(t *testing.T) {
 	solvedGame := newTestGame()
 	solvedGame.Solve()
 	pos := core.NewPosition(0, 2)
-	correctValue := solvedGame.PlayBoard.Get(pos)
+	correctValue := boardValue(solvedGame.PlayBoard(), pos)
 
 	wrongValue := (correctValue % 9) + 1
 	if wrongValue == correctValue {

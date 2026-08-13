@@ -1,7 +1,6 @@
 package game
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/gnailuy/sudoku/core"
@@ -16,16 +15,13 @@ type MoveRecord struct {
 
 // Game holds the state for an interactive Sudoku session.
 type Game struct {
-	// Public fields.
-	ProblemBoard core.Board // The problem board. Read-only.
-	PlayBoard    core.Board // The board that the user can play with.
-
-	// Private fields.
+	problemBoard    core.Board
+	playBoard       core.Board
 	invalidInput    core.Board              // Put the invalid input in another board to keep the play board solvable.
 	inputSequence   []MoveRecord            // User input sequence.
 	inputCursor     int                     // The cursor of the current user input.
-	completeSolver  solver.CompleteSolver    // The complete solver for judging input and solving, must be reliable.
-	strategySolvers []solver.StrategySolver  // An optional list of strategy solvers to give hints.
+	completeSolver  solver.CompleteSolver   // The complete solver for judging input and solving, must be reliable.
+	strategySolvers []solver.StrategySolver // An optional list of strategy solvers to give hints.
 }
 
 // NewGame creates a new game from a problem board and options.
@@ -35,8 +31,8 @@ func NewGame(problem core.Board, options Options) Game {
 	}
 
 	return Game{
-		ProblemBoard:    problem,
-		PlayBoard:       problem.Copy(),
+		problemBoard:    problem,
+		playBoard:       problem.Copy(),
 		invalidInput:    core.NewEmptyBoard(),
 		inputSequence:   []MoveRecord{},
 		inputCursor:     -1,
@@ -47,7 +43,7 @@ func NewGame(problem core.Board, options Options) Game {
 
 // Function to count the solutions of the current play board using the complete solver.
 func (game *Game) countSolutions() int {
-	return game.completeSolver.CountSolutions(&game.PlayBoard)
+	return game.completeSolver.CountSolutions(&game.playBoard)
 }
 
 // Function to add a non-zero cell input.
@@ -56,12 +52,12 @@ func (game *Game) addNonZeroInput(input core.Cell) {
 		panic("Bug: Cannot add a zero input with this function")
 	}
 
-	_ = game.PlayBoard.SetCell(input)       // cell validated by caller
+	_ = game.playBoard.SetCell(input)       // cell validated by caller
 	game.invalidInput.Unset(input.Position) // Reset the invalid input state when adding a new input.
 
 	if game.countSolutions() <= 0 {
 		// Store the invalid input in the invalidInput board and unset the cell in the play board.
-		game.PlayBoard.Unset(input.Position)
+		game.playBoard.Unset(input.Position)
 		_ = game.invalidInput.SetCell(input) // cell validated by caller
 	}
 }
@@ -72,7 +68,7 @@ func (game *Game) addZeroInput(input core.Cell) {
 		panic("Bug: Cannot add a non-zero input with this function")
 	}
 
-	game.PlayBoard.Unset(input.Position)
+	game.playBoard.Unset(input.Position)
 	game.invalidInput.Unset(input.Position) // Reset the invalid input state when adding a new input.
 
 	// If the board has multiple solutions, we need to check if any previously invalid input is now valid.
@@ -91,8 +87,8 @@ func (game *Game) addZeroInput(input core.Cell) {
 
 // Function to get the cell value of the game boards.
 func (game *Game) Get(position core.Position) int {
-	if game.PlayBoard.Get(position) != 0 {
-		return game.PlayBoard.Get(position)
+	if game.playBoard.Get(position) != 0 {
+		return game.playBoard.Get(position)
 	} else {
 		return game.invalidInput.Get(position)
 	}
@@ -101,12 +97,16 @@ func (game *Game) Get(position core.Position) int {
 // Function to add a cell input.
 func (game *Game) AddInput(input core.Cell) (err error) {
 	if !input.IsValid() {
-		panic("Bug: Invalid input when adding input. Check user input before calling this function")
+		return invalidCellError(input.Position, input.Value)
 	}
 
-	if game.ProblemBoard.Get(input.Position) != 0 {
-		err = errors.New("cannot change the value of a problem cell")
-		return
+	if game.problemBoard.Get(input.Position) != 0 {
+		position := input.Position
+		return &EngineError{
+			Code:     ErrorImmutableCell,
+			Position: &position,
+			Detail:   "cannot change the value of a problem cell",
+		}
 	}
 
 	if input.Value == 0 {
@@ -120,6 +120,10 @@ func (game *Game) AddInput(input core.Cell) (err error) {
 
 // Function to add a cell input and record the history.
 func (game *Game) AddInputAndRecordHistory(input core.Cell) (err error) {
+	if !input.IsValid() {
+		return invalidCellError(input.Position, input.Value)
+	}
+
 	previousValue := game.Get(input.Position)
 
 	err = game.AddInput(input)
@@ -145,8 +149,7 @@ func (game *Game) AddInputAndRecordHistory(input core.Cell) (err error) {
 // Function to undo the last cell input.
 func (game *Game) Undo() (err error) {
 	if game.inputCursor < 0 {
-		err = errors.New("no input to undo")
-		return
+		return &EngineError{Code: ErrorNoUndo, Detail: "no input to undo"}
 	}
 
 	lastInput := game.inputSequence[game.inputCursor]
@@ -163,8 +166,7 @@ func (game *Game) Undo() (err error) {
 // Function to redo the last undone cell input.
 func (game *Game) Redo() (err error) {
 	if game.inputCursor >= len(game.inputSequence)-1 {
-		err = errors.New("no input to redo")
-		return
+		return &EngineError{Code: ErrorNoRedo, Detail: "no input to redo"}
 	}
 
 	game.inputCursor++
@@ -187,7 +189,7 @@ func (game *Game) Repair() (undoSteps int) {
 
 // Function to reset the game to the initial state.
 func (game *Game) Reset() {
-	game.PlayBoard = game.ProblemBoard.Copy()
+	game.playBoard = game.problemBoard.Copy()
 	game.invalidInput = core.NewEmptyBoard()
 	game.inputSequence = []MoveRecord{}
 	game.inputCursor = -1
@@ -195,7 +197,7 @@ func (game *Game) Reset() {
 
 // Function to solve the game.
 func (game *Game) Solve() {
-	game.completeSolver.Solve(&game.PlayBoard)
+	game.completeSolver.Solve(&game.playBoard)
 }
 
 // Hint returns the next recommended move.
@@ -207,6 +209,10 @@ func (game *Game) Solve() {
 // hint loop continues to try other solvers — the eliminations are applied to
 // the board's elimination layer and may enable other techniques.
 func (game *Game) Hint() *solver.Move {
+	// Solvers may record candidate eliminations while searching. Work on a
+	// detached board so a query never mutates engine state.
+	hintBoard := game.playBoard.Copy()
+
 	// If there is any invalid input, randomly remove one of them.
 	if !game.invalidInput.IsEmpty() {
 		positionPointer := game.invalidInput.GetRandomPositionWith(func(value int) bool {
@@ -232,7 +238,7 @@ func (game *Game) Hint() *solver.Move {
 	for {
 		progress := false
 		for _, s := range game.strategySolvers {
-			move := s.Apply(&game.PlayBoard)
+			move := s.Apply(&hintBoard)
 			if move == nil {
 				continue
 			}
@@ -249,12 +255,12 @@ func (game *Game) Hint() *solver.Move {
 	}
 
 	// Otherwise, get a hint from the complete solver.
-	return game.completeSolver.Hint(&game.PlayBoard)
+	return game.completeSolver.Hint(&hintBoard)
 }
 
 // Function to check if the game is solved.
 func (game *Game) IsSolved() bool {
-	return game.PlayBoard.IsSolved()
+	return game.playBoard.IsSolved()
 }
 
 // Function to check if the game is in a valid state.
@@ -265,10 +271,10 @@ func (game *Game) IsValid() bool {
 // Function to print the Sudoku game to string.
 func (game *Game) ToString() string {
 	result := "Problem:\n"
-	result += game.ProblemBoard.ToString()
+	result += game.problemBoard.ToString()
 	result += "\n"
 
-	playBoardCopy := game.PlayBoard.Copy()
+	playBoardCopy := game.playBoard.Copy()
 	playBoardCopy.Merge(game.invalidInput)
 
 	status := "Valid"
@@ -278,7 +284,7 @@ func (game *Game) ToString() string {
 		status = "Invalid"
 	}
 
-	if playBoardCopy != game.ProblemBoard {
+	if playBoardCopy != game.problemBoard {
 		result += "Current board (" + status + "):\n"
 		result += playBoardCopy.ToString()
 		result += "\n"
