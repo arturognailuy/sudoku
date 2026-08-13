@@ -21,7 +21,8 @@ This index provides reading chains for common starting points and a complete doc
 7. `solver/store.go` — solver registry with typed access
 8. `game/game.go` — private session state and compatibility adapters
 9. `game/contract.go` — typed actions, detached snapshots, results, and engine errors
-10. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
+10. `game/serialization.go` — versioned complete-session persistence and atomic restoration
+11. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -68,4 +69,5 @@ This index provides reading chains for common starting points and a complete doc
 | `db/db.go` | SQLite puzzle database — open, close, schema migration |
 | `db/puzzle.go` | Puzzle CRUD, random query by difficulty, statistics |
 | `game/contract.go` | Stable engine actions, snapshots, results, and typed errors |
+| `game/serialization.go` | Versioned JSON session serialization, validation, and restoration |
 | `solver/classify.go` | Puzzle classification — difficulty tier, score, max technique |

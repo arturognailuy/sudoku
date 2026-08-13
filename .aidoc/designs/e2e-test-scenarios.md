@@ -314,3 +314,5 @@ These scenarios should be added as the project evolves:
 - **Manual notes:** After a frontend exposes note actions, toggle and clear notes through that frontend and verify the rendered candidates.
 - **Automatic peer-note cleanup:** Add the same note to row, column, box, and non-peer cells; set the value and verify only target and peer notes are removed.
 - **Unified note history:** Toggle or clear notes, set a value that removes peer notes, then undo and redo; verify values, invalid markers, and notes restore atomically.
+- **Session save and restore:** After a frontend exposes persistence transport, save a session containing values, invalid entries, notes, and an undone action; restart, restore it, and verify the rendered state plus both undo and redo behavior.
+- **Corrupt session rejection:** Attempt to load malformed or unsupported session data through the frontend and verify that it reports the failure without replacing the active session.
