@@ -35,9 +35,10 @@ This index provides reading chains for common starting points and a complete doc
 10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
-1. `.aidoc/designs/roadmap.md` — future phases: generator + puzzle database, UI-ready engine
-2. `.aidoc/designs/difficulty-model.md` — difficulty model, scoring, and puzzle classification
+1. `.aidoc/designs/roadmap.md` — Phase 5 scope, delivery order, and exit criteria
+2. `.aidoc/designs/ui-ready-engine.md` — stable engine API, notes, history, and serialization design
 3. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+4. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility scenarios
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -55,7 +56,8 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Future phases: puzzle database, batch generation, import, UI-ready engine |
+| `.aidoc/designs/roadmap.md` | Phase 5 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/ui-ready-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |
