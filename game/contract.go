@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gnailuy/sudoku/core"
 )
@@ -62,6 +63,8 @@ const (
 	ActionApplyHint  ActionKind = "apply-hint"
 	ActionToggleNote ActionKind = "toggle-note"
 	ActionClearNotes ActionKind = "clear-notes"
+	ActionRepair     ActionKind = "repair"
+	ActionSolve      ActionKind = "solve"
 )
 
 // Action is a typed player intent. Its unexported method keeps the set of
@@ -116,6 +119,17 @@ type ClearNotes struct{ Position core.Position }
 
 func (ClearNotes) actionKind() ActionKind { return ActionClearNotes }
 
+// Repair removes invalid player entries by returning to the most recent
+// valid history state.
+type Repair struct{}
+
+func (Repair) actionKind() ActionKind { return ActionRepair }
+
+// Solve completes the current session with the configured complete solver.
+type Solve struct{}
+
+func (Solve) actionKind() ActionKind { return ActionSolve }
+
 // Snapshot is a detached read model. Its arrays may be modified by a caller
 // without mutating the Game that produced it.
 type Snapshot struct {
@@ -126,6 +140,42 @@ type Snapshot struct {
 	Status  Status
 	CanUndo bool
 	CanRedo bool
+}
+
+// String formats the detached session state for terminal summaries.
+func (snapshot Snapshot) String() string {
+	var result strings.Builder
+	result.WriteString("Problem:\n")
+	writeSnapshotValues(&result, snapshot.Givens)
+	result.WriteByte('\n')
+
+	if snapshot.Values != snapshot.Givens {
+		status := "Valid"
+		switch snapshot.Status {
+		case StatusInvalid:
+			status = "Invalid"
+		case StatusSolved:
+			status = "Solved"
+		}
+		fmt.Fprintf(&result, "Current board (%s):\n", status)
+		writeSnapshotValues(&result, snapshot.Values)
+		result.WriteByte('\n')
+	}
+
+	return result.String()
+}
+
+func writeSnapshotValues(result *strings.Builder, values [9][9]int) {
+	for row := range values {
+		for column := range values[row] {
+			value := values[row][column]
+			if value == 0 {
+				result.WriteByte('.')
+			} else {
+				result.WriteByte(byte('0' + value))
+			}
+		}
+	}
 }
 
 // CellChange describes one visible cell changed by an accepted action.
@@ -139,6 +189,14 @@ type CellChange struct {
 	NotesAfter    core.CandidateSet
 }
 
+// AppliedHint describes the recommendation used by an ApplyHint action.
+type AppliedHint struct {
+	Position  core.Position
+	Value     int
+	Technique string
+	Reason    string
+}
+
 // Result describes an accepted transition.
 type Result struct {
 	Action  ActionKind
@@ -146,6 +204,7 @@ type Result struct {
 	Status  Status
 	CanUndo bool
 	CanRedo bool
+	Hint    *AppliedHint
 }
 
 // Snapshot returns a detached representation suitable for rendering.
@@ -182,34 +241,47 @@ func (game *Game) Apply(action Action) (Result, error) {
 
 	kind := action.actionKind()
 	var err error
+	var appliedHint *AppliedHint
 	switch typed := action.(type) {
 	case SetValue:
 		if !typed.Position.IsValid() || typed.Value < 1 || typed.Value > 9 {
 			return Result{}, invalidCellError(typed.Position, typed.Value)
 		}
-		err = game.AddInputAndRecordHistory(core.Cell{Position: typed.Position, Value: typed.Value})
+		err = game.addInputAndRecordHistory(core.Cell{Position: typed.Position, Value: typed.Value})
 	case ClearValue:
 		if !typed.Position.IsValid() {
 			return Result{}, invalidCellError(typed.Position, 0)
 		}
-		err = game.AddInputAndRecordHistory(core.Cell{Position: typed.Position, Value: 0})
+		err = game.addInputAndRecordHistory(core.Cell{Position: typed.Position, Value: 0})
 	case Reset:
-		game.Reset()
+		game.reset()
 	case Undo:
-		err = game.Undo()
+		err = game.undo()
 	case Redo:
-		err = game.Redo()
+		err = game.redo()
 	case ApplyHint:
 		hint := game.Hint()
 		if hint == nil {
 			err = &EngineError{Code: ErrorNoHint, Detail: "no hint is available"}
 		} else {
-			err = game.AddInputAndRecordHistory(hint.Cell)
+			err = game.addInputAndRecordHistory(hint.Cell)
+			appliedHint = &AppliedHint{
+				Position:  hint.Cell.Position,
+				Value:     hint.Cell.Value,
+				Technique: hint.Technique,
+				Reason:    hint.Reason,
+			}
 		}
 	case ToggleNote:
 		err = game.toggleNote(typed.Position, typed.Value)
 	case ClearNotes:
 		err = game.clearNotes(typed.Position)
+	case Repair:
+		if game.repair() == 0 {
+			err = &EngineError{Code: ErrorInvalidAction, Detail: "no invalid input to repair"}
+		}
+	case Solve:
+		game.solve()
 	default:
 		return Result{}, &EngineError{Code: ErrorInvalidAction, Detail: fmt.Sprintf("unsupported action %T", action)}
 	}
@@ -218,7 +290,9 @@ func (game *Game) Apply(action Action) (Result, error) {
 	}
 
 	after := game.Snapshot()
-	return resultFromSnapshots(kind, before, after), nil
+	result := resultFromSnapshots(kind, before, after)
+	result.Hint = appliedHint
+	return result, nil
 }
 
 func (game *Game) status() Status {
