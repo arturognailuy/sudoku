@@ -20,7 +20,7 @@ Phase 5 turns `game.Game` into a stable, reusable engine for the CLI and future 
 | Document | Relationship |
 |----------|-------------|
 | `.aidoc/architecture/guidelines.md` | Current package boundaries that the engine must preserve |
-| `.aidoc/designs/roadmap.md` | Phase 5 delivery order |
+| `.aidoc/designs/roadmap.md` | Current frontend delivery order |
 | `.aidoc/designs/e2e-test-scenarios.md` | Black-box CLI behavior that must remain compatible |
 
 ## Why the Engine Boundary Exists

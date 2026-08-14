@@ -9,7 +9,8 @@ Features:
 - SQLite puzzle database with automatic storage, dedup, and fallback lookup
 - Batch generation CLI for offline puzzle creation
 - Import CLI for loading puzzles from files
-- Interactive play with undo/redo and technique-aware hints
+- Interactive play with manual notes, undo/redo, and technique-aware hints
+- Explicit atomic session saves with validated resume
 
 ## Build
 
@@ -31,6 +32,9 @@ go build
 
 # Custom board (use . for empty cells)
 ./sudoku -i .56.4.7...1.5....6.......19...9.....3.58..2...4...6...1.....93....4....22.3.1....
+
+# Resume a session saved from the interactive prompt
+./sudoku --resume game.json
 ```
 
 ## Batch Generate
@@ -62,12 +66,20 @@ Import puzzles from a text file (one per line, 81 chars):
 
 ## In-Game Commands
 
-During play, enter moves as `row col value` (e.g., `1 2 5`). Additional commands:
+During play, enter moves as `row col value` (for example, `1 2 5`). Commands accept the displayed long form or alias:
 
-- `u` — undo last move
-- `r` — redo
-- `h` — get a hint
-- `q` — quit
+- `add`, `a <row> <column> <value>` — set a value
+- `clear`, `d <row> <column>` — clear a value
+- `note`, `n <row> <column> <value>` — toggle a manual candidate note
+- `notes-clear`, `x <row> <column>` — clear a cell's notes
+- `save <path>` — atomically save values, notes, and undo/redo history
+- `undo`, `u` / `redo`, `r` — move through value and note history
+- `hint`, `i` — apply a technique-aware hint
+- `check`, `c` / `repair`, `f` — inspect or remove invalid entries
+- `reset`, `e` / `solve`, `s` — restart or solve the puzzle
+- `help`, `h` / `quit`, `q` — show command help or exit without saving
+
+Manual notes use a fixed 3×3 candidate layout. Saving is explicit: use `save` before `quit`, then pass the same file to `--resume` later.
 
 ## Development
 
