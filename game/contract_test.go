@@ -7,6 +7,27 @@ import (
 	"github.com/gnailuy/sudoku/core"
 )
 
+func TestSnapshotStringMatchesSessionSummary(t *testing.T) {
+	game := newTestGame()
+	if got, want := game.Snapshot().String(), game.ToString(); got != want {
+		t.Fatalf("initial snapshot summary differs from game summary:\n%s\nwant:\n%s", got, want)
+	}
+
+	if _, err := game.Apply(SetValue{Position: core.NewPosition(0, 2), Value: 9}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := game.Snapshot().String(), game.ToString(); got != want {
+		t.Fatalf("invalid snapshot summary differs from game summary:\n%s\nwant:\n%s", got, want)
+	}
+
+	if _, err := game.Apply(Solve{}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := game.Snapshot().String(), game.ToString(); got != want {
+		t.Fatalf("solved snapshot summary differs from game summary:\n%s\nwant:\n%s", got, want)
+	}
+}
+
 func TestSnapshotIsDetached(t *testing.T) {
 	game := newTestGame()
 	position := core.NewPosition(0, 2)
@@ -101,8 +122,11 @@ func TestApplyHintAndReset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Apply(ApplyHint) returned error: %v", err)
 	}
-	if result.Action != ActionApplyHint || len(result.Changes) != 1 || !result.CanUndo {
+	if result.Action != ActionApplyHint || len(result.Changes) != 1 || !result.CanUndo || result.Hint == nil {
 		t.Fatalf("unexpected hint result: %+v", result)
+	}
+	if result.Hint.Position != result.Changes[0].Position || result.Hint.Value != result.Changes[0].After || result.Hint.Reason == "" {
+		t.Fatalf("hint metadata does not describe the applied change: %+v", result)
 	}
 
 	result, err = game.Apply(Reset{})
@@ -114,6 +138,34 @@ func TestApplyHintAndReset(t *testing.T) {
 	}
 	if game.Snapshot().Status != StatusInProgress {
 		t.Fatal("reset game should be in progress")
+	}
+}
+
+func TestApplyRepairAndSolve(t *testing.T) {
+	game := newTestGame()
+	position := core.NewPosition(0, 2)
+
+	if _, err := game.Apply(SetValue{Position: position, Value: 9}); err != nil {
+		t.Fatalf("Apply invalid SetValue returned error: %v", err)
+	}
+	if game.Snapshot().Status != StatusInvalid {
+		t.Fatal("wrong player value should make the snapshot invalid")
+	}
+
+	result, err := game.Apply(Repair{})
+	if err != nil {
+		t.Fatalf("Apply(Repair) returned error: %v", err)
+	}
+	if result.Action != ActionRepair || result.Status != StatusInProgress || len(result.Changes) != 1 {
+		t.Fatalf("unexpected repair result: %+v", result)
+	}
+
+	result, err = game.Apply(Solve{})
+	if err != nil {
+		t.Fatalf("Apply(Solve) returned error: %v", err)
+	}
+	if result.Action != ActionSolve || result.Status != StatusSolved || len(result.Changes) == 0 {
+		t.Fatalf("unexpected solve result: %+v", result)
 	}
 }
 

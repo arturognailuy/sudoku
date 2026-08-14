@@ -45,6 +45,7 @@ func printColumnNumbers() {
 
 // PrintBoard renders the 9×9 Sudoku grid with row/column numbers.
 func (ctrl *Controller) PrintBoard() {
+	snapshot := ctrl.game.Snapshot()
 	fmt.Println()
 	printColumnNumbers()
 
@@ -55,8 +56,7 @@ func (ctrl *Controller) PrintBoard() {
 
 		fmt.Printf(" %d ", i+1)
 		for j := 0; j < 9; j++ {
-			position := core.NewPosition(i, j)
-			value := ctrl.game.Get(position)
+			value := snapshot.Values[i][j]
 
 			if j%3 == 0 {
 				fmt.Print("| ")
@@ -98,16 +98,19 @@ func (ctrl *Controller) setValue(rowInput, columnInput, valueInput int) (success
 		return false, fmt.Errorf("error in the input position: %w", err)
 	}
 
-	cellPointer, err := core.NewCellFromInput(*positionPointer, valueInput)
-	if err != nil {
-		return false, fmt.Errorf("error in the input value: %w", err)
+	if valueInput < 0 || valueInput > 9 {
+		return false, errors.New("error in the input value: expected a digit from 0 through 9")
 	}
 
-	if ctrl.game.Get(*positionPointer) == valueInput {
+	if ctrl.game.Snapshot().Values[positionPointer.Row][positionPointer.Column] == valueInput {
 		return false, nil
 	}
 
-	err = ctrl.game.AddInputAndRecordHistory(*cellPointer)
+	var action game.Action = game.ClearValue{Position: *positionPointer}
+	if valueInput != 0 {
+		action = game.SetValue{Position: *positionPointer, Value: valueInput}
+	}
+	_, err = ctrl.game.Apply(action)
 	success = err == nil
 	return
 }
@@ -169,38 +172,36 @@ func (ctrl *Controller) RunCommand(command string) bool {
 		}
 		return success
 	case "check", "c":
-		if ctrl.game.IsValid() {
+		if ctrl.game.Snapshot().Status != game.StatusInvalid {
 			fmt.Println("The current board is correct.")
 		} else {
 			fmt.Println("You have entered incorrect values(s).")
 		}
 	case "undo", "u":
-		err := ctrl.game.Undo()
+		_, err := ctrl.game.Apply(game.Undo{})
 		return err == nil
 	case "redo", "r":
-		err := ctrl.game.Redo()
+		_, err := ctrl.game.Apply(game.Redo{})
 		return err == nil
 	case "repair", "f":
-		return ctrl.game.Repair() > 0
+		_, err := ctrl.game.Apply(game.Repair{})
+		return err == nil
 	case "hint", "i":
-		hint := ctrl.game.Hint()
-		if hint != nil {
-			added, err := ctrl.setValue(hint.Cell.Position.Row+1, hint.Cell.Position.Column+1, hint.Cell.Value)
-			if err != nil {
-				printError("Failed to apply hint:", err)
-			}
-			if added {
-				fmt.Printf("Hint: %s\n", hint.Reason)
-			}
-			return added
+		result, err := ctrl.game.Apply(game.ApplyHint{})
+		if err != nil {
+			printError("Failed to apply hint:", err)
+			return false
 		}
-		return false
+		if result.Hint != nil {
+			fmt.Printf("Hint: %s\n", result.Hint.Reason)
+		}
+		return true
 	case "solve", "s":
-		ctrl.game.Solve()
-		return true
+		_, err := ctrl.game.Apply(game.Solve{})
+		return err == nil
 	case "reset", "e":
-		ctrl.game.Reset()
-		return true
+		_, err := ctrl.game.Apply(game.Reset{})
+		return err == nil
 	case "quit", "q":
 		ctrl.closeChannel.Close()
 	default:
@@ -248,16 +249,16 @@ func (ctrl *Controller) Play() {
 			ctrl.RunCommand(command)
 		case <-ctrl.closeChannel:
 			fmt.Println("\nExiting the game.")
-			fmt.Println(ctrl.game.ToString())
+			fmt.Println(ctrl.game.Snapshot().String())
 			os.Exit(0)
 		}
 
-		if ctrl.game.IsSolved() {
+		if ctrl.game.Snapshot().Status == game.StatusSolved {
 			ctrl.PrintBoard()
 			break
 		}
 	}
 
 	fmt.Println("Congratulations! You have solved the problem.")
-	fmt.Println(ctrl.game.ToString())
+	fmt.Println(ctrl.game.Snapshot().String())
 }

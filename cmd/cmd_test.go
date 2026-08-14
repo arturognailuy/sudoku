@@ -432,9 +432,10 @@ func TestShorthandDigitInput(t *testing.T) {
 	if !changed {
 		t.Error("shorthand digit input should return true (board changed)")
 	}
-	if g.Get(*emptyPos) != correctValue {
+	actual := g.Snapshot().Values[emptyPos.Row][emptyPos.Column]
+	if actual != correctValue {
 		t.Errorf("after shorthand input, expected %d at (%d,%d), got %d",
-			correctValue, emptyPos.Row, emptyPos.Column, g.Get(*emptyPos))
+			correctValue, emptyPos.Row, emptyPos.Column, actual)
 	}
 }
 
@@ -484,25 +485,23 @@ func (ctrl *testController) RunCommand(command string) bool {
 	case "check", "c":
 		return false
 	case "undo", "u":
-		return ctrl.game.Undo() == nil
+		_, err := ctrl.game.Apply(game.Undo{})
+		return err == nil
 	case "redo", "r":
-		return ctrl.game.Redo() == nil
+		_, err := ctrl.game.Apply(game.Redo{})
+		return err == nil
 	case "repair", "f":
-		return ctrl.game.Repair() > 0
+		_, err := ctrl.game.Apply(game.Repair{})
+		return err == nil
 	case "hint", "i":
-		hint := ctrl.game.Hint()
-		if hint != nil {
-			pos := hint.Cell.Position
-			_ = ctrl.game.AddInputAndRecordHistory(hint.Cell)
-			return ctrl.game.Get(pos) == hint.Cell.Value
-		}
-		return false
+		_, err := ctrl.game.Apply(game.ApplyHint{})
+		return err == nil
 	case "solve", "s":
-		ctrl.game.Solve()
-		return true
+		_, err := ctrl.game.Apply(game.Solve{})
+		return err == nil
 	case "reset", "e":
-		ctrl.game.Reset()
-		return true
+		_, err := ctrl.game.Apply(game.Reset{})
+		return err == nil
 	default:
 		// Shorthand: bare digits treated as add.
 		return ctrl.runAddCommand(command)
@@ -534,15 +533,18 @@ func (ctrl *testController) setValue(rowInput, columnInput, valueInput int) bool
 		return false
 	}
 
-	cellPointer, err := core.NewCellFromInput(*positionPointer, valueInput)
-	if err != nil {
+	if valueInput < 0 || valueInput > 9 {
 		return false
 	}
 
-	if ctrl.game.Get(*positionPointer) == valueInput {
+	if ctrl.game.Snapshot().Values[positionPointer.Row][positionPointer.Column] == valueInput {
 		return false
 	}
 
-	err = ctrl.game.AddInputAndRecordHistory(*cellPointer)
+	var action game.Action = game.ClearValue{Position: *positionPointer}
+	if valueInput != 0 {
+		action = game.SetValue{Position: *positionPointer, Value: valueInput}
+	}
+	_, err = ctrl.game.Apply(action)
 	return err == nil
 }

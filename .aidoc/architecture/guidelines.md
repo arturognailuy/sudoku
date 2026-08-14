@@ -55,7 +55,7 @@ Violations of these boundaries indicate a design problem.
 
 `game.Game` owns mutable session state and never exposes its internal boards. `game.Game.ProblemBoard`, `game.Game.PlayBoard`, and `game.Game.Snapshot` return detached values so frontend rendering cannot mutate the session accidentally.
 
-Player transitions enter through typed actions in `game/contract.go`. `game.Game.Apply` returns structured value and note changes plus typed `game.EngineError` values; rejected actions leave the complete visible state unchanged. The legacy command-shaped methods remain compatibility adapters until the CLI migration described in `.aidoc/designs/roadmap.md` is complete.
+Player transitions enter through typed actions in `game/contract.go`. `game.Game.Apply` returns structured value and note changes, applied-hint metadata, and typed `game.EngineError` values; rejected actions leave the complete visible state unchanged. `cli.Controller` uses this boundary for set, clear, reset, repair, solve, hint, undo, and redo operations rather than calling command-shaped helpers.
 
 Manual notes are engine state rather than solver candidates. Value actions clear notes on the changed cell and remove the value from peer notes as one atomic transition. The unified history restores boards, invalid markers, and notes together, which prevents frontends from reconstructing note cleanup during undo or redo.
 

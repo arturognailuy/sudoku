@@ -102,8 +102,8 @@ func (game *Game) Get(position core.Position) int {
 	}
 }
 
-// Function to add a cell input.
-func (game *Game) AddInput(input core.Cell) (err error) {
+// addInput applies a cell value to the visible state.
+func (game *Game) addInput(input core.Cell) (err error) {
 	if !input.IsValid() {
 		return invalidCellError(input.Position, input.Value)
 	}
@@ -126,14 +126,14 @@ func (game *Game) AddInput(input core.Cell) (err error) {
 	return
 }
 
-// Function to add a cell input and record the history.
-func (game *Game) AddInputAndRecordHistory(input core.Cell) (err error) {
+// addInputAndRecordHistory applies a value transition and records it.
+func (game *Game) addInputAndRecordHistory(input core.Cell) (err error) {
 	if !input.IsValid() {
 		return invalidCellError(input.Position, input.Value)
 	}
 
 	before := game.captureState()
-	err = game.AddInput(input)
+	err = game.addInput(input)
 	if err != nil {
 		return
 	}
@@ -143,8 +143,8 @@ func (game *Game) AddInputAndRecordHistory(input core.Cell) (err error) {
 	return
 }
 
-// Function to undo the last cell input.
-func (game *Game) Undo() (err error) {
+// undo restores the state before the current history record.
+func (game *Game) undo() (err error) {
 	if game.inputCursor < 0 {
 		return &EngineError{Code: ErrorNoUndo, Detail: "no input to undo"}
 	}
@@ -156,8 +156,8 @@ func (game *Game) Undo() (err error) {
 	return
 }
 
-// Function to redo the last undone cell input.
-func (game *Game) Redo() (err error) {
+// redo restores the next state in history.
+func (game *Game) redo() (err error) {
 	if game.inputCursor >= len(game.inputSequence)-1 {
 		return &EngineError{Code: ErrorNoRedo, Detail: "no input to redo"}
 	}
@@ -169,18 +169,18 @@ func (game *Game) Redo() (err error) {
 	return
 }
 
-// Function to repair the game to the last valid state.
-func (game *Game) Repair() (undoSteps int) {
+// repair undoes transitions until the visible state is valid.
+func (game *Game) repair() (undoSteps int) {
 	for !game.IsValid() && game.inputCursor >= 0 {
 		undoSteps++
-		_ = game.Undo()
+		_ = game.undo()
 	}
 
 	return undoSteps
 }
 
-// Function to reset the game to the initial state.
-func (game *Game) Reset() {
+// reset restores the original puzzle and clears transition history.
+func (game *Game) reset() {
 	game.playBoard = game.problemBoard.Copy()
 	game.invalidInput = core.NewEmptyBoard()
 	game.notes = [9][9]core.CandidateSet{}
@@ -231,8 +231,8 @@ func (game *Game) applyValueNoteCleanup(input core.Cell) {
 	}
 }
 
-// Function to solve the game.
-func (game *Game) Solve() {
+// solve replaces the visible state with a complete solution.
+func (game *Game) solve() {
 	game.completeSolver.Solve(&game.playBoard)
 	game.invalidInput = core.NewEmptyBoard()
 	game.notes = [9][9]core.CandidateSet{}

@@ -1,6 +1,6 @@
 ---
 domain: Designs
-status: Draft
+status: Active
 entry_points:
   - game/game.go
   - game/contract.go
@@ -49,12 +49,12 @@ The stable contract is organized around four concepts:
 
 - `Game` is the authoritative mutable session owned by one caller at a time.
 - `Snapshot` is a detached read model containing givens, visible values, invalid markers, notes, status, and undo/redo availability. Mutating a snapshot cannot mutate the game.
-- `Action` is a typed player intent: set or clear a value, toggle or clear notes, reset, or apply a hint. Frontends submit actions instead of reproducing rules.
-- `Result` describes the accepted transition, changed cells, current status, and whether undo or redo is available. Invalid actions return typed errors and leave state unchanged.
+- `Action` is a typed player intent: set or clear a value, toggle or clear notes, reset, repair, solve, undo, redo, or apply a hint. Frontends submit actions instead of reproducing rules.
+- `Result` describes the accepted transition, changed cells, current status, undo/redo availability, and the recommendation used by an applied hint. Invalid actions return typed errors and leave state unchanged.
 
 `Hint` remains a query: it returns a structured recommendation with position, value, technique, and explanation. Applying the recommendation is a separate action so hints participate in history exactly like player moves.
 
-Existing convenience methods may remain temporarily as adapters, but `cli.Controller` must migrate to the action/snapshot contract before those adapters are removed. Public callers must not receive mutable references to the engine's internal boards or history.
+`cli.Controller` renders only `Game.Snapshot` values and performs game operations only through `Game.Apply`. Command-shaped mutation helpers are private engine implementation details; `Game.Apply` is the public mutation boundary. Public callers must not receive mutable references to the engine's internal boards or history.
 
 ## State and Validation Invariants
 
@@ -103,4 +103,4 @@ Serialization failures, invalid actions, unavailable undo/redo, and attempts to 
 
 Engine tests cover every action, typed error, atomic rollback, note cleanup, mixed value/note undo-redo sequences, redo truncation, immutable snapshots, and serialization round trips. Restoration tests include malformed and unsupported versions.
 
-CLI migration is verified against `.aidoc/designs/e2e-test-scenarios.md` by building the binary and exercising it as a black box. Package tests, `go vet`, `golangci-lint`, and CI must pass for each implementation PR.
+The CLI boundary is verified against `.aidoc/designs/e2e-test-scenarios.md` by building the binary and exercising it as a black box. Package tests cover repair, solve, applied-hint metadata, typed errors, and snapshot isolation; package tests, `go vet`, golangci-lint, and CI must remain green.

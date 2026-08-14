@@ -11,7 +11,7 @@ dependencies:
 
 # Roadmap
 
-The next milestone is Phase 5: formalize the existing pure game logic as a stable, serializable engine with note-taking support. The CLI remains the first frontend and proves the boundary before any graphical UI begins.
+Phase 5 formalizes the pure game logic as a stable, serializable engine with note-taking support. The migrated CLI is the first frontend and proves the action/snapshot boundary before any graphical UI begins.
 
 ## Related Docs
 
@@ -27,16 +27,13 @@ Phase 5 provides one engine contract for game state, typed actions, validation, 
 
 Phase 5 does not add a TUI, web UI, or mobile app. A new frontend should begin only after the CLI is fully migrated and the engine API has survived implementation and black-box verification.
 
-## Delivery Plan
+## Implementation Boundaries
 
-| PR | Scope | Acceptance boundary |
-|----|-------|---------------------|
-| 1 | Engine contract and encapsulation | Introduce typed actions, detached snapshots, structured results/errors, and compatibility adapters; remove public mutable-state dependencies from new API usage. |
-| 2 | Notes and unified history | Add manual notes, automatic peer cleanup, and atomic undo/redo across value and note changes. |
-| 3 | Versioned serialization | Save and restore complete sessions, including notes and undo/redo history; reject corrupt or unsupported state atomically. |
-| 4 | CLI migration and verification | Move `cli.Controller` to actions/snapshots, retire obsolete adapters, and run the documented black-box E2E scenarios. |
-
-Implementation PRs are sequential because each one stabilizes the contract consumed by the next. Every PR includes package tests and keeps existing CLI behavior green.
+- `game.Game.Apply` accepts typed value, note, hint, history, reset, repair, and solve actions; command-shaped mutation methods remain private.
+- `game.Game.Snapshot` returns all renderable state as detached values.
+- Unified history restores values, invalid markers, and notes atomically.
+- Versioned serialization preserves complete sessions and validates restored data before replacing state.
+- `cli.Controller` renders snapshots and submits actions without reproducing engine rules.
 
 ## Exit Criteria
 

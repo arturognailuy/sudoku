@@ -27,10 +27,12 @@ These scenarios are designed to be run manually or via shell scripts against a b
 
 ```bash
 go build -o sudoku .
-export SUDOKU_DB=$(mktemp -d)/test-puzzles.db
+export SUDOKU_E2E_DIR=$(mktemp -d)
+export XDG_DATA_HOME=$SUDOKU_E2E_DIR/data
+export SUDOKU_DB=$SUDOKU_E2E_DIR/test-puzzles.db
 ```
 
-Use `--db $SUDOKU_DB` for all commands that touch the database to isolate test runs.
+Root play commands auto-store puzzles under `XDG_DATA_HOME`; generate and import commands use `--db $SUDOKU_DB`. These settings isolate every database touched by the scenarios.
 
 ---
 
@@ -93,6 +95,8 @@ echo "quit" | ./sudoku --level easy
 ---
 
 ## 2. Game Commands
+
+The game-command scenarios verify the stable engine boundary through the real terminal frontend: `cli.Controller` renders detached snapshots and submits typed actions while preserving the established command output and behavior.
 
 For these scenarios, start a game with a known puzzle:
 ```bash

@@ -184,7 +184,10 @@ func TestSerializeRestorePreservesStateOutsideActionHistory(t *testing.T) {
 	if _, err := original.Apply(SetValue{Position: core.NewPosition(0, 3), Value: 5}); err != nil {
 		t.Fatal(err)
 	}
-	original.Solve() // Compatibility adapter mutates the board without adding a history record.
+	// Solve intentionally replaces the visible board without adding a history record.
+	if _, err := original.Apply(Solve{}); err != nil {
+		t.Fatal(err)
+	}
 	if snapshot := original.Snapshot(); snapshot.Status != StatusSolved || snapshot.Invalid[0][3] || !snapshot.Notes[0][2].IsEmpty() {
 		t.Fatalf("Solve did not produce a self-consistent solved session: %+v", snapshot)
 	}
@@ -203,7 +206,7 @@ func TestSerializeRestorePreservesStateOutsideActionHistory(t *testing.T) {
 		t.Fatalf("original undo returned error: %v", err)
 	}
 	if restored.Snapshot() != original.Snapshot() {
-		t.Fatal("restoration did not preserve compatibility-adapter undo behavior")
+		t.Fatal("restoration did not preserve solve-action undo behavior")
 	}
 }
 

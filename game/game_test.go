@@ -60,7 +60,7 @@ func TestAddInputAndRecordHistory(t *testing.T) {
 
 	// Add a valid input.
 	cell := core.NewCell(pos, 4)
-	err := g.AddInputAndRecordHistory(cell)
+	err := g.addInputAndRecordHistory(cell)
 	if err != nil {
 		t.Fatalf("AddInputAndRecordHistory returned error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestAddInputToProblemCell(t *testing.T) {
 
 	// Try to change a problem cell — (0,0) = 5.
 	cell := core.NewCell(core.NewPosition(0, 0), 3)
-	err := g.AddInputAndRecordHistory(cell)
+	err := g.addInputAndRecordHistory(cell)
 	if err == nil {
 		t.Error("Expected error when changing a problem cell")
 	}
@@ -87,14 +87,14 @@ func TestUndoRedo(t *testing.T) {
 
 	// Add a value.
 	cell := core.NewCell(pos, 4)
-	_ = g.AddInputAndRecordHistory(cell)
+	_ = g.addInputAndRecordHistory(cell)
 
 	if g.Get(pos) != 4 {
 		t.Fatalf("Expected 4 after add, got %d", g.Get(pos))
 	}
 
 	// Undo.
-	err := g.Undo()
+	err := g.undo()
 	if err != nil {
 		t.Fatalf("Undo returned error: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestUndoRedo(t *testing.T) {
 	}
 
 	// Redo.
-	err = g.Redo()
+	err = g.redo()
 	if err != nil {
 		t.Fatalf("Redo returned error: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestUndoRedo(t *testing.T) {
 func TestUndoEmpty(t *testing.T) {
 	g := newTestGame()
 
-	err := g.Undo()
+	err := g.undo()
 	if err == nil {
 		t.Error("Expected error when undoing with no history")
 	}
@@ -124,7 +124,7 @@ func TestUndoEmpty(t *testing.T) {
 func TestRedoEmpty(t *testing.T) {
 	g := newTestGame()
 
-	err := g.Redo()
+	err := g.redo()
 	if err == nil {
 		t.Error("Expected error when redoing with no undone moves")
 	}
@@ -136,15 +136,15 @@ func TestReset(t *testing.T) {
 
 	// Add a value and then reset.
 	cell := core.NewCell(pos, 4)
-	_ = g.AddInputAndRecordHistory(cell)
-	g.Reset()
+	_ = g.addInputAndRecordHistory(cell)
+	g.reset()
 
 	if g.Get(pos) != 0 {
 		t.Errorf("Expected 0 after reset, got %d", g.Get(pos))
 	}
 
 	// Undo should fail after reset (no history).
-	err := g.Undo()
+	err := g.undo()
 	if err == nil {
 		t.Error("Expected error on undo after reset")
 	}
@@ -153,7 +153,7 @@ func TestReset(t *testing.T) {
 func TestSolve(t *testing.T) {
 	g := newTestGame()
 
-	g.Solve()
+	g.solve()
 
 	if !g.IsSolved() {
 		t.Error("Game should be solved after Solve()")
@@ -185,7 +185,7 @@ func TestRepair(t *testing.T) {
 
 	// Solve the game to know the correct answer for cell (0,2).
 	solvedGame := newTestGame()
-	solvedGame.Solve()
+	solvedGame.solve()
 	correctValue := boardValue(solvedGame.PlayBoard(), core.NewPosition(0, 2))
 
 	// Pick a wrong value for (0,2).
@@ -196,7 +196,7 @@ func TestRepair(t *testing.T) {
 
 	// Add a value that makes the board unsolvable (invalid input).
 	cell := core.NewCell(core.NewPosition(0, 2), wrongValue)
-	_ = g.AddInputAndRecordHistory(cell)
+	_ = g.addInputAndRecordHistory(cell)
 
 	// The game tracks invalid inputs separately — IsValid() should return false.
 	if g.IsValid() {
@@ -206,7 +206,7 @@ func TestRepair(t *testing.T) {
 	}
 
 	// Repair should undo the invalid input.
-	steps := g.Repair()
+	steps := g.repair()
 	if steps == 0 {
 		t.Error("Repair should undo at least one step")
 	}
@@ -221,14 +221,14 @@ func TestClear(t *testing.T) {
 
 	// Add a value to an empty cell.
 	cell := core.NewCell(pos, 4)
-	_ = g.AddInputAndRecordHistory(cell)
+	_ = g.addInputAndRecordHistory(cell)
 	if g.Get(pos) != 4 {
 		t.Fatalf("Expected 4 after add, got %d", g.Get(pos))
 	}
 
 	// Clear the cell (add value 0).
 	clearCell := core.NewCell(pos, 0)
-	err := g.AddInputAndRecordHistory(clearCell)
+	err := g.addInputAndRecordHistory(clearCell)
 	if err != nil {
 		t.Fatalf("Clear returned error: %v", err)
 	}
@@ -247,13 +247,13 @@ func TestCheckValid(t *testing.T) {
 
 	// Solve to find the correct value for an empty cell.
 	solvedGame := newTestGame()
-	solvedGame.Solve()
+	solvedGame.solve()
 	pos := core.NewPosition(0, 2)
 	correctValue := boardValue(solvedGame.PlayBoard(), pos)
 
 	// Add the correct value.
 	cell := core.NewCell(pos, correctValue)
-	_ = g.AddInputAndRecordHistory(cell)
+	_ = g.addInputAndRecordHistory(cell)
 
 	if !g.IsValid() {
 		t.Error("Board should be valid after adding correct value")
@@ -265,7 +265,7 @@ func TestCheckInvalid(t *testing.T) {
 
 	// Solve to find the correct value, then add a wrong one.
 	solvedGame := newTestGame()
-	solvedGame.Solve()
+	solvedGame.solve()
 	pos := core.NewPosition(0, 2)
 	correctValue := boardValue(solvedGame.PlayBoard(), pos)
 
@@ -275,7 +275,7 @@ func TestCheckInvalid(t *testing.T) {
 	}
 
 	cell := core.NewCell(pos, wrongValue)
-	_ = g.AddInputAndRecordHistory(cell)
+	_ = g.addInputAndRecordHistory(cell)
 
 	if g.IsValid() {
 		t.Error("Board should be invalid after adding wrong value")
@@ -328,18 +328,18 @@ func TestMultipleUndoRedo(t *testing.T) {
 	// Add two values.
 	pos1 := core.NewPosition(0, 2)
 	pos2 := core.NewPosition(0, 3)
-	_ = g.AddInputAndRecordHistory(core.NewCell(pos1, 4))
-	_ = g.AddInputAndRecordHistory(core.NewCell(pos2, 8))
+	_ = g.addInputAndRecordHistory(core.NewCell(pos1, 4))
+	_ = g.addInputAndRecordHistory(core.NewCell(pos2, 8))
 
 	// Undo both.
-	_ = g.Undo()
-	_ = g.Undo()
+	_ = g.undo()
+	_ = g.undo()
 	if g.Get(pos1) != 0 || g.Get(pos2) != 0 {
 		t.Error("Both cells should be 0 after two undos")
 	}
 
 	// Redo one.
-	_ = g.Redo()
+	_ = g.redo()
 	if g.Get(pos1) != 4 {
 		t.Errorf("Expected 4 after one redo, got %d", g.Get(pos1))
 	}
@@ -348,8 +348,8 @@ func TestMultipleUndoRedo(t *testing.T) {
 	}
 
 	// New input after partial redo should truncate redo history.
-	_ = g.AddInputAndRecordHistory(core.NewCell(pos2, 6))
-	err := g.Redo()
+	_ = g.addInputAndRecordHistory(core.NewCell(pos2, 6))
+	err := g.redo()
 	if err == nil {
 		t.Error("Expected error on redo after new input (history truncated)")
 	}
