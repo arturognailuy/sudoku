@@ -24,7 +24,7 @@ Phase 6 turns the engine-backed command line into a complete session frontend. P
 
 ## Why Phase 6 Exists
 
-The game engine already owns notes and complete serialized sessions, but the CLI cannot expose either capability. Adding a different frontend now would leave the first frontend unable to exercise important parts of the engine contract and would postpone validation of persistence transport and note rendering.
+The game engine owns notes and complete serialized sessions. Phase 6 exposes both capabilities through the existing CLI so the first frontend exercises the engine contract, persistence transport, and note rendering before another frontend is added.
 
 Phase 6 keeps the project CLI-first while making interactive play practical across multiple terminal sessions. The CLI remains a thin adapter: note rules stay in `game.Game.Apply`, session validation stays in `game.Restore`, and files remain frontend-owned transport.
 
@@ -34,13 +34,13 @@ The interactive CLI renders manual notes, accepts note actions, saves complete s
 
 Phase 6 does not add automatic candidate population, background autosave, TUI dependencies, network storage, or a graphical frontend. Those features require separate product decisions after the explicit CLI workflow is proven.
 
-## Delivery Order
+## Implemented Layers
 
-1. Add note commands and a deterministic note-aware board rendering without changing value-entry shorthand.
-2. Add explicit save and resume transport around `game.Game.Serialize` and `game.Restore`, including atomic file replacement.
-3. Complete black-box session scenarios, help text, and player documentation, then reassess whether the next frontend should be a TUI, web UI, or mobile app.
+1. Note commands add and a deterministic note-aware board rendering without changing value-entry shorthand.
+2. Explicit save and resume transport around `game.Game.Serialize` and `game.Restore`, including atomic file replacement.
+3. Black-box session scenarios, help text, and player documentation, then reassess whether the next frontend should be a TUI, web UI, or mobile app.
 
-Each step should remain independently reviewable and keep the built CLI usable. Package tests verify adapters and failure paths; black-box scenarios verify the compiled program and filesystem behavior.
+The layers keep the built CLI usable and preserve separation between engine behavior, transport, and presentation. Package tests verify adapters and failure paths; black-box scenarios verify the compiled program and filesystem behavior.
 
 ## Exit Criteria
 
