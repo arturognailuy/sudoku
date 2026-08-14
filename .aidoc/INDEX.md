@@ -37,11 +37,12 @@ This index provides reading chains for common starting points and a complete doc
 10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
-1. `.aidoc/designs/roadmap.md` — Phase 6 scope, delivery order, and exit criteria
-2. `.aidoc/designs/cli-sessions.md` — manual-note and persistence frontend design
+1. `.aidoc/designs/roadmap.md` — Phase 7 scope, delivery order, and exit criteria
+2. `.aidoc/designs/tui-frontend.md` — full-screen interaction, persistence, rendering, and dependency design
 3. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-4. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
-5. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility scenarios
+4. `.aidoc/designs/cli-sessions.md` — existing manual-note and persistence frontend design
+5. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+6. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility and future TUI scenarios
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -59,7 +60,8 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Phase 6 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/roadmap.md` | Phase 7 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/tui-frontend.md` | TUI interaction model, persistence policy, rendering, and dependency boundaries |
 | `.aidoc/designs/cli-sessions.md` | CLI manual notes, rendering, save, and resume design |
 | `.aidoc/designs/game-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
