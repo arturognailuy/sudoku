@@ -21,6 +21,7 @@ These scenarios are designed to be run manually or via shell scripts against a b
 |----------|-------------|
 | `.aidoc/INDEX.md` | Discovery index and project reading chains |
 | `.aidoc/designs/game-engine.md` | Engine actions and state that frontends expose to users |
+| `.aidoc/designs/cli-sessions.md` | Manual-note rendering and persistence transport contract |
 | `AGENT.md` | Required verification discipline for feature and bug-fix PRs |
 
 ## Prerequisites
@@ -307,7 +308,62 @@ echo "quit" | ./sudoku --input "....7....6..195....98....6.8...6...34..8.3..17..
 
 ---
 
-## 7. Future Scenarios (Not Yet Implemented)
+## 7. Manual Notes and Durable Sessions
+
+Use the known puzzle from section 2 and paths under `$SUDOKU_E2E_DIR`.
+
+### 7.1 Toggle and Clear Manual Notes
+```bash
+printf 'n 1 1 1\nn 1 1 9\nx 1 1\nq\n' | ./sudoku --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+```
+**Expected:** Notes 1 and 9 appear in fixed candidate positions, then `x` returns the board to compact rendering.
+
+### 7.2 Peer Cleanup and Unified History
+```bash
+printf 'n 1 1 4\nn 1 2 4\nn 3 1 4\nn 2 2 4\nn 4 5 4\n1 1 4\nu\nr\nq\n' | ./sudoku --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+```
+**Expected:** Setting (1,1) removes notes from the target and its row, column, and box peers but preserves the note at non-peer (4,5). Undo restores the value and all removed notes atomically; redo reapplies cleanup.
+
+### 7.3 Save, Resume, and Preserve Redo
+```bash
+SESSION=$SUDOKU_E2E_DIR/session.json
+printf 'n 1 1 5\n1 1 4\nu\nsave %s\nq\n' "$SESSION" | ./sudoku --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+printf 'r\nq\n' | ./sudoku --resume "$SESSION"
+
+INVALID_SESSION=$SUDOKU_E2E_DIR/invalid-session.json
+printf '1 1 5\nn 1 2 4\nsave %s\nq\n' "$INVALID_SESSION" | ./sudoku --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+printf 'c\nq\n' | ./sudoku --resume "$INVALID_SESSION"
+```
+**Expected:** The first restored board includes note 5 at (1,1), `redo` restores value 4, and the session file has mode `0600`. The second restore retains the invalid entry and note, and `check` reports the invalid board.
+
+### 7.4 Reject Corrupt, Unsupported, and Oversized Sessions
+```bash
+printf '{bad json' > "$SUDOKU_E2E_DIR/corrupt.json"
+printf '{"version":999}' > "$SUDOKU_E2E_DIR/unsupported.json"
+head -c 1048577 /dev/zero > "$SUDOKU_E2E_DIR/oversized.json"
+./sudoku --resume "$SUDOKU_E2E_DIR/corrupt.json"
+./sudoku --resume "$SUDOKU_E2E_DIR/unsupported.json"
+./sudoku --resume "$SUDOKU_E2E_DIR/oversized.json"
+```
+**Expected:** Every command exits non-zero before interactive play with a concise restore error. Source files remain unchanged.
+
+### 7.5 Resume Flag Conflicts
+```bash
+./sudoku --resume "$SUDOKU_E2E_DIR/session.json" --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+./sudoku --resume "$SUDOKU_E2E_DIR/session.json" --level easy
+```
+**Expected:** Cobra rejects both combinations before reading or generating a puzzle.
+
+### 7.6 Failed Save Preserves the Destination
+```bash
+mkdir "$SUDOKU_E2E_DIR/existing-destination"
+printf 'save %s\nq\n' "$SUDOKU_E2E_DIR/existing-destination" | ./sudoku --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+```
+**Expected:** Save reports an error, the existing destination remains a directory, and no `.sudoku-session-*` temporary file remains.
+
+---
+
+## 8. Future Scenarios (Not Yet Implemented)
 
 These scenarios should be added as the project evolves:
 
@@ -315,8 +371,3 @@ These scenarios should be added as the project evolves:
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).
 - **Played tracking:** Mark puzzles as played → DB query skips played puzzles.
 - **Concurrent DB access:** Multiple generate workers writing to the same DB → no corruption (WAL mode).
-- **Manual notes:** After a frontend exposes note actions, toggle and clear notes through that frontend and verify the rendered candidates.
-- **Automatic peer-note cleanup:** Add the same note to row, column, box, and non-peer cells; set the value and verify only target and peer notes are removed.
-- **Unified note history:** Toggle or clear notes, set a value that removes peer notes, then undo and redo; verify values, invalid markers, and notes restore atomically.
-- **Session save and restore:** After a frontend exposes persistence transport, save a session containing values, invalid entries, notes, and an undone action; restart, restore it, and verify the rendered state plus both undo and redo behavior.
-- **Corrupt session rejection:** Attempt to load malformed or unsupported session data through the frontend and verify that it reports the failure without replacing the active session.

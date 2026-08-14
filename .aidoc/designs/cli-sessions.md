@@ -1,9 +1,10 @@
 ---
 domain: Designs
-status: Draft
+status: Active
 entry_points:
   - cli/controller.go
   - cmd/play.go
+  - cli/session_file.go
 dependencies:
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/e2e-test-scenarios.md
@@ -12,7 +13,7 @@ dependencies:
 
 # CLI Sessions
 
-Phase 6 exposes manual notes and durable game sessions through the existing command-line frontend. The design keeps rules and validation in the game engine while the CLI owns command parsing, rendering, and filesystem transport.
+The CLI exposes manual notes and durable game sessions through the existing command-line frontend. The design keeps rules and validation in the game engine while the CLI owns command parsing, rendering, and filesystem transport.
 
 ## Related Docs
 
@@ -75,4 +76,4 @@ Persistence helpers accept explicit paths and byte slices and return errors. Per
 
 ## Verification
 
-Package tests cover command parsing, snapshot rendering, bounded reads, atomic replacement, option conflicts, and error translation. The built-binary scenarios cover manual notes, peer cleanup, mixed note/value undo and redo, save/resume round trips, redo preservation, corrupt input rejection, and protection of an existing destination when saving fails.
+Package tests cover command parsing, snapshot rendering, bounded reads, atomic replacement, and error translation. Cobra and built-binary scenarios cover option conflicts, manual notes, peer cleanup, mixed note/value undo and redo, save/resume round trips, redo preservation, corrupt input rejection, and protection of an existing destination when saving fails.

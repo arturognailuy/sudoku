@@ -17,8 +17,24 @@ import (
 func runPlay(cmd *cobra.Command) {
 	input, _ := cmd.Flags().GetString("input")
 	level, _ := cmd.Flags().GetString("level")
+	resume, _ := cmd.Flags().GetString("resume")
 
-	if input != "" {
+	if resume != "" {
+		data, err := cli.ReadSessionFile(resume)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to read saved session: %v\n", err)
+			os.Exit(1)
+		}
+		opts := game.NewDefaultOptions(solverStore)
+		opts.StrategySolverKeys = solverStore.GetAllStrategySolverKeys()
+		restoredGame, err := game.Restore(data, opts)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to resume saved session: %v\n", err)
+			os.Exit(1)
+		}
+		ctrl := cli.NewController(&restoredGame)
+		ctrl.Play()
+	} else if input != "" {
 		problem, err := generator.GenerateSudokuProblemFromString(input)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "The input is not a valid Sudoku problem: %s\n", input)

@@ -29,6 +29,9 @@ func init() {
 	// Play mode flags (on root command).
 	rootCmd.Flags().StringP("input", "i", "", "Specify a Sudoku problem string to play")
 	rootCmd.Flags().StringP("level", "l", "hard", "Difficulty level: easy, medium, hard, expert, evil")
+	rootCmd.Flags().String("resume", "", "Resume a saved game session")
+	rootCmd.MarkFlagsMutuallyExclusive("resume", "input")
+	rootCmd.MarkFlagsMutuallyExclusive("resume", "level")
 }
 
 // Execute runs the root command.
