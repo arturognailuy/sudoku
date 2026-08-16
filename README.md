@@ -11,6 +11,7 @@ Features:
 - Import CLI for loading puzzles from files
 - Interactive play with manual notes, undo/redo, and technique-aware hints
 - Explicit atomic session saves with validated resume
+- Opt-in full-screen Bubble Tea interface with keyboard navigation
 
 ## Build
 
@@ -36,6 +37,18 @@ go build
 # Resume a session saved from the interactive prompt
 ./sudoku --resume game.json
 ```
+
+## Full-Screen TUI
+
+The existing line-oriented game remains the default. Launch the optional terminal UI with the same puzzle sources:
+
+```bash
+./sudoku tui --level medium
+./sudoku tui --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+./sudoku tui --resume game.json
+```
+
+Use arrows or `h`/`j`/`k`/`l` to move, `1`–`9` to enter a value, `n` to toggle note mode, `u`/`r` for history, `?` then Enter to preview/apply a hint, `S` to save, and `q` to quit. Unsaved sessions require confirmation.
 
 ## Batch Generate
 

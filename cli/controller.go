@@ -10,6 +10,7 @@ import (
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/sessionfile"
 )
 
 // Controller owns all terminal I/O for the Sudoku game.
@@ -248,7 +249,7 @@ func (ctrl *Controller) runSaveCommand(path string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("serialize session: %w", err)
 	}
-	if err := WriteSessionFile(path, data); err != nil {
+	if err := sessionfile.Write(path, data); err != nil {
 		return false, err
 	}
 	fmt.Printf("Session saved to %s.\n", path)

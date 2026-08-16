@@ -12,7 +12,7 @@ dependencies:
 
 # Roadmap
 
-Phase 7 adds an optional full-screen terminal interface while preserving the line-oriented CLI. The TUI is the smallest second frontend for validating the reusable game engine before the project commits to a web, mobile, or network boundary.
+Phase 7 delivers an optional full-screen terminal interface while preserving the line-oriented CLI. The TUI is the smallest second frontend for validating the reusable game engine before the project commits to a web, mobile, or network boundary.
 
 ## Related Docs
 
@@ -35,14 +35,14 @@ Players can launch a full-screen board, navigate with the keyboard, enter values
 
 Phase 7 does not add automatic candidate population, background autosave, mouse support, a web service, a browser frontend, or a mobile app. Those features remain separate product decisions after the multi-frontend boundary is proven.
 
-## Delivery Layers
+## Delivered Layers
 
-1. Extract presentation-neutral session-file transport and shared game startup while preserving every root CLI behavior and black-box scenario.
-2. Add the TUI model, deterministic renderer, focus movement, value/note input, status messages, and engine action translation.
-3. Add hint preview/apply, destructive-action confirmations, explicit save, resume-path handling, dirty-state protection, and small-terminal fallback.
-4. Add pseudo-terminal E2E coverage, help and README guidance, then reassess whether Phase 8 should target automatic candidates, autosave, or a web frontend.
+1. Extracted presentation-neutral session-file transport and shared game startup while preserving every root CLI behavior and black-box scenario.
+2. Added the TUI model, deterministic renderer, focus movement, value/note input, status messages, and engine action translation.
+3. Added hint preview/apply, destructive-action confirmations, explicit save, resume-path handling, dirty-state protection, and small-terminal fallback.
+4. Added pseudo-terminal E2E coverage, help and README guidance, then reassess whether Phase 8 should target automatic candidates, autosave, or a web frontend.
 
-Each layer must leave the built program usable. The event loop serializes all `game.Game` mutations; persistence and generation may run outside the loop only when they return results as messages.
+Each layer leaves the built program usable. The event loop serializes all `game.Game` mutations; persistence and generation may run outside the loop only when they return results as messages.
 
 ## Exit Criteria
 

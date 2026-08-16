@@ -1,6 +1,6 @@
 ---
 domain: Designs
-status: Draft
+status: Active
 entry_points:
   - cmd/tui.go
   - tui/model.go
@@ -31,7 +31,7 @@ The existing CLI remains valuable for scripts, redirected input, and minimal ter
 
 ## Interaction Model
 
-The TUI presents one focused cell, the board, game status, available history, a concise key guide, and a message area. Arrow keys and `h`/`j`/`k`/`l` move focus without wrapping. Digit keys set values in value mode and toggle manual notes in note mode; `0`, Backspace, or Delete clears the focused value or its notes according to the active mode.
+The TUI presents one focused cell, the board, game status, available history, a concise key guide, and a message area. Arrow keys and `h`/`j`/`k`/`l` move focus within the board without wrapping. Digit keys set values in value mode and toggle manual notes in note mode; `0`, Backspace, or Delete clears the focused value or its notes according to the active mode.
 
 The following global actions remain available when no modal is open:
 
@@ -47,11 +47,11 @@ The TUI translates keys into `game.Action` values and renders only `game.Snapsho
 
 ## Startup and Persistence
 
-`sudoku tui` accepts the same puzzle sources as root play: `--input`, `--level`, and `--resume`, with the same mutual exclusions and default difficulty. Shared session construction should move behind a command-level helper so the CLI and TUI do not duplicate generation, classification, solver options, or restore validation.
+`sudoku tui` accepts the same puzzle sources as root play: `--input`, `--level`, and `--resume`, with the same mutual exclusions and default difficulty. Shared session construction lives behind a command-level helper so the CLI and TUI do not duplicate generation, classification, solver options, or restore validation.
 
 Persistence remains explicit. A resumed session remembers its source path for the current process, but saving still requires the player to press `S` and confirm a destination. New sessions prompt for a path. Phase 7 does not add background autosave, recovery files, cloud storage, or a default save location.
 
-The filesystem transport should move from `cli` into a presentation-neutral package before both frontends consume it. The transport retains the current bounded-read, user-only permission, atomic-replacement, and source-preservation guarantees.
+The filesystem transport lives in the presentation-neutral `sessionfile` package so both frontends consume the same guarantees. The transport retains the current bounded-read, user-only permission, atomic-replacement, and source-preservation guarantees.
 
 ## Rendering and Terminal Boundaries
 
@@ -63,15 +63,15 @@ Phase 7 uses a single event loop to serialize engine actions. Background puzzle 
 
 ## Dependency Decision
 
-The implementation should use Bubble Tea for terminal lifecycle, keyboard events, resize events, and deterministic model updates. Lip Gloss may provide styling, but game state and layout decisions remain in project-owned TUI code so the frontend is testable and not coupled to style-library internals.
+The implementation uses Bubble Tea v1.3.4 for terminal lifecycle, keyboard events, resize events, and deterministic model updates. The first implementation does not call Bubbles or Lip Gloss directly; ANSI styling, game state, and layout decisions remain in project-owned TUI code so the frontend is testable and not coupled to style-library internals.
 
 The dependency is confined to the `tui` package and `cmd/tui.go`. The `game`, `core`, `solver`, and persistence packages remain terminal-library independent.
 
 ## Verification
 
-Package tests cover key-to-action translation, focus boundaries, note mode, modal confirmations, dirty-state tracking, error messages, small-terminal fallback, and deterministic rendering. Tests inject persistence functions so save and resume failure paths do not depend on a real terminal.
+Package tests cover key-to-action translation, focus boundaries, note mode, modal confirmations, dirty-state tracking, save transport, hint preview/apply, small-terminal fallback, and deterministic rendering. The model injects its persistence function for isolated save tests.
 
-A pseudo-terminal E2E harness starts the built binary, sends keys, resizes the terminal, and inspects stable screen text. Black-box scenarios cover startup from input and saved state, value and note entry, undo/redo, hint preview/apply, explicit save, invalid restore rejection, quit confirmation, and CLI backward compatibility.
+`scripts/e2e_tui.py` is a standard-library pseudo-terminal harness that starts the built binary, sends keys, resizes the terminal, and inspects stable screen text. Black-box scenarios cover startup from input and saved state, value and note entry, undo/redo, hint preview/apply, explicit save, invalid restore rejection, quit confirmation, and CLI backward compatibility.
 
 ## Deferred Work
 

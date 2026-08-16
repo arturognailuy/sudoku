@@ -22,7 +22,10 @@ This index provides reading chains for common starting points and a complete doc
 8. `game/game.go` — private session state and compatibility adapters
 9. `game/contract.go` — typed actions, detached snapshots, results, and engine errors
 10. `game/serialization.go` — versioned complete-session persistence and atomic restoration
-11. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
+11. `cli/controller.go` — line-oriented CLI controller (terminal I/O, commands, display)
+12. `sessionfile/session_file.go` — presentation-neutral bounded and atomic session transport
+13. `tui/model.go` — Bubble Tea event model and action translation
+14. `tui/render.go` — deterministic full-screen renderer
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -68,6 +71,11 @@ This index provides reading chains for common starting points and a complete doc
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |
 | `cmd/play.go` | Interactive play mode, fallback flow, auto-store |
+| `cmd/session.go` | Shared CLI/TUI session startup and restore validation |
+| `cmd/tui.go` | Opt-in full-screen TUI command and terminal lifecycle |
+| `tui/model.go` | TUI event model, focus, modes, confirmations, and persistence |
+| `tui/render.go` | Deterministic color-independent board rendering |
+| `sessionfile/session_file.go` | Bounded reads and atomic mode-0600 session writes |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
 | `db/db.go` | SQLite puzzle database — open, close, schema migration |
