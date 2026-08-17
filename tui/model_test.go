@@ -2,10 +2,12 @@ package tui
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
 	"github.com/gnailuy/sudoku/solver"
@@ -19,7 +21,8 @@ func testModel(t *testing.T) Model {
 	board.FromString(testPuzzle)
 	current := game.NewGame(board, game.NewDefaultOptions(solver.NewStore()))
 	model := NewModel(current, "")
-	model.width, model.height = 80, 40
+	model.width, model.height = 80, 42
+	model.theme = darkTheme
 	return model
 }
 
@@ -64,18 +67,23 @@ func TestUndoRedoAndQuitConfirmation(t *testing.T) {
 	}
 }
 
-func TestResizeFallbackAndStableMarkers(t *testing.T) {
+func TestResizeFallbackAndCleanStableLayout(t *testing.T) {
 	model := testModel(t)
 	updated, _ := model.Update(tea.WindowSizeMsg{Width: 30, Height: 10})
 	model = updated.(Model)
 	if !strings.Contains(model.View(), "Terminal too small") {
 		t.Fatal("missing resize fallback")
 	}
-	model.width, model.height = 80, 40
-	view := model.View()
-	for _, marker := range []string{"<3>", "{ . }", "mode:VALUE", "? preview hint"} {
+	model.width, model.height = 80, 42
+	view := ansi.Strip(model.View())
+	for _, marker := range []string{"  3  ", "VALUE  •", "┏", "╋", "i hint", "? help"} {
 		if !strings.Contains(view, marker) {
 			t.Errorf("view missing %q", marker)
+		}
+	}
+	for _, oldMarker := range []string{"<3>", "{", "}", "( . )", " . "} {
+		if strings.Contains(view, oldMarker) {
+			t.Errorf("view retained old cell marker %q", oldMarker)
 		}
 	}
 }
@@ -116,13 +124,69 @@ func TestSaveUsesSerializedSessionAndClearsDirty(t *testing.T) {
 func TestHintPreviewDoesNotMutateUntilEnter(t *testing.T) {
 	model := testModel(t)
 	before := model.snapshot
-	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 	if model.hint == nil || model.snapshot != before {
 		t.Fatal("hint preview missing or mutated game")
 	}
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyEnter})
 	if model.snapshot == before || !model.dirty {
 		t.Fatal("hint was not applied")
+	}
+}
+
+func TestHelpOverlayOpensAndCloses(t *testing.T) {
+	model := testModel(t)
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if model.modal != helpModal || !strings.Contains(ansi.Strip(model.View()), "KEYBOARD HELP") {
+		t.Fatal("help overlay did not open")
+	}
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyEscape})
+	if model.modal != noModal {
+		t.Fatal("help overlay did not close")
+	}
+}
+
+func TestSemanticBackgroundsUseDeterministicThemeColors(t *testing.T) {
+	model := testModel(t)
+	view := model.View()
+	for _, pattern := range []string{`\x1b\[[0-9;]*48;2;117;91;24m`, `\x1b\[[0-9;]*48;2;27;48;56m`} {
+		if !regexp.MustCompile(pattern).MatchString(view) {
+			t.Fatalf("dark view missing background pattern %q", pattern)
+		}
+	}
+	model.theme = lightTheme
+	view = model.View()
+	for _, pattern := range []string{`\x1b\[[0-9;]*48;2;246;195;83m`, `\x1b\[[0-9;]*48;2;232;242;243m`} {
+		if !regexp.MustCompile(pattern).MatchString(view) {
+			t.Fatalf("light view missing background pattern %q", pattern)
+		}
+	}
+}
+
+func TestDeterministicThemeSelectionAndNoColorFallback(t *testing.T) {
+	t.Setenv("SUDOKU_THEME", "light")
+	if got := themeFromEnvironment(); got != lightTheme {
+		t.Fatalf("light theme=%v", got)
+	}
+	t.Setenv("NO_COLOR", "1")
+	if got := themeFromEnvironment(); got != noColorTheme {
+		t.Fatalf("NO_COLOR theme=%v", got)
+	}
+
+	model := testModel(t)
+	model.theme = noColorTheme
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	view := model.View()
+	for _, colorCode := range []string{"\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m", "\x1b[38;", "\x1b[40m", "\x1b[41m", "\x1b[42m", "\x1b[43m", "\x1b[44m", "\x1b[45m", "\x1b[46m", "\x1b[47m", "\x1b[48;"} {
+		if strings.Contains(view, colorCode) {
+			t.Fatalf("no-color view contains %q", colorCode)
+		}
+	}
+	if !regexp.MustCompile(`\x1b\[[0-9;]*7[0-9;]*m`).MatchString(view) {
+		t.Fatal("no-color focus is not distinguished with reverse video")
+	}
+	if !regexp.MustCompile(`\x1b\[[0-9;]*4[0-9;]*m`).MatchString(view) {
+		t.Fatal("no-color invalid value is not underlined")
 	}
 }
 

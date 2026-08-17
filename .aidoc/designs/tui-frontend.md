@@ -37,7 +37,8 @@ The following global actions remain available when no modal is open:
 
 - `n` toggles value and note modes;
 - `u` and `r` submit undo and redo;
-- `?` requests a hint preview, while Enter applies the displayed hint;
+- `i` requests a hint preview, while Enter applies the displayed hint;
+- `?` opens a compact keyboard-help overlay;
 - `c` checks the current status without mutating the game;
 - `R` resets after confirmation;
 - `S` opens an explicit save-path prompt;
@@ -57,22 +58,24 @@ The filesystem transport lives in the presentation-neutral `sessionfile` package
 
 The first TUI supports terminals large enough to show a 9×9 board, status, messages, and help. A too-small terminal renders a resize instruction and accepts only resize and quit events until the minimum layout fits.
 
-Given cells, player values, invalid entries, the focused cell, and peer cells must be visually distinguishable without relying on color alone. Notes use fixed candidate positions within a cell. The renderer must produce deterministic output from model state so package tests can verify layouts without a live terminal.
+Given cells, player values, invalid entries, the focused cell, and peer cells remain semantically distinct without punctuation around digits. Focus uses a strong background, peers use a quieter background, 3×3 boundaries are heavier than cell boundaries, and notes retain fixed candidate positions without placeholder dots. The title, status, board, messages, and one-line key guide center within the available width.
+
+Dark and light palettes are deterministic and selected with `SUDOKU_THEME`; `NO_COLOR` or the `no-color` theme retains bold, underline, reverse-video, and faint attributes while removing color distinctions. The renderer must produce deterministic output from model state so package tests can verify layouts without a live terminal.
 
 Phase 7 uses a single event loop to serialize engine actions. Background puzzle generation and filesystem operations may return messages to the event loop, but no goroutine mutates `game.Game` directly.
 
 ## Dependency Decision
 
-The implementation uses Bubble Tea v1.3.4 for terminal lifecycle, keyboard events, resize events, and deterministic model updates. The first implementation does not call Bubbles or Lip Gloss directly; ANSI styling, game state, and layout decisions remain in project-owned TUI code so the frontend is testable and not coupled to style-library internals.
+The implementation uses Bubble Tea v1.3.4 for terminal lifecycle, keyboard events, resize events, and deterministic model updates. Lip Gloss v1.0.0 provides styling and width-aware centering, while semantic state, palettes, layout, and accessibility policy remain in project-owned TUI code. Bubbles is not required.
 
-The dependency is confined to the `tui` package and `cmd/tui.go`. The `game`, `core`, `solver`, and persistence packages remain terminal-library independent.
+The terminal dependencies are confined to the `tui` package and `cmd/tui.go`. The `game`, `core`, `solver`, and persistence packages remain terminal-library independent.
 
 ## Verification
 
-Package tests cover key-to-action translation, focus boundaries, note mode, modal confirmations, dirty-state tracking, save transport, hint preview/apply, small-terminal fallback, and deterministic rendering. The model injects its persistence function for isolated save tests.
+Package tests cover key-to-action translation, focus boundaries, note mode, modal confirmations and help, dirty-state tracking, save transport, hint preview/apply, small-terminal fallback, clean cell rendering, theme selection, no-color accessibility, and deterministic rendering. The model injects its persistence function for isolated save tests.
 
 `scripts/e2e_tui.py` is a standard-library pseudo-terminal harness that starts the built binary, sends keys, resizes the terminal, and inspects stable screen text. Black-box scenarios cover startup from input and saved state, value and note entry, undo/redo, hint preview/apply, explicit save, invalid restore rejection, quit confirmation, and CLI backward compatibility.
 
 ## Deferred Work
 
-Automatic candidate population, background autosave, mouse support, themes, localization, web and mobile frontends, network protocols, cloud sync, and multi-user play remain separate product decisions. Phase 7 should not expand the engine contract unless the TUI exposes a concrete missing capability that cannot be expressed through snapshots, actions, hints, or serialization.
+Automatic candidate population, background autosave, mouse support, localization, web and mobile frontends, network protocols, cloud sync, and multi-user play remain separate product decisions. Phase 7 should not expand the engine contract unless the TUI exposes a concrete missing capability that cannot be expressed through snapshots, actions, hints, or serialization.

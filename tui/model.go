@@ -3,6 +3,7 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"unicode/utf8"
 
@@ -14,8 +15,8 @@ import (
 )
 
 const (
-	minWidth  = 54
-	minHeight = 38
+	minWidth  = 72
+	minHeight = 40
 )
 
 type inputMode uint8
@@ -32,6 +33,7 @@ const (
 	quitModal
 	resetModal
 	saveModal
+	helpModal
 )
 
 // Model owns presentation state while delegating all puzzle transitions to game.Game.
@@ -42,6 +44,7 @@ type Model struct {
 	width, height int
 	mode          inputMode
 	modal         modalKind
+	theme         themeName
 	message       string
 	hint          *solver.Move
 	dirty         bool
@@ -51,7 +54,27 @@ type Model struct {
 
 // NewModel creates a TUI model. resumePath becomes the default save target.
 func NewModel(current game.Game, resumePath string) Model {
-	return Model{game: &current, snapshot: current.Snapshot(), savePath: resumePath, writeSession: sessionfile.Write}
+	return Model{
+		game:         &current,
+		snapshot:     current.Snapshot(),
+		savePath:     resumePath,
+		theme:        themeFromEnvironment(),
+		writeSession: sessionfile.Write,
+	}
+}
+
+func themeFromEnvironment() themeName {
+	if _, disabled := os.LookupEnv("NO_COLOR"); disabled {
+		return noColorTheme
+	}
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("SUDOKU_THEME"))) {
+	case "light":
+		return lightTheme
+	case "no-color", "nocolor", "none":
+		return noColorTheme
+	default:
+		return darkTheme
+	}
 }
 
 func (m Model) Init() tea.Cmd { return nil }
@@ -109,6 +132,8 @@ func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "r":
 		m.apply(game.Redo{})
 	case "?":
+		m.modal = helpModal
+	case "i":
 		m.hint = m.game.Hint()
 		if m.hint == nil {
 			m.message = "No hint is available."
@@ -157,6 +182,12 @@ func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateModal(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.modal == helpModal {
+		if key.String() == "?" || key.String() == "esc" {
+			m.modal = noModal
+		}
+		return m, nil
+	}
 	if m.modal == saveModal {
 		switch key.String() {
 		case "esc":

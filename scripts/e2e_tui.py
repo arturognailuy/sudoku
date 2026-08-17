@@ -59,7 +59,7 @@ def main():
         output += drain(master, 0.4)
         # Move to an editable cell, set a value, toggle a note, exercise history
         # and hint preview/apply, then save explicitly and cleanly quit.
-        for keys in (b"l", b"5", b"q", b"n", b"n", b"j", b"4", b"u", b"r", b"?", b"\r", b"S"):
+        for keys in (b"l", b"5", b"q", b"n", b"n", b"j", b"4", b"u", b"r", b"?", b"\x1b", b"i", b"\r", b"S"):
             os.write(master, keys)
             output += drain(master)
         os.write(master, session.encode() + b"\r")
@@ -74,7 +74,7 @@ def main():
         finally:
             os.close(master)
         text = ANSI.sub(b"", output).decode("utf-8", "replace")
-        required = ("Sudoku", "mode:NOTE", "Hint preview:", "Saved to ", "unsaved:*", "Unsaved changes")
+        required = ("SUDOKU", "NOTE  ", "KEYBOARD HELP", "Hint preview:", "Saved to ", "unsaved", "Unsaved changes")
         missing = [value for value in required if value not in text]
         if missing:
             raise AssertionError(f"screen output missing {missing}\n{text[-4000:]}")
@@ -90,7 +90,7 @@ def main():
         resumed_output = drain(master, 0.7)
         os.write(master, b"q")
         resumed_output += drain(master, 0.3)
-        if resumed.wait(timeout=3) != 0 or b"Sudoku" not in ANSI.sub(b"", resumed_output):
+        if resumed.wait(timeout=3) != 0 or b"SUDOKU" not in ANSI.sub(b"", resumed_output):
             raise AssertionError("saved TUI session did not resume cleanly")
         os.close(master)
         corrupt = os.path.join(directory, "corrupt.json")

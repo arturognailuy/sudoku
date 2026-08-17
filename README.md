@@ -48,7 +48,9 @@ The existing line-oriented game remains the default. Launch the optional termina
 ./sudoku tui --resume game.json
 ```
 
-Use arrows or `h`/`j`/`k`/`l` to move, `1`–`9` to enter a value, `n` to toggle note mode, `u`/`r` for history, `?` then Enter to preview/apply a hint, `S` to save, and `q` to quit. Unsaved sessions require confirmation.
+Use arrows or `h`/`j`/`k`/`l` to move, `1`–`9` to enter a value, `n` to toggle note mode, `u`/`r` for history, `i` then Enter to preview/apply a hint, `?` for keyboard help, `S` to save, and `q` to quit. Unsaved sessions require confirmation.
+
+The TUI defaults to a deterministic dark palette. Set `SUDOKU_THEME=light` for the light palette or `SUDOKU_THEME=no-color` (also selected by `NO_COLOR`) for an attribute-only accessible fallback.
 
 ## Batch Generate
 
