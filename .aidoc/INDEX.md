@@ -22,7 +22,10 @@ This index provides reading chains for common starting points and a complete doc
 8. `game/game.go` — private session state and compatibility adapters
 9. `game/contract.go` — typed actions, detached snapshots, results, and engine errors
 10. `game/serialization.go` — versioned complete-session persistence and atomic restoration
-11. `cli/controller.go` — CLI controller (terminal I/O, commands, display)
+11. `cli/controller.go` — line-oriented CLI controller (terminal I/O, commands, display)
+12. `sessionfile/session_file.go` — presentation-neutral bounded and atomic session transport
+13. `tui/model.go` — Bubble Tea event model and action translation
+14. `tui/render.go` — deterministic full-screen renderer
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -37,11 +40,12 @@ This index provides reading chains for common starting points and a complete doc
 10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
-1. `.aidoc/designs/roadmap.md` — Phase 6 scope, delivery order, and exit criteria
-2. `.aidoc/designs/cli-sessions.md` — manual-note and persistence frontend design
+1. `.aidoc/designs/roadmap.md` — Phase 7 scope, delivery order, and exit criteria
+2. `.aidoc/designs/tui-frontend.md` — full-screen interaction, persistence, rendering, and dependency design
 3. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-4. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
-5. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility scenarios
+4. `.aidoc/designs/cli-sessions.md` — existing manual-note and persistence frontend design
+5. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+6. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility and future TUI scenarios
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -59,13 +63,19 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Phase 6 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/roadmap.md` | Phase 7 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/tui-frontend.md` | TUI interaction model, persistence policy, rendering, and dependency boundaries |
 | `.aidoc/designs/cli-sessions.md` | CLI manual notes, rendering, save, and resume design |
 | `.aidoc/designs/game-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |
 | `cmd/play.go` | Interactive play mode, fallback flow, auto-store |
+| `cmd/session.go` | Shared CLI/TUI session startup and restore validation |
+| `cmd/tui.go` | Opt-in full-screen TUI command and terminal lifecycle |
+| `tui/model.go` | TUI event model, focus, modes, confirmations, and persistence |
+| `tui/render.go` | Deterministic color-independent board rendering |
+| `sessionfile/session_file.go` | Bounded reads and atomic mode-0600 session writes |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
 | `db/db.go` | SQLite puzzle database — open, close, schema migration |

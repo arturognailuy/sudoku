@@ -24,3 +24,7 @@ go.work.sum
 
 # env file
 .env
+
+# Python caches used by black-box test scripts
+__pycache__/
+*.py[cod]

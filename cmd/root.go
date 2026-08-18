@@ -15,8 +15,9 @@ var rootCmd = &cobra.Command{
 	Long: `Sudoku is a CLI puzzle game featuring 23 strategy solvers across five
 difficulty tiers (Easy through Evil). Play interactively, generate batches
 of puzzles, or import puzzle collections.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		runPlay(cmd)
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runPlay(cmd)
 	},
 }
 
@@ -32,6 +33,7 @@ func init() {
 	rootCmd.Flags().String("resume", "", "Resume a saved game session")
 	rootCmd.MarkFlagsMutuallyExclusive("resume", "input")
 	rootCmd.MarkFlagsMutuallyExclusive("resume", "level")
+	rootCmd.AddCommand(newTUICommand())
 }
 
 // Execute runs the root command.

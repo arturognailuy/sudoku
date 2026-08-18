@@ -2,85 +2,41 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/gnailuy/sudoku/cli"
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/db"
-	"github.com/gnailuy/sudoku/game"
 	"github.com/gnailuy/sudoku/generator"
 	"github.com/gnailuy/sudoku/solver"
 	"github.com/spf13/cobra"
 )
 
-func runPlay(cmd *cobra.Command) {
+func runPlay(cmd *cobra.Command) error {
 	input, _ := cmd.Flags().GetString("input")
 	level, _ := cmd.Flags().GetString("level")
 	resume, _ := cmd.Flags().GetString("resume")
-
-	if resume != "" {
-		data, err := cli.ReadSessionFile(resume)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to read saved session: %v\n", err)
-			os.Exit(1)
-		}
-		opts := game.NewDefaultOptions(solverStore)
-		opts.StrategySolverKeys = solverStore.GetAllStrategySolverKeys()
-		restoredGame, err := game.Restore(data, opts)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to resume saved session: %v\n", err)
-			os.Exit(1)
-		}
-		ctrl := cli.NewController(&restoredGame)
-		ctrl.Play()
-	} else if input != "" {
-		problem, err := generator.GenerateSudokuProblemFromString(input)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "The input is not a valid Sudoku problem: %s\n", input)
-			os.Exit(1)
-		}
-
-		solutionCount := solverStore.GetDefaultSolver().CountSolutions(problem)
-		if solutionCount == 0 {
-			fmt.Fprintf(os.Stderr, "The input is not a solvable Sudoku problem: %s\n", input)
-			os.Exit(1)
-		} else if solutionCount > 1 {
-			fmt.Fprintf(os.Stderr, "The input has %d solutions: %s\n", solutionCount, input)
-		}
-
-		autoStore(solverStore, *problem, "input")
-		playCli(*problem, solverStore, solverStore.GetAllStrategySolverKeys())
-	} else {
-		difficulty := parseDifficulty(level)
-		levelName := level
-		fmt.Printf("Generating a random %s Sudoku problem...\n", capitalize(levelName))
-
-		problem, keys := generateWithFallback(solverStore, difficulty, levelName)
-		playCli(problem, solverStore, keys)
+	newGame, _, err := createSession(sessionRequest{input: input, level: level, resume: resume}, os.Stdout, os.Stderr)
+	if err != nil {
+		return err
 	}
+	ctrl := cli.NewController(&newGame)
+	ctrl.Play()
+	return nil
 }
 
 func parseDifficulty(level string) generator.Difficulty {
-	switch level {
-	case "easy":
-		return generator.NewEasyDifficulty()
-	case "medium":
-		return generator.NewMediumDifficulty()
-	case "hard":
-		return generator.NewHardDifficulty()
-	case "expert":
-		return generator.NewExpertDifficulty()
-	case "evil":
-		return generator.NewEvilDifficulty()
-	default:
-		fmt.Fprintf(os.Stderr, "Invalid difficulty level: %s. Options: easy, medium, hard, expert, evil\n", level)
+	difficulty, err := difficultyForLevel(level)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-		return generator.Difficulty{} // unreachable
 	}
+	return difficulty
 }
 
-func generateWithFallback(solverStore solver.Store, difficulty generator.Difficulty, levelName string) (core.Board, []string) {
+func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficulty generator.Difficulty, levelName string) (core.Board, []string) {
 	opts := generator.NewBestEffortOptions(solverStore, difficulty)
 	result := generator.GenerateBestEffort(opts)
 
@@ -113,7 +69,7 @@ func generateWithFallback(solverStore solver.Store, difficulty generator.Difficu
 
 	actualLevel := result.Classification.Difficulty
 	if actualLevel != levelName {
-		fmt.Printf("Requested difficulty: %s. Generated puzzle difficulty: %s. Enjoy!\n",
+		fmt.Fprintf(output, "Requested difficulty: %s. Generated puzzle difficulty: %s. Enjoy!\n",
 			capitalize(levelName), capitalize(actualLevel))
 	}
 
@@ -172,14 +128,6 @@ func autoStore(solverStore solver.Store, board core.Board, source string) {
 		MaxTechnique: classification.MaxTechnique,
 		Source:       source,
 	})
-}
-
-func playCli(problem core.Board, solverStore solver.Store, strategySolverKeys []string) {
-	opts := game.NewDefaultOptions(solverStore)
-	opts.StrategySolverKeys = strategySolverKeys
-	newGame := game.NewGame(problem, opts)
-	ctrl := cli.NewController(&newGame)
-	ctrl.Play()
 }
 
 func defaultDBPath() string {

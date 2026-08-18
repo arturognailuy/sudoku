@@ -1,14 +1,13 @@
 package cli
 
 import (
-	"errors"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/sessionfile"
 	"github.com/gnailuy/sudoku/solver"
 )
 
@@ -68,53 +67,6 @@ func TestNoteCommandsAndRendering(t *testing.T) {
 	}
 }
 
-func TestWriteAndReadSessionFile(t *testing.T) {
-	directory := t.TempDir()
-	path := filepath.Join(directory, "game.json")
-	if err := WriteSessionFile(path, []byte("first")); err != nil {
-		t.Fatal(err)
-	}
-	if err := WriteSessionFile(path, []byte("second")); err != nil {
-		t.Fatal(err)
-	}
-	data, err := ReadSessionFile(path)
-	if err != nil || string(data) != "second" {
-		t.Fatalf("ReadSessionFile() = %q, %v", data, err)
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if info.Mode().Perm() != 0600 {
-		t.Fatalf("mode = %o, want 600", info.Mode().Perm())
-	}
-}
-
-func TestReadSessionFileRejectsOversizedInput(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "large.json")
-	if err := os.WriteFile(path, make([]byte, MaxSessionFileSize+1), 0600); err != nil {
-		t.Fatal(err)
-	}
-	_, err := ReadSessionFile(path)
-	if !errors.Is(err, ErrSessionTooLarge) {
-		t.Fatalf("error = %v, want ErrSessionTooLarge", err)
-	}
-}
-
-func TestWriteFailureLeavesDestination(t *testing.T) {
-	directory := t.TempDir()
-	destination := filepath.Join(directory, "destination")
-	if err := os.Mkdir(destination, 0700); err != nil {
-		t.Fatal(err)
-	}
-	if err := WriteSessionFile(destination, []byte("replacement")); err == nil {
-		t.Fatal("WriteSessionFile unexpectedly replaced a directory")
-	}
-	if info, err := os.Stat(destination); err != nil || !info.IsDir() {
-		t.Fatalf("destination changed after failed write: %v, %v", info, err)
-	}
-}
-
 func TestSaveCommandRoundTrip(t *testing.T) {
 	controller := newTestController(t)
 	if !controller.RunCommand("n 1 1 5") {
@@ -124,7 +76,7 @@ func TestSaveCommandRoundTrip(t *testing.T) {
 	if controller.RunCommand("save " + path) {
 		t.Fatal("save should not report a board change")
 	}
-	data, err := ReadSessionFile(path)
+	data, err := sessionfile.Read(path)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -79,7 +79,7 @@ echo "quit" | ./sudoku --level easy
 ```bash
 ./sudoku --help
 ```
-**Expected:** Usage printed with subcommands (`generate`, `import`) and flags listed.
+**Expected:** Usage printed with subcommands (`generate`, `import`, `tui`) and flags listed.
 
 ### 1.8 Backward Compatibility: `--input` Flag
 ```bash
@@ -304,7 +304,7 @@ echo "quit" | ./sudoku --input "....7....6..195....98....6.8...6...34..8.3..17..
 ```bash
 ./sudoku
 ```
-**Expected:** Shows available commands: `generate`, `import`, and usage for the default play mode.
+**Expected:** Shows available commands: `generate`, `import`, `tui`, and usage for the default play mode.
 
 ---
 
@@ -363,7 +363,41 @@ printf 'save %s\nq\n' "$SUDOKU_E2E_DIR/existing-destination" | ./sudoku --input 
 
 ---
 
-## 8. Future Scenarios (Not Yet Implemented)
+## 8. Full-Screen TUI
+
+The TUI scenarios require a pseudo-terminal. The standard-library harness exercises the built binary rather than package internals:
+
+```bash
+python3 scripts/e2e_tui.py ./sudoku
+```
+
+### 8.1 Startup and Resize
+**Action:** Start `sudoku tui --input <known puzzle>` in a terminal of at least 72×40, then resize below the minimum and back.
+**Expected:** The centered board uses clean digits, fixed-position notes, strong 3×3 boundaries, a strong focus background, and subtle peer backgrounds. A small terminal displays only the minimum-size instruction; resizing restores the unchanged game.
+
+### 8.2 Values, Notes, and History
+**Action:** Move with arrows or `h`/`j`/`k`/`l`, enter a value, toggle note mode with `n`, enter a note, then use `u` and `r`.
+**Expected:** Focus stops at board edges. Keys submit engine actions, note cleanup follows peer rules, and undo/redo restore whole transitions.
+
+### 8.3 Help, Hint Preview, and Apply
+**Action:** Press `?`, inspect and close the keyboard-help overlay, press `i`, inspect the technique/reason, then press Enter.
+**Expected:** Help does not mutate the board. Hint preview does not mutate the board; Enter applies that hint through `game.ApplyHint` and marks the session dirty.
+
+### 8.4 Explicit Save and Safe Quit
+**Action:** Change a cell, press `q` and decline, press `S`, enter a path, then quit. Resume with `sudoku tui --resume <path>`.
+**Expected:** Dirty quit asks for confirmation. Save atomically creates a mode-0600 session, clears the dirty marker, and resumed values, notes, and history match.
+
+### 8.5 Restore Rejection and CLI Compatibility
+**Action:** Run TUI restore against corrupt, unsupported, and oversized files; then run scenarios 1.1, 7.3, and 7.4 against root play.
+**Expected:** Invalid restores fail before entering full-screen mode and preserve source files. The line-oriented CLI output and persistence behavior remain compatible.
+
+### 8.6 Themes and No-Color Accessibility
+**Action:** Start the known puzzle with the default environment, `SUDOKU_THEME=light`, and `NO_COLOR=1`.
+**Expected:** Dark and light runs use their deterministic palettes. The no-color run emits no color codes while bold givens, underlined invalid values, reverse-video focus, faint peers/notes, clean digits, and heavy box boundaries preserve semantic distinctions.
+
+---
+
+## 9. Future Scenarios (Not Yet Implemented)
 
 These scenarios should be added as the project evolves:
 
