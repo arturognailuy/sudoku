@@ -48,7 +48,7 @@ Frontends own presentation, command parsing, keyboard or pointer gestures, acces
 The stable contract is organized around four concepts:
 
 - `Game` is the authoritative mutable session owned by one caller at a time.
-- `Snapshot` is a detached read model containing givens, visible values, invalid markers, notes, status, and undo/redo availability. Mutating a snapshot cannot mutate the game.
+- `Snapshot` is a detached read model containing givens, visible values, invalid markers, manual notes, derived legal candidates, status, and undo/redo availability. Mutating a snapshot cannot mutate the game.
 - `Action` is a typed player intent: set or clear a value, toggle or clear notes, reset, repair, solve, undo, redo, or apply a hint. Frontends submit actions instead of reproducing rules.
 - `Result` describes the accepted transition, changed cells, current status, undo/redo availability, and the recommendation used by an applied hint. Invalid actions return typed errors and leave state unchanged.
 
@@ -73,7 +73,7 @@ Notes are player annotations, distinct from `core.Board.Candidates`, which compu
 
 Notes are allowed only on editable empty cells and contain digits 1–9. Setting a value clears notes in that cell and removes that value from notes in peer cells. Clearing a value does not recreate notes. Every automatic note cleanup is part of the same action delta, so undo restores the exact previous notes.
 
-The engine does not automatically fill all legal candidates or continuously synchronize notes with `core.Board.Candidates`. A frontend may request an explicit future helper for that behavior without changing the meaning of manual notes.
+`Game.Snapshot` derives legal candidates from the solver-safe play board through `core.Board.Candidates`. Derived candidates remain separate from manual notes, actions, history, dirty state, and serialization; frontends decide whether to display them.
 
 ## Serialization Contract
 

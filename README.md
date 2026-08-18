@@ -12,6 +12,7 @@ Features:
 - Interactive play with manual notes, undo/redo, and technique-aware hints
 - Explicit atomic session saves with validated resume
 - Opt-in full-screen Bubble Tea interface with keyboard navigation
+- Opt-in automatic legal candidates in the full-screen TUI
 
 ## Build
 
@@ -48,7 +49,7 @@ The existing line-oriented game remains the default. Launch the optional termina
 ./sudoku tui --resume game.json
 ```
 
-Use arrows or `h`/`j`/`k`/`l` to move, `1`–`9` to enter a value, `n` to toggle note mode, `u`/`r` for history, `i` then Enter to preview/apply a hint, `?` for keyboard help, `S` to save, and `q` to quit. Unsaved sessions require confirmation.
+Use arrows or `h`/`j`/`k`/`l` to move, `1`–`9` to enter a value, `n` to toggle note mode, `a` to show or hide automatic legal candidates, `u`/`r` for history, `i` then Enter to preview/apply a hint, `?` for keyboard help, `S` to save, and `q` to quit. Automatic candidates start hidden and are not saved; manual notes remain player-owned. Unsaved sessions require confirmation.
 
 The TUI defaults to a deterministic dark palette. Set `SUDOKU_THEME=light` for the light palette or `SUDOKU_THEME=no-color` (also selected by `NO_COLOR`) for an attribute-only accessible fallback.
 

@@ -133,13 +133,14 @@ func (Solve) actionKind() ActionKind { return ActionSolve }
 // Snapshot is a detached read model. Its arrays may be modified by a caller
 // without mutating the Game that produced it.
 type Snapshot struct {
-	Givens  [9][9]int
-	Values  [9][9]int
-	Invalid [9][9]bool
-	Notes   [9][9]core.CandidateSet
-	Status  Status
-	CanUndo bool
-	CanRedo bool
+	Givens     [9][9]int
+	Values     [9][9]int
+	Invalid    [9][9]bool
+	Notes      [9][9]core.CandidateSet
+	Candidates [9][9]core.CandidateSet
+	Status     Status
+	CanUndo    bool
+	CanRedo    bool
 }
 
 // String formats the detached session state for terminal summaries.
@@ -217,6 +218,7 @@ func (game *Game) Snapshot() Snapshot {
 			snapshot.Values[row][column] = game.Get(position)
 			snapshot.Invalid[row][column] = game.invalidInput.Get(position) != 0
 			snapshot.Notes[row][column] = game.notes[row][column]
+			snapshot.Candidates[row][column] = game.playBoard.Candidates(position)
 		}
 	}
 	snapshot.Status = game.status()

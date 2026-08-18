@@ -1,6 +1,6 @@
 ---
 domain: Designs
-status: Draft
+status: Active
 entry_points:
   - game/contract.go
   - tui/model.go
@@ -66,7 +66,7 @@ Phase 8 does not add candidate persistence, automatic note population, note clea
 
 ## Delivery and Verification
 
-Phase 8 is delivered in two implementation layers after this design is approved:
+Phase 8 is delivered in two implementation layers:
 
 1. Extend detached snapshots with computed legal candidates and contract tests for empty, filled, invalid-visible, changed, restored, and mutation-isolation cases.
 2. Add the TUI toggle, combined note/candidate rendering, help text, theme tests, and pseudo-terminal black-box coverage.

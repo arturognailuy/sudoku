@@ -393,7 +393,27 @@ python3 scripts/e2e_tui.py ./sudoku
 
 ### 8.6 Themes and No-Color Accessibility
 **Action:** Start the known puzzle with the default environment, `SUDOKU_THEME=light`, and `NO_COLOR=1`.
-**Expected:** Dark and light runs use their deterministic palettes. The no-color run emits no color codes while bold givens, underlined invalid values, reverse-video focus, faint peers/notes, clean digits, and heavy box boundaries preserve semantic distinctions.
+**Expected:** Dark and light runs use their deterministic palettes. The no-color run emits no color codes while bold givens, underlined invalid values, reverse-video focus, faint peers/automatic candidates, bold manual notes, clean digits, and heavy box boundaries preserve semantic distinctions.
+
+### 8.7 Automatic-Candidate Toggle
+**Action:** Start TUI, press `a`, and press `a` again.
+**Expected:** Legal candidates appear only while enabled, board geometry remains stable, the status changes between `AUTO ON` and `AUTO OFF`, and no dirty marker is created.
+
+### 8.8 Candidate Transition Refresh
+**Action:** With candidates enabled, set and clear a value, undo and redo, apply a hint, repair an invalid entry, solve, and reset.
+**Expected:** Every displayed candidate set follows the accepted solver-safe board without an independent candidate action or history entry.
+
+### 8.9 Automatic and Manual Coexistence
+**Action:** Add legal and stale manual notes with candidates enabled under dark, light, and `NO_COLOR` themes.
+**Expected:** Manual styling wins at overlapping positions, stale manual notes remain visible, and automatic candidates remain distinguishable without color alone.
+
+### 8.10 Candidate Save and Resume
+**Action:** Save with candidates enabled, then resume the session.
+**Expected:** Session bytes contain no candidate preference or derived data, and the resumed TUI starts with `AUTO OFF`.
+
+### 8.11 Invalid-Entry Handling
+**Action:** Enter an invalid value with candidates enabled, then clear or repair it.
+**Expected:** The invalid cell shows its visible value, its peers ignore that value during candidate calculation, and candidates reappear in the cell after clear or repair.
 
 ---
 
@@ -401,11 +421,6 @@ python3 scripts/e2e_tui.py ./sudoku
 
 These scenarios should be added as the project evolves:
 
-- **Automatic-candidate toggle:** Start TUI, press `a`, and press `a` again → candidates appear only while enabled, board geometry remains stable, and no dirty marker is created.
-- **Candidate transition refresh:** With candidates enabled, set/clear a value, undo/redo, apply a hint, repair, solve, and reset → every displayed set follows the accepted board.
-- **Automatic/manual coexistence:** Add legal and stale manual notes with candidates enabled → manual styling wins at overlapping positions and remains distinct in dark, light, and `NO_COLOR` modes.
-- **Candidate save/resume:** Save with candidates enabled, then resume → session data is unchanged by derived candidates and the display starts disabled.
-- **Candidate invalid-entry handling:** Enter an invalid value → its cell shows the invalid value, peers ignore it for candidate calculation, and clearing or repairing restores that cell's candidates.
 - **Large import progress indicator:** Import 150+ puzzles → progress indicator fires every 100 puzzles.
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).
 - **Played tracking:** Mark puzzles as played → DB query skips played puzzles.

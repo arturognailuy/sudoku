@@ -31,10 +31,10 @@ type palette struct {
 }
 
 type renderStyles struct {
-	canvas                               lipgloss.Style
-	title, status, message, guide, modal lipgloss.Style
-	given, player, invalid, empty, note  lipgloss.Style
-	focus, peer, border, strongBorder    lipgloss.Style
+	canvas                                         lipgloss.Style
+	title, status, message, guide, modal           lipgloss.Style
+	given, player, invalid, empty, note, candidate lipgloss.Style
+	focus, peer, border, strongBorder              lipgloss.Style
 }
 
 func render(m Model) string {
@@ -46,6 +46,11 @@ func render(m Model) string {
 
 	title := center(m.width, styles.title.Render("SUDOKU"), styles.canvas)
 	status := fmt.Sprintf("%s  •  %s  •  r%dc%d", mode, m.snapshot.Status, m.row+1, m.column+1)
+	if m.autoCandidates {
+		status = "AUTO ON  •  " + status
+	} else {
+		status = "AUTO OFF  •  " + status
+	}
 	if m.dirty {
 		status += "  •  unsaved"
 	}
@@ -75,7 +80,7 @@ func render(m Model) string {
 	case helpModal:
 		parts = append(parts, styles.canvas.Render(strings.Repeat(" ", m.width)))
 	default:
-		parts = append(parts, center(m.width, styles.guide.Render("arrows move  •  1–9 set  •  n notes  •  i hint  •  ? help  •  S save  •  q quit"), styles.canvas))
+		parts = append(parts, center(m.width, styles.guide.Render("arrows move  •  1–9 set  •  n notes  •  a candidates  •  i hint  •  ? help  •  S save  •  q quit"), styles.canvas))
 	}
 	return strings.Join(parts, "\n") + "\n"
 }
@@ -133,10 +138,9 @@ func boardRule(styles renderStyles, left, minor, major, right, fill rune) string
 }
 
 func renderCell(m Model, styles renderStyles, row, column, noteRow int) string {
-	content := cellContent(m, row, column, noteRow)
-	style := styles.empty
 	value := m.snapshot.Values[row][column]
 	if value != 0 {
+		var style lipgloss.Style
 		switch {
 		case m.snapshot.Invalid[row][column]:
 			style = styles.invalid
@@ -145,16 +149,43 @@ func renderCell(m Model, styles renderStyles, row, column, noteRow int) string {
 		default:
 			style = styles.player
 		}
-	} else if !m.snapshot.Notes[row][column].IsEmpty() {
-		style = styles.note
+		return contextualStyle(m, styles, row, column, style).Render(cellContent(m, row, column, noteRow))
 	}
 
-	if row == m.row && column == m.column {
-		style = styles.focus.Inherit(style)
-	} else if row == m.row || column == m.column || (row/3 == m.row/3 && column/3 == m.column/3) {
-		style = styles.peer.Inherit(style)
+	notes := m.snapshot.Notes[row][column]
+	candidates := m.snapshot.Candidates[row][column]
+	if notes.IsEmpty() && (!m.autoCandidates || candidates.IsEmpty()) {
+		return contextualStyle(m, styles, row, column, styles.empty).Render("     ")
 	}
-	return style.Render(content)
+
+	var out strings.Builder
+	for offset := -1; offset <= 3; offset++ {
+		style := styles.empty
+		content := " "
+		if offset >= 0 && offset < 3 {
+			digit := noteRow*3 + offset + 1
+			switch {
+			case notes.Has(digit):
+				style = styles.note
+				content = string(rune('0' + digit))
+			case m.autoCandidates && candidates.Has(digit):
+				style = styles.candidate
+				content = string(rune('0' + digit))
+			}
+		}
+		out.WriteString(contextualStyle(m, styles, row, column, style).Render(content))
+	}
+	return out.String()
+}
+
+func contextualStyle(m Model, styles renderStyles, row, column int, style lipgloss.Style) lipgloss.Style {
+	if row == m.row && column == m.column {
+		return styles.focus.Inherit(style)
+	}
+	if row == m.row || column == m.column || (row/3 == m.row/3 && column/3 == m.column/3) {
+		return styles.peer.Inherit(style)
+	}
+	return style
 }
 
 func cellContent(m Model, row, column, noteRow int) string {
@@ -167,13 +198,14 @@ func cellContent(m Model, row, column, noteRow int) string {
 	}
 
 	notes := m.snapshot.Notes[row][column]
-	if notes.IsEmpty() {
+	candidates := m.snapshot.Candidates[row][column]
+	if notes.IsEmpty() && (!m.autoCandidates || candidates.IsEmpty()) {
 		return "     "
 	}
 	content := [5]byte{' ', ' ', ' ', ' ', ' '}
 	for offset := 0; offset < 3; offset++ {
 		candidate := noteRow*3 + offset + 1
-		if notes.Has(candidate) {
+		if notes.Has(candidate) || (m.autoCandidates && candidates.Has(candidate)) {
 			content[offset+1] = byte('0' + candidate)
 		}
 	}
@@ -185,6 +217,7 @@ func renderHelp(styles renderStyles) string {
 		"KEYBOARD HELP  •  ? or Esc closes",
 		"Move     arrows / h j k l",
 		"Edit     1–9 set or note  •  0 clears  •  n toggles mode",
+		"Assist   a toggles automatic legal candidates",
 		"Game     i previews hint  •  Enter applies  •  u/r undo/redo  •  c checks",
 		"Session  S saves  •  R resets  •  q quits",
 	}, "\n"))
@@ -246,7 +279,8 @@ func stylesFor(name themeName) renderStyles {
 		player:       base.Foreground(p.player),
 		invalid:      base.Foreground(p.invalid).Bold(true).Underline(true),
 		empty:        base,
-		note:         base.Foreground(p.muted).Faint(true),
+		note:         base.Foreground(p.player).Bold(name == noColorTheme),
+		candidate:    base.Foreground(p.muted).Faint(true),
 		focus:        renderer.NewStyle().Background(p.focusBackground).Bold(true).Reverse(name == noColorTheme),
 		peer:         renderer.NewStyle().Background(p.peerBackground).Faint(name == noColorTheme),
 		border:       base.Foreground(p.border),

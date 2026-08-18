@@ -36,6 +36,7 @@ The TUI presents one focused cell, the board, game status, available history, a 
 The following global actions remain available when no modal is open:
 
 - `n` toggles value and note modes;
+- `a` toggles derived legal-candidate display without mutating or dirtying the session;
 - `u` and `r` submit undo and redo;
 - `i` requests a hint preview, while Enter applies the displayed hint;
 - `?` opens a compact keyboard-help overlay;
@@ -58,7 +59,7 @@ The filesystem transport lives in the presentation-neutral `sessionfile` package
 
 The first TUI supports terminals large enough to show a 9×9 board, status, messages, and help. A too-small terminal renders a resize instruction and accepts only resize and quit events until the minimum layout fits.
 
-Given cells, player values, invalid entries, the focused cell, and peer cells remain semantically distinct without punctuation around digits. Focus uses a strong background, peers use a quieter background, 3×3 boundaries are heavier than cell boundaries, and notes retain fixed candidate positions without placeholder dots. The title, status, board, messages, and one-line key guide center within the available width.
+Given cells, player values, invalid entries, the focused cell, and peer cells remain semantically distinct without punctuation around digits. Focus uses a strong background, peers use a quieter background, 3×3 boundaries are heavier than cell boundaries, and manual notes and opt-in automatic candidates share fixed candidate positions without placeholder dots. Manual styling wins for overlapping or stale notes. The title, status, board, messages, and one-line key guide center within the available width.
 
 Dark and light palettes are deterministic and selected with `SUDOKU_THEME`; `NO_COLOR` or the `no-color` theme retains bold, underline, reverse-video, and faint attributes while removing color distinctions. The renderer must produce deterministic output from model state so package tests can verify layouts without a live terminal.
 
@@ -72,10 +73,10 @@ The terminal dependencies are confined to the `tui` package and `cmd/tui.go`. Th
 
 ## Verification
 
-Package tests cover key-to-action translation, focus boundaries, note mode, modal confirmations and help, dirty-state tracking, save transport, hint preview/apply, small-terminal fallback, clean cell rendering, theme selection, no-color accessibility, and deterministic rendering. The model injects its persistence function for isolated save tests.
+Package tests cover key-to-action translation, focus boundaries, note mode, automatic-candidate display, modal confirmations and help, dirty-state tracking, save transport, hint preview/apply, small-terminal fallback, clean cell rendering, theme selection, no-color accessibility, and deterministic rendering. The model injects its persistence function for isolated save tests.
 
 `scripts/e2e_tui.py` is a standard-library pseudo-terminal harness that starts the built binary, sends keys, resizes the terminal, and inspects stable screen text. Black-box scenarios cover startup from input and saved state, value and note entry, undo/redo, hint preview/apply, explicit save, invalid restore rejection, quit confirmation, and CLI backward compatibility.
 
 ## Deferred Work
 
-Automatic candidate population, background autosave, mouse support, localization, web and mobile frontends, network protocols, cloud sync, and multi-user play remain separate product decisions. Phase 7 should not expand the engine contract unless the TUI exposes a concrete missing capability that cannot be expressed through snapshots, actions, hints, or serialization.
+Automatic note population, background autosave, mouse support, localization, web and mobile frontends, network protocols, cloud sync, and multi-user play remain separate product decisions. Later TUI work should not expand the engine contract unless the TUI exposes a concrete missing capability that cannot be expressed through snapshots, actions, hints, or serialization.
