@@ -401,6 +401,11 @@ python3 scripts/e2e_tui.py ./sudoku
 
 These scenarios should be added as the project evolves:
 
+- **Automatic-candidate toggle:** Start TUI, press `a`, and press `a` again → candidates appear only while enabled, board geometry remains stable, and no dirty marker is created.
+- **Candidate transition refresh:** With candidates enabled, set/clear a value, undo/redo, apply a hint, repair, solve, and reset → every displayed set follows the accepted board.
+- **Automatic/manual coexistence:** Add legal and stale manual notes with candidates enabled → manual styling wins at overlapping positions and remains distinct in dark, light, and `NO_COLOR` modes.
+- **Candidate save/resume:** Save with candidates enabled, then resume → session data is unchanged by derived candidates and the display starts disabled.
+- **Candidate invalid-entry handling:** Enter an invalid value → its cell shows the invalid value, peers ignore it for candidate calculation, and clearing or repairing restores that cell's candidates.
 - **Large import progress indicator:** Import 150+ puzzles → progress indicator fires every 100 puzzles.
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).
 - **Played tracking:** Mark puzzles as played → DB query skips played puzzles.

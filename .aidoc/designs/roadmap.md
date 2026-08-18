@@ -5,6 +5,7 @@ entry_points:
   - cmd/tui.go
   - tui/model.go
 dependencies:
+  - .aidoc/designs/automatic-candidates.md
   - .aidoc/designs/tui-frontend.md
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/e2e-test-scenarios.md
@@ -12,48 +13,47 @@ dependencies:
 
 # Roadmap
 
-Phase 7 delivers an optional full-screen terminal interface while preserving the line-oriented CLI. The TUI is the smallest second frontend for validating the reusable game engine before the project commits to a web, mobile, or network boundary.
+Phase 8 adds opt-in automatic candidate assistance as the next gameplay improvement after the full-screen TUI. The feature strengthens the shared engine read boundary without introducing persistence changes, hosting, accounts, or network infrastructure.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/tui-frontend.md` | Canonical Phase 7 interaction, persistence, rendering, and dependency decisions |
-| `.aidoc/designs/game-engine.md` | Stable state and serialization boundary consumed by every frontend |
-| `.aidoc/designs/cli-sessions.md` | Existing CLI behavior that Phase 7 must preserve |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility contract and future TUI scenarios |
+| `.aidoc/designs/automatic-candidates.md` | Canonical Phase 8 engine, interaction, rendering, and compatibility decisions |
+| `.aidoc/designs/game-engine.md` | Stable state and snapshot boundary consumed by every frontend |
+| `.aidoc/designs/tui-frontend.md` | Current full-screen interaction, rendering, and accessibility contract |
+| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility contract and Phase 8 acceptance scenarios |
 
-## Why Phase 7 Exists
+## Why Phase 8 Is Next
 
-Phase 6 proved that a frontend can render manual notes, transport complete sessions, and preserve mixed value/note history through the engine contract. A second frontend now needs to prove that the contract is presentation-independent rather than merely a cleaner CLI implementation.
+The current TUI makes keyboard play pleasant and proves that two frontends can share actions, snapshots, hints, and serialization. Automatic candidates now provide more player value than another frontend while exercising a small missing part of the read contract: presentation-neutral, derived legal-candidate data.
 
-A TUI is the next frontend because it consumes the Go engine in-process and delivers a materially better keyboard experience without first deciding on HTTP APIs, WebAssembly, hosting, authentication, or mobile distribution. The root CLI remains the compatibility interface for scripts and redirected input; the TUI is opt-in through `sudoku tui`.
+A web frontend would first require API or WebAssembly, hosting, authentication, and deployment decisions. Background autosave would require path, retention, recovery, and privacy policy. Candidate assistance is lower risk because `core.Board.Candidates` already defines the rule and the feature does not create mutable session state.
 
-## Phase 7 Outcome
+## Phase 8 Outcome
 
-Players can launch a full-screen board, navigate with the keyboard, enter values and manual notes, inspect and apply hints, use unified undo/redo, save explicitly, resume safely, and quit without accidental loss. The interface handles terminal resize and limited color while preserving all engine and session invariants.
+Players can toggle legal candidates in the full-screen TUI without changing the default board, manual notes, undo history, dirty state, or saved sessions. Candidate sets update from accepted values after every engine transition and remain visually distinct from manual notes in dark, light, and no-color modes.
 
-Phase 7 does not add automatic candidate population, background autosave, mouse support, a web service, a browser frontend, or a mobile app. Those features remain separate product decisions after the multi-frontend boundary is proven.
+The line-oriented CLI remains unchanged. The engine exposes detached candidate data so later frontends can choose their own presentation without recomputing Sudoku rules.
 
-## Delivered Layers
+## Delivery Order
 
-1. Extracted presentation-neutral session-file transport and shared game startup while preserving every root CLI behavior and black-box scenario.
-2. Added the TUI model, deterministic renderer, focus movement, value/note input, status messages, and engine action translation.
-3. Added hint preview/apply, destructive-action confirmations, explicit save, resume-path handling, dirty-state protection, and small-terminal fallback.
-4. Added pseudo-terminal E2E coverage, help and README guidance, then reassess whether Phase 8 should target automatic candidates, autosave, or a web frontend.
+1. Add detached legal candidates to `game.Snapshot` using `core.Board.Candidates`, with no cache or second algorithm.
+2. Add the opt-in TUI toggle and combined automatic-candidate/manual-note rendering.
+3. Update help, package tests, the pseudo-terminal harness, black-box scenarios, and player documentation.
 
-Each layer leaves the built program usable. The event loop serializes all `game.Game` mutations; persistence and generation may run outside the loop only when they return results as messages.
+Each layer preserves serialization version 1 and all current CLI/TUI behavior. The implementation adds no dependency and no candidate-specific action or history record.
 
 ## Exit Criteria
 
-- `sudoku tui` starts from explicit input, generated, and restored puzzles without changing root CLI defaults or output.
-- Keyboard navigation, value mode, note mode, peer-note cleanup, hint preview/apply, undo, and redo expose engine behavior without duplicating Sudoku rules.
-- Given, focused, peer, invalid, and editable cells remain distinguishable without color alone.
-- Save remains explicit and atomic; failed save or restore preserves existing data and displays an actionable error.
-- Unsaved changes require confirmation before quit, while a clean session exits directly.
-- Resize events produce a usable board or a clear minimum-size fallback without corrupting state.
-- Package tests, pseudo-terminal scenarios, existing CLI E2E scenarios, `go test`, `go vet`, lint, diff checks, and CI pass.
+- Candidate sets are correct for editable empty cells and refresh after value entry, clear, undo/redo, hints, repair, solve, reset, and restore.
+- Invalid visible entries do not constrain peers and suppress candidates in their own occupied cells.
+- Automatic candidates start off, toggle without dirtying the session, and are never persisted.
+- Manual notes remain player-owned, including stale notes, and remain distinguishable from automatic candidates without color alone.
+- Dark, light, and `NO_COLOR` rendering preserve the current board geometry and accessibility semantics.
+- Root CLI output and commands, version 1 save bytes, restore behavior, hints, and solver behavior remain compatible.
+- Package tests, pseudo-terminal scenarios, applicable root CLI E2E scenarios, build, vet, lint, diff checks, and CI pass.
 
-## Deferred Work
+## Later Work
 
-Automatic candidate population, background autosave and crash recovery, mouse support, themes, localization, web and mobile frontends, network protocols, cloud sync, and multi-user play remain deferred. Later frontends should continue consuming the engine action, snapshot, hint, and serialization contracts rather than moving their rules into transport or presentation code.
+Background autosave and crash recovery follow Phase 8 only after explicit path, privacy, retention, and conflict policies are designed. A web or API boundary follows local-session reliability work. Mouse support, localization, cloud sync, mobile clients, and multi-user features remain deferred until a concrete product need justifies their architectural cost.
