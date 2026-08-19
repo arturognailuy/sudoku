@@ -441,13 +441,13 @@ Use an isolated state root with `export XDG_STATE_HOME=$SUDOKU_E2E_DIR/state`.
 **Action:** Use an inaccessible or unsafe state path and mutate the game.
 **Expected:** Gameplay continues with a persistent concise autosave warning. A later mutation retries recovery after the path is fixed.
 
-## 10. Local Web API and Browser Frontend (Planned)
+## 10. Local HTTP API (Planned)
 
-Run Phase 10 scenarios against the built binary with isolated data and state roots. Browser scenarios use a real browser at desktop and narrow mobile viewports; HTTP scenarios call the running process rather than importing Go handlers.
+Run Phase 10 scenarios against the built backend with isolated data and state roots. HTTP scenarios call the running `sudoku api` process rather than importing Go handlers; frontend behavior is tested in the separate client project.
 
-### 10.1 Loopback Startup and Embedded Assets
-**Action:** Start `sudoku web` with isolated XDG roots, load its printed URL, and request an unknown `/api/` path.
-**Expected:** The server binds only to loopback, serves all application assets without third-party requests, reports a healthy endpoint, and returns JSON rather than the SPA shell for unknown API routes.
+### 10.1 Loopback Startup and Health
+**Action:** Start `sudoku api` with isolated XDG roots, call `/healthz`, and request an unknown `/api/` path.
+**Expected:** The server binds only to loopback, prints its listening address, reports healthy, returns a stable JSON `404` for the unknown route, and serves no frontend assets or SPA fallback.
 
 ### 10.2 Session Creation and Strict Input
 **Action:** Create sessions by difficulty and puzzle string, then send conflicting sources, unknown fields, malformed JSON, wrong content types, and oversized bodies.
@@ -458,19 +458,19 @@ Run Phase 10 scenarios against the built binary with isolated data and state roo
 **Expected:** Accepted mutations increment revisions once and match engine semantics. Hint preview is read-only. The delayed mutation returns `409` with current state and never overwrites the accepted action.
 
 ### 10.4 Restart Recovery and Discard
-**Action:** Mutate two browser sessions, stop and restart the server, reconnect to both, then discard one.
+**Action:** Mutate two API sessions, stop and restart the server, reconnect to both, then discard one.
 **Expected:** Both sessions restore from separate private records with complete values, notes, and history. Discard removes only the selected record, and another restart retains the other session.
 
-### 10.5 Keyboard, Pointer, and Touch Parity
-**Action:** Complete equivalent value, note, candidate, hint, history, reset, and discard flows using keyboard controls and the on-screen pointer/touch controls.
-**Expected:** All input modes submit the same API intents and produce the same snapshots. Focus remains visible and predictable, and automatic candidates never become persisted game state.
+### 10.5 Concurrent Sessions and Process Lock
+**Action:** Mutate separate sessions concurrently, submit concurrent actions to one session, and start a second `sudoku api` process against the same state root.
+**Expected:** Different sessions proceed independently, one session remains revision-ordered, and the second process fails clearly without modifying recovery records.
 
-### 10.6 Responsive and Accessible Rendering
-**Action:** Exercise desktop and narrow viewports in dark, light, high-contrast, and reduced-motion modes with automated accessibility checks.
-**Expected:** The board does not scroll horizontally; 3×3 boundaries and gameplay states remain distinguishable without color; controls have names; one cell participates in tab order; status changes are announced; no unexpected console or accessibility errors occur.
+### 10.6 Origin Policy
+**Action:** Send browser-style preflight and mutation requests with no configured origin, one exact allowed loopback origin, a different port, `null`, a wildcard, and a non-loopback origin.
+**Expected:** Cross-origin browser access is denied by default. Only the exact configured loopback origin succeeds; responses never enable credentialed or wildcard CORS.
 
 ### 10.7 Existing Frontend Compatibility
-**Action:** Run all applicable root CLI, TUI, serialization, candidate, and recovery scenarios after web tests.
+**Action:** Run all applicable root CLI, TUI, serialization, candidate, and recovery scenarios after API tests.
 **Expected:** Existing output, actions, session bytes, recovery behavior, and terminal rendering remain compatible.
 
 ## 11. Future Scenarios (Not Yet Implemented)

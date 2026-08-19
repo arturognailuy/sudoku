@@ -41,14 +41,13 @@ This index provides reading chains for common starting points and a complete doc
 10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
-1. `.aidoc/designs/roadmap.md` — Phase 10 scope, delivery order, and exit criteria
-2. `.aidoc/designs/web-api.md` — local HTTP resources, revisions, recovery, and security boundary
-3. `.aidoc/designs/browser-frontend.md` — responsive interaction, accessibility, assets, and client state
-4. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-5. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
-6. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
-7. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
-8. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
+1. `.aidoc/designs/roadmap.md` — Phase 10 backend scope, delivery order, and exit criteria
+2. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
+3. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
+4. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
+5. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
+6. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+7. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -66,9 +65,8 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Phase 10 scope, delivery plan, and exit criteria |
-| `.aidoc/designs/web-api.md` | Local API resources, revisions, recovery, and security boundary |
-| `.aidoc/designs/browser-frontend.md` | Browser interaction, accessibility, assets, and client-state design |
+| `.aidoc/designs/roadmap.md` | Phase 10 backend scope, delivery plan, and exit criteria |
+| `.aidoc/designs/web-api.md` | Client-neutral local API resources, revisions, recovery, client access, and security boundary |
 | `.aidoc/designs/background-autosave.md` | Background autosave lifecycle, privacy, retention, and conflict design |
 | `.aidoc/designs/automatic-candidates.md` | Automatic-candidate engine contract, TUI interaction, and rendering constraints |
 | `.aidoc/designs/tui-frontend.md` | TUI interaction model, persistence policy, rendering, and dependency boundaries |
