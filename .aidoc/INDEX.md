@@ -66,7 +66,7 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
 | `.aidoc/designs/roadmap.md` | Phase 10 backend scope, delivery plan, and exit criteria |
-| `.aidoc/designs/web-api.md` | Client-neutral local API resources, revisions, recovery, client access, and security boundary |
+| `.aidoc/designs/web-api.md` | General-purpose API resources, revisions, recovery, client access, and network security boundary |
 | `.aidoc/designs/background-autosave.md` | Background autosave lifecycle, privacy, retention, and conflict design |
 | `.aidoc/designs/automatic-candidates.md` | Automatic-candidate engine contract, TUI interaction, and rendering constraints |
 | `.aidoc/designs/tui-frontend.md` | TUI interaction model, persistence policy, rendering, and dependency boundaries |

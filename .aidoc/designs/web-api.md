@@ -12,9 +12,9 @@ dependencies:
   - .aidoc/designs/e2e-test-scenarios.md
 ---
 
-# Local HTTP API
+# HTTP API Backend
 
-Phase 10 adds a versioned, client-neutral HTTP boundary around the existing game engine without adding frontend code or turning Sudoku into a hosted service. A local `sudoku api` process remains authoritative for gameplay, recovery, validation, and concurrency while separately released clients own presentation.
+Phase 10 adds a versioned, general-purpose HTTP backend around the existing game engine without adding frontend code. A `sudoku api` process remains authoritative for gameplay, recovery, validation, and concurrency while separately deployed clients own presentation and may connect from any explicitly permitted origin.
 
 ## Related Docs
 
@@ -27,9 +27,9 @@ Phase 10 adds a versioned, client-neutral HTTP boundary around the existing game
 
 ## Why the API Is Client-Neutral
 
-The first HTTP boundary proves that `game.Game` supports non-terminal clients before hosting introduces authentication, accounts, deployment, abuse controls, and remote data policy. Keeping frontend source and build tooling in a separate TypeScript project lets backend and UX contracts evolve independently.
+The HTTP boundary makes `game.Game` available to local tools, separately hosted browser applications, and other network clients through one stable contract. Keeping frontend source and build tooling in a separate TypeScript project lets backend and UX contracts evolve and deploy independently.
 
-The local boundary still behaves like a real API: transport models are independent from Go engine structs, errors and revisions are machine-readable, and handlers are tested through HTTP. Later hosting requires separate security and product review rather than exposing these loopback endpoints unchanged.
+The backend is safe by default rather than local-only: it binds to loopback unless an operator explicitly selects another address, and non-loopback operation requires authentication. Transport models remain independent from Go engine structs, errors and revisions are machine-readable, and handlers are tested through HTTP.
 
 ## Process and Package Boundaries
 
@@ -72,14 +72,14 @@ Server startup discovers valid records from a dedicated API recovery namespace a
 
 Only one `sudoku api` process may own the API recovery namespace at a time. Startup acquires an exclusive process-lifetime lock and fails clearly rather than allowing two registries to write the same records.
 
-## Local Security and Client Access
+## Network Security and Client Access
 
-`sudoku api` listens on `127.0.0.1` by default and Phase 10 rejects non-loopback bind addresses. The server validates `Host`, requires JSON content types for mutations, limits request/header/body sizes, applies read/write/idle timeouts, logs metadata without puzzle or session payloads, and shuts down cleanly.
+`sudoku api` listens on `127.0.0.1` by default but accepts an explicit `--listen` address for LAN, container, or hosted deployment. Non-loopback binding requires an operator-supplied authentication token; every `/api/v1` request must then present that token as a bearer credential. `/healthz` remains payload-free and may be used by deployment health checks. The server validates request authority, requires JSON content types for mutations, limits request/header/body sizes, applies read/write/idle timeouts, logs metadata without credentials, puzzle data, or session payloads, and shuts down cleanly.
 
-Browser cross-origin access is disabled by default. A repeatable `--allow-origin` option may enable exact `http://127.0.0.1:<port>`, `http://localhost:<port>`, or `[::1]` development origins; wildcards, `null`, non-loopback hosts, and credentialed CORS are rejected. Preflight responses advertise only required methods and headers, and mutating requests from browsers must match the configured origin exactly.
+Browser cross-origin access is disabled by default. A repeatable `--allow-origin` option may enable any exact `http` or `https` origin needed by a separately deployed frontend; wildcards, `null`, path-bearing origins, and malformed origins are rejected. Preflight responses advertise only required methods and headers, including `Authorization` when authentication is active, and browser requests must match a configured origin exactly.
 
-Opaque session IDs prevent accidental collisions but are not authentication. Remote binding, TLS termination, authentication, rate limiting, and deployment configuration are later work requiring a separate threat model.
+Opaque session IDs prevent accidental collisions and never substitute for authentication. Internet-facing deployments terminate TLS at a trusted reverse proxy or platform boundary; `sudoku api` does not infer identity from forwarded headers. Account-specific authorization, multi-tenant isolation, distributed rate limiting, and shared-game collaboration remain separate product work.
 
 ## Verification
 
-Handler tests exercise real HTTP requests, strict decoding, body limits, action translation, typed errors, revision conflicts, recovery failure, concurrent access, default CORS denial, and exact-origin allowlisting. Black-box tests start the built binary with isolated XDG roots, call the versioned API, restart the process, and confirm recovery without importing Go packages or relying on a frontend.
+Handler tests exercise real HTTP requests, strict decoding, body limits, action translation, typed errors, revision conflicts, recovery failure, concurrent access, authentication, default CORS denial, and exact-origin allowlisting. Black-box tests start the built binary with isolated XDG roots on both default and explicit listen addresses, call the versioned API, restart the process, and confirm recovery without importing Go packages or relying on a frontend.
