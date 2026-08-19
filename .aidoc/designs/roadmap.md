@@ -2,61 +2,74 @@
 domain: Designs
 status: Active
 entry_points:
-  - cmd/tui.go
-  - tui/model.go
-  - sessionfile/session_file.go
+  - cmd/root.go
+  - cmd/session.go
+  - game/contract.go
+  - recovery/recovery.go
 dependencies:
-  - .aidoc/designs/background-autosave.md
-  - .aidoc/designs/tui-frontend.md
+  - .aidoc/designs/web-api.md
+  - .aidoc/designs/browser-frontend.md
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/e2e-test-scenarios.md
 ---
 
 # Roadmap
 
-Phase 9 provides private background autosave and crash recovery for the full-screen TUI. The phase improves local-session reliability while preserving explicit saves, line-oriented CLI behavior, the stable game-engine contract, and version 1 serialized gameplay state.
+Phase 10 adds a local-first HTTP API and embedded browser frontend after the reusable engine, complete sessions, TUI, candidate assistance, and crash recovery have stabilized. The phase proves a non-terminal boundary without prematurely committing the project to hosting, accounts, or remote data storage.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/background-autosave.md` | Canonical Phase 9 lifecycle, privacy, storage, conflict, and retention decisions |
-| `.aidoc/designs/tui-frontend.md` | Current TUI event loop, dirty state, persistence, and modal behavior |
-| `.aidoc/designs/game-engine.md` | Stable serialization and restoration boundary |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility contract and Phase 9 acceptance scenarios |
+| `.aidoc/designs/web-api.md` | Canonical API resources, revisions, recovery, and local security boundary |
+| `.aidoc/designs/browser-frontend.md` | Browser interaction, accessibility, assets, and client-state decisions |
+| `.aidoc/designs/game-engine.md` | Stable actions, snapshots, hints, and serialization reused by the API |
+| `.aidoc/designs/e2e-test-scenarios.md` | Existing compatibility contract and Phase 10 acceptance scenarios |
 
-## Why Phase 9 Exists
+## Why Phase 10 Exists
 
-The TUI supports long-running play with notes, history, hints, and automatic candidates. Without recovery, process or host interruption would lose unsaved progress. Recovery completes the local session lifecycle before an API, browser frontend, cloud sync, or account model introduces remote state and broader conflict policy.
+The game engine now supports multiple terminal presentations without leaking UI concerns, and private recovery protects long-running local sessions. A browser frontend is the next useful stress test: HTTP introduces serialization, concurrency, lifecycle, and security boundaries while the browser introduces responsive pointer and accessibility requirements.
 
-The engine already serializes complete sessions, and `sessionfile` already provides bounded reads and atomic private writes. Phase 9 therefore remains a frontend lifecycle feature instead of changing Sudoku rules, history, solver behavior, or the serialized gameplay schema.
+A hosted service would add unrelated decisions about identity, abuse, deployment, TLS, persistence, and privacy. Phase 10 keeps the server on loopback and ships one local executable so those product choices do not distort the first API contract.
 
-## Phase 9 Outcome
+## Phase 10 Outcome
 
-The TUI writes debounced recovery records after successful gameplay mutations and offers valid recent records when a plain TUI session starts. Recovery files use a private XDG state location, support concurrent local games, survive abnormal termination, and disappear after successful explicit save or confirmed discard.
+`sudoku web` starts a loopback HTTP server and serves an embedded browser application. Players can create a puzzle by difficulty or puzzle string, enter values and notes, use undo/redo and hints, toggle automatic candidates, recover interrupted sessions, and discard or export a game.
 
-Autosave is enabled by default with an explicit opt-out. Intentional startup using `--input`, `--level`, or `--resume` remains deterministic and bypasses recovery discovery. The line-oriented CLI never creates recovery files.
+The Go process remains authoritative. Browser state contains presentation preferences only; all Sudoku state transitions pass through `game.Game.Apply`, and all rendering starts from detached snapshots. The line CLI, TUI, serialized gameplay format, and recovery security guarantees remain compatible.
 
-## Implementation Structure
+## Delivery Structure
 
-1. A presentation-neutral recovery package owns wrapper validation, secure XDG paths, discovery, retention, atomic writes, and deletion.
-2. The TUI owns mutation generations, one-second debounce, single-flight writes, warning and retry behavior, and cleanup policy.
-3. Command startup owns recovery selection eligibility, `--no-autosave`, and deterministic bypass for explicit puzzle sources.
-4. Player help, package tests, pseudo-terminal coverage, black-box scenarios, and current-state documentation describe the same lifecycle.
+1. **Application and API boundary**
+   - Add a transport-independent session registry around `game.Game` with opaque IDs and monotonic revisions.
+   - Add strict `/api/v1` JSON models for session creation, snapshots, hint preview, actions, conflicts, and discard.
+   - Keep generation, fallback, and solver policy injected from command wiring rather than duplicated in handlers.
 
-Implementation keeps recovery metadata outside `game`, uses `game.Serialize` and `game.Restore` as opaque boundaries, and adds no external dependency.
+2. **Durability and local security**
+   - Persist accepted web mutations through the validated private recovery store.
+   - Restrict Phase 10 to loopback, same-origin browser requests, bounded JSON, safe HTTP timeouts, private logging, and clean shutdown.
+   - Preserve recoverable sessions across browser refresh and server restart without accepting arbitrary host paths.
+
+3. **Embedded browser frontend**
+   - Add framework-free TypeScript, semantic HTML, and CSS compiled to embedded assets.
+   - Support responsive keyboard, pointer, and touch play with visible focus, notes, candidates, hints, history, confirmations, and accessible status.
+   - Keep UI preferences separate from authoritative session state.
+
+4. **Black-box verification and documentation**
+   - Exercise the built server through HTTP and a real browser with isolated XDG roots.
+   - Cover stale revisions, restart recovery, invalid input, request limits, responsive layouts, accessibility, and browser console health.
+   - Capture desktop and mobile screenshots and keep all existing CLI/TUI scenarios green.
 
 ## Exit Criteria
 
-- Only successful gameplay mutations create or refresh recovery state; presentation-only actions do not.
-- Recovery uses mode-`0700` directories, mode-`0600` regular files, bounded atomic replacement, random opaque names, and rejection of symlink directories and records.
-- One-second debounce and single-flight writes preserve the newest generation without concurrent-session overwrites.
-- Plain TUI startup can resume or discard recent valid records, while explicit startup sources and opt-out remain deterministic.
-- Successful explicit save, clean unmodified exit, and confirmed discard remove the current record; abnormal termination leaves the latest successful record.
-- Invalid records are ignored, records older than 30 days are pruned, and write failures remain visible without terminating play.
-- Root CLI behavior, explicit save bytes, version 1 restore semantics, engine actions, TUI gameplay, and automatic candidates remain compatible.
-- Package tests, pseudo-terminal scenarios, applicable root CLI E2E scenarios, build, vet, lint, diff checks, documentation audit, and CI pass.
+- `sudoku web` serves one self-contained application from a loopback-only address with no runtime CDN or cloud dependency.
+- API version 1 has strict bounded requests, stable errors, opaque session IDs, per-session serialization, and revision conflicts that prevent silent stale writes.
+- Every accepted action uses the game-engine contract and returns an authoritative detached snapshot; browser code contains no duplicate Sudoku rules.
+- Accepted web mutations are recoverable after process restart, and discard removes only the selected record.
+- The browser supports values, notes, candidates, hints, history, reset, new/discard, and session export across keyboard, pointer, touch, desktop, and narrow layouts.
+- Semantic roles, labels, focus behavior, non-color distinctions, reduced motion, and status announcements pass accessibility checks.
+- API handler tests, browser tests, built-binary HTTP/browser E2E, build, vet, lint, diff checks, documentation audit, existing CLI/TUI E2E, and CI pass.
 
-## Later Work
+## Deferred Work
 
-A web or API boundary follows local-session reliability work only when hosting and deployment requirements are concrete. Mouse support, localization, cloud sync, encryption, mobile clients, account identity, cross-device merge, and multi-user features remain deferred until their product need justifies new architectural and privacy costs.
+Remote binding, hosted deployment, TLS, accounts, authentication, analytics, cloud synchronization, shared games, cross-device merge, mobile-native clients, localization, and multi-user collaboration remain outside Phase 10. Each deferred capability changes the threat model or product contract and requires a separately reviewed design.
