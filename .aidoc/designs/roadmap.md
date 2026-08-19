@@ -4,8 +4,9 @@ status: Active
 entry_points:
   - cmd/tui.go
   - tui/model.go
+  - sessionfile/session_file.go
 dependencies:
-  - .aidoc/designs/automatic-candidates.md
+  - .aidoc/designs/background-autosave.md
   - .aidoc/designs/tui-frontend.md
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/e2e-test-scenarios.md
@@ -13,47 +14,49 @@ dependencies:
 
 # Roadmap
 
-Phase 8 adds opt-in automatic candidate assistance as the next gameplay improvement after the full-screen TUI. The feature strengthens the shared engine read boundary without introducing persistence changes, hosting, accounts, or network infrastructure.
+Phase 9 adds private background autosave and crash recovery for the full-screen TUI. The phase improves local-session reliability while preserving explicit saves, line-oriented CLI behavior, the stable game-engine contract, and version 1 serialized gameplay state.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/automatic-candidates.md` | Canonical Phase 8 engine, interaction, rendering, and compatibility decisions |
-| `.aidoc/designs/game-engine.md` | Stable state and snapshot boundary consumed by every frontend |
-| `.aidoc/designs/tui-frontend.md` | Current full-screen interaction, rendering, and accessibility contract |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility contract and Phase 8 acceptance scenarios |
+| `.aidoc/designs/background-autosave.md` | Canonical Phase 9 lifecycle, privacy, storage, conflict, and retention decisions |
+| `.aidoc/designs/tui-frontend.md` | Current TUI event loop, dirty state, persistence, and modal behavior |
+| `.aidoc/designs/game-engine.md` | Stable serialization and restoration boundary |
+| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility contract and Phase 9 acceptance scenarios |
 
-## Why Phase 8 Is Next
+## Why Phase 9 Is Next
 
-The current TUI makes keyboard play pleasant and proves that two frontends can share actions, snapshots, hints, and serialization. Automatic candidates now provide more player value than another frontend while exercising a small missing part of the read contract: presentation-neutral, derived legal-candidate data.
+The TUI now supports long-running play with notes, history, hints, and automatic candidates, but process or host interruption can still lose unsaved progress. Recovery provides immediate player value and completes the local session lifecycle before an API, browser frontend, cloud sync, or account model introduces remote state and broader conflict policy.
 
-A web frontend would first require API or WebAssembly, hosting, authentication, and deployment decisions. Background autosave would require path, retention, recovery, and privacy policy. Candidate assistance is lower risk because `core.Board.Candidates` already defines the rule and the feature does not create mutable session state.
+The engine already serializes complete sessions, and `sessionfile` already provides bounded reads and atomic private writes. Phase 9 can therefore remain a frontend lifecycle feature instead of changing Sudoku rules, history, solver behavior, or the serialized gameplay schema.
 
-## Phase 8 Outcome
+## Phase 9 Outcome
 
-Players can toggle legal candidates in the full-screen TUI without changing the default board, manual notes, undo history, dirty state, or saved sessions. Candidate sets update from accepted values after every engine transition and remain visually distinct from manual notes in dark, light, and no-color modes.
+The TUI writes debounced recovery records after successful gameplay mutations and offers valid recent records when a plain TUI session starts. Recovery files use a private XDG state location, support concurrent local games, survive abnormal termination, and disappear after successful explicit save or confirmed discard.
 
-The line-oriented CLI remains unchanged. The engine exposes detached candidate data so later frontends can choose their own presentation without recomputing Sudoku rules.
+Autosave is enabled by default with an explicit opt-out. Intentional startup using `--input`, `--level`, or `--resume` remains deterministic and bypasses recovery discovery. The line-oriented CLI never creates recovery files.
 
 ## Delivery Order
 
-1. Add detached legal candidates to `game.Snapshot` using `core.Board.Candidates`, with no cache or second algorithm.
-2. Add the opt-in TUI toggle and combined automatic-candidate/manual-note rendering.
-3. Update help, package tests, the pseudo-terminal harness, black-box scenarios, and player documentation.
+1. Add a presentation-neutral recovery package for wrapper validation, secure XDG paths, discovery, retention, atomic writes, and deletion.
+2. Add TUI mutation generations, one-second debounce, single-flight writes, warning and retry behavior, and cleanup policy.
+3. Add startup recovery selection, explicit discard, `--no-autosave`, and deterministic bypass for explicit puzzle sources.
+4. Update player help, package tests, pseudo-terminal coverage, black-box scenarios, and current-state documentation.
 
-Each layer preserves serialization version 1 and all current CLI/TUI behavior. The implementation adds no dependency and no candidate-specific action or history record.
+Implementation keeps recovery metadata outside `game`, uses `game.Serialize` and `game.Restore` as opaque boundaries, and adds no external dependency.
 
 ## Exit Criteria
 
-- Candidate sets are correct for editable empty cells and refresh after value entry, clear, undo/redo, hints, repair, solve, reset, and restore.
-- Invalid visible entries do not constrain peers and suppress candidates in their own occupied cells.
-- Automatic candidates start off, toggle without dirtying the session, and are never persisted.
-- Manual notes remain player-owned, including stale notes, and remain distinguishable from automatic candidates without color alone.
-- Dark, light, and `NO_COLOR` rendering preserve the current board geometry and accessibility semantics.
-- Root CLI output and commands, version 1 save bytes, restore behavior, hints, and solver behavior remain compatible.
-- Package tests, pseudo-terminal scenarios, applicable root CLI E2E scenarios, build, vet, lint, diff checks, and CI pass.
+- Only successful gameplay mutations create or refresh recovery state; presentation-only actions do not.
+- Recovery uses mode-`0700` directories, mode-`0600` regular files, bounded atomic replacement, random opaque names, and no symlink traversal.
+- One-second debounce and single-flight writes preserve the newest generation without concurrent-session overwrites.
+- Plain TUI startup can resume or discard recent valid records, while explicit startup sources and opt-out remain deterministic.
+- Successful explicit save, clean unmodified exit, and confirmed discard remove the current record; abnormal termination leaves the latest successful record.
+- Invalid records are ignored, records older than 30 days are pruned, and write failures remain visible without terminating play.
+- Root CLI behavior, explicit save bytes, version 1 restore semantics, engine actions, TUI gameplay, and automatic candidates remain compatible.
+- Package tests, pseudo-terminal scenarios, applicable root CLI E2E scenarios, build, vet, lint, diff checks, documentation audit, and CI pass.
 
 ## Later Work
 
-Background autosave and crash recovery follow Phase 8 only after explicit path, privacy, retention, and conflict policies are designed. A web or API boundary follows local-session reliability work. Mouse support, localization, cloud sync, mobile clients, and multi-user features remain deferred until a concrete product need justifies their architectural cost.
+A web or API boundary follows local-session reliability work only when hosting and deployment requirements are concrete. Mouse support, localization, cloud sync, encryption, mobile clients, account identity, cross-device merge, and multi-user features remain deferred until their product need justifies new architectural and privacy costs.
