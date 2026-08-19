@@ -1,6 +1,6 @@
 ---
 domain: Designs
-status: Draft
+status: Active
 entry_points:
   - cmd/tui.go
   - tui/model.go
@@ -44,7 +44,7 @@ Plain `sudoku tui` startup discovers valid recovery records before generating a 
 
 Recovery records live under `$XDG_STATE_HOME/sudoku/recovery`, falling back to `$HOME/.local/state/sudoku/recovery`. The directory uses mode `0700`, records use mode `0600`, filenames contain random identifiers rather than puzzle content, and writes use the bounded atomic transport guarantees in `sessionfile`.
 
-Each TUI process owns one recovery record, so concurrent games never overwrite one another. Recovery discovery ignores symlinks, non-regular files, oversized records, malformed wrappers, unsupported versions, and sessions rejected by `game.Restore`.
+Each running TUI instance has one randomly identified recovery record, so concurrent games never overwrite one another. Recovery records are never keyed or selected by an operating-system process ID: after a restart, plain `sudoku tui` scans the private recovery directory, validates eligible records, and lets the player select one. The resumed instance adopts the selected durable record identifier for later autosaves. Recovery discovery ignores symlinks, non-regular files, oversized records, malformed wrappers, unsupported versions, and sessions rejected by `game.Restore`.
 
 A successful explicit save removes the current recovery record. Further gameplay mutations create a fresh record. A clean unmodified exit or confirmed dirty-session discard removes the current record; interruption, `Ctrl-C`, write failure, or host loss leaves the last successful record available. Startup prunes invalid records and records older than 30 days, while valid recent records require an explicit resume or discard decision.
 
@@ -54,7 +54,7 @@ A successful engine action increments a TUI recovery generation and schedules a 
 
 Only completion for the latest persisted generation can report recovery as current. Out-of-order completion cannot erase newer work or clear gameplay dirty state. Autosave failure keeps the game playable, shows a concise persistent warning, and retries after the next mutation; explicit save errors continue to use the existing save modal behavior.
 
-Recovery files are never merged. Separate process-owned records avoid writer conflicts, and recovery followed by explicit save uses the existing destination replacement contract. If the explicit destination changed outside Sudoku, explicit save reports the transport result rather than silently selecting or merging another file.
+Recovery files are never merged. Separate randomly identified records avoid writer conflicts, and recovery followed by explicit save uses the existing destination replacement contract. If the explicit destination changed outside Sudoku, explicit save reports the transport result rather than silently selecting or merging another file.
 
 ## Ownership Boundaries
 
@@ -66,9 +66,9 @@ Recovery files are never merged. Separate process-owned records avoid writer con
 
 ## Verification
 
-Package tests cover secure path selection, wrapper bounds and versions, symlink rejection, retention pruning, concurrent record isolation, debounce coalescing, stale completion, retry behavior, and cleanup decisions. The pseudo-terminal harness covers crash recovery, multiple-record selection, explicit startup bypass, opt-out, explicit save cleanup, confirmed discard, and inaccessible-state-directory warnings.
+Recovery and model tests cover secure path selection, wrapper bounds and versions, symlink rejection, retention pruning, concurrent record isolation, debounce coalescing, stale completion, retry behavior, selection, and cleanup decisions. The pseudo-terminal harness covers gameplay compatibility, explicit save/resume, crash recovery, durable-record selection, private modes, cleanup, and opt-out behavior.
 
-Applicable root CLI black-box scenarios verify unchanged output, flags, save bytes, and no recovery-file creation. Build, package tests, vet, lint, diff checks, documentation audit, pseudo-terminal scenarios, black-box scenarios, and GitHub CI must pass before implementation review.
+Applicable root CLI black-box scenarios verify unchanged output, flags, save bytes, and no recovery-file creation. Build, package tests, vet, lint, diff checks, documentation audit, pseudo-terminal scenarios, black-box scenarios, and GitHub CI must pass before review.
 
 ## Deferred Work
 

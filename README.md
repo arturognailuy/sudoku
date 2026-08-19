@@ -13,6 +13,7 @@ Features:
 - Explicit atomic session saves with validated resume
 - Opt-in full-screen Bubble Tea interface with keyboard navigation
 - Opt-in automatic legal candidates in the full-screen TUI
+- Private background autosave and crash recovery for TUI games
 
 ## Build
 
@@ -47,7 +48,10 @@ The existing line-oriented game remains the default. Launch the optional termina
 ./sudoku tui --level medium
 ./sudoku tui --input "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 ./sudoku tui --resume game.json
+./sudoku tui --no-autosave
 ```
+
+The TUI autosaves gameplay changes to a private XDG state directory after a one-second pause. A later plain `sudoku tui` start offers valid recent games for recovery; records use random durable identifiers, never process IDs. Explicit `--input`, `--level`, and `--resume` starts bypass recovery selection, and `--no-autosave` disables both writing and discovery.
 
 Use arrows or `h`/`j`/`k`/`l` to move, `1`–`9` to enter a value, `n` to toggle note mode, `a` to show or hide automatic legal candidates, `u`/`r` for history, `i` then Enter to preview/apply a hint, `?` for keyboard help, `S` to save, and `q` to quit. Automatic candidates start hidden and are not saved; manual notes remain player-owned. Unsaved sessions require confirmation.
 

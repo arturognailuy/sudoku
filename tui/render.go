@@ -58,14 +58,23 @@ func render(m Model) string {
 	mainContent := renderBoard(m, styles)
 	if m.modal == helpModal {
 		mainContent = place(boardWidth, boardHeight, renderHelp(styles), styles.canvas)
+	} else if m.modal == recoveryModal {
+		mainContent = place(boardWidth, boardHeight, renderRecovery(m, styles), styles.canvas)
 	}
 	parts := []string{
 		title,
 		center(m.width, styles.status.Render(status), styles.canvas),
 		center(m.width, mainContent, styles.canvas),
 	}
-	if m.message != "" {
-		parts = append(parts, center(m.width, styles.message.Render(m.message), styles.canvas))
+	displayMessage := m.message
+	if m.recoveryWarning != "" {
+		if displayMessage != "" {
+			displayMessage += "  •  "
+		}
+		displayMessage += m.recoveryWarning
+	}
+	if displayMessage != "" {
+		parts = append(parts, center(m.width, styles.message.Render(displayMessage), styles.canvas))
 	} else {
 		parts = append(parts, styles.canvas.Render(strings.Repeat(" ", m.width)))
 	}
@@ -77,7 +86,7 @@ func render(m Model) string {
 		parts = append(parts, center(m.width, styles.modal.Render("Reset the puzzle and clear history?  y / N"), styles.canvas))
 	case saveModal:
 		parts = append(parts, center(m.width, styles.modal.Render(fmt.Sprintf("Save session path: %s_\nEnter saves  •  Esc cancels", m.savePath)), styles.canvas))
-	case helpModal:
+	case helpModal, recoveryModal:
 		parts = append(parts, styles.canvas.Render(strings.Repeat(" ", m.width)))
 	default:
 		parts = append(parts, center(m.width, styles.guide.Render("arrows move  •  1–9 set  •  n notes  •  a candidates  •  i hint  •  ? help  •  S save  •  q quit"), styles.canvas))
@@ -210,6 +219,22 @@ func cellContent(m Model, row, column, noteRow int) string {
 		}
 	}
 	return string(content[:])
+}
+
+func renderRecovery(m Model, styles renderStyles) string {
+	lines := []string{"RECOVER A GAME", "Enter resumes  •  ↑/↓ chooses  •  d discards  •  n starts new"}
+	for index, choice := range m.recoveryChoices {
+		marker := "  "
+		if index == m.recoverySelection {
+			marker = "> "
+		}
+		label := choice.Record.Source
+		if label == "" {
+			label = "Sudoku game"
+		}
+		lines = append(lines, fmt.Sprintf("%s%s — %s", marker, choice.Record.UpdatedAt.Local().Format("2006-01-02 15:04"), label))
+	}
+	return styles.modal.Render(strings.Join(lines, "\n"))
 }
 
 func renderHelp(styles renderStyles) string {

@@ -26,6 +26,7 @@ This index provides reading chains for common starting points and a complete doc
 12. `sessionfile/session_file.go` — presentation-neutral bounded and atomic session transport
 13. `tui/model.go` — Bubble Tea event model and action translation
 14. `tui/render.go` — deterministic full-screen renderer
+15. `recovery/recovery.go` — private XDG recovery records, validation, retention, and atomic transport
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -79,6 +80,7 @@ This index provides reading chains for common starting points and a complete doc
 | `cmd/tui.go` | Opt-in full-screen TUI command and terminal lifecycle |
 | `tui/model.go` | TUI event model, focus, modes, confirmations, and persistence |
 | `tui/render.go` | Deterministic color-independent board rendering |
+| `recovery/recovery.go` | Private XDG recovery records, discovery, validation, retention, and deletion |
 | `sessionfile/session_file.go` | Bounded reads and atomic mode-0600 session writes |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |

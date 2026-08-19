@@ -417,7 +417,31 @@ python3 scripts/e2e_tui.py ./sudoku
 
 ---
 
-## 9. Future Scenarios (Not Yet Implemented)
+## 9. TUI Autosave and Recovery
+
+Use an isolated state root with `export XDG_STATE_HOME=$SUDOKU_E2E_DIR/state`.
+
+### 9.1 Crash Recovery and Durable Record Discovery
+**Action:** Start `sudoku tui --input <known puzzle>`, make a gameplay change, wait past the one-second debounce, and terminate the process abnormally. Then run plain `sudoku tui`.
+**Expected:** One mode-`0600` record exists under a mode-`0700` recovery directory. Plain startup offers the changed game; selecting it restores the value without relying on the old process ID.
+
+### 9.2 Concurrent Recovery Selection
+**Action:** Interrupt two changed TUI instances, then run plain `sudoku tui` and move through the recovery list.
+**Expected:** Each instance has a different random record. The list is newest-first, either game can be selected, and `d` discards only the selected record.
+
+### 9.3 Explicit Sources and Opt-Out
+**Action:** Leave a valid recovery record, then start with each of `--input`, explicit `--level`, `--resume`, and `--no-autosave`.
+**Expected:** Every intentional source bypasses recovery selection. `--no-autosave` also creates no recovery record after mutations.
+
+### 9.4 Recovery Cleanup
+**Action:** Recover a game and explicitly save it; separately confirm dirty quit/discard and cleanly quit an unmodified recovered game.
+**Expected:** Each successful cleanup path removes the active recovery record. `Ctrl-C` and abnormal termination retain the latest successful record.
+
+### 9.5 Recovery Failure Is Non-Fatal
+**Action:** Use an inaccessible or unsafe state path and mutate the game.
+**Expected:** Gameplay continues with a persistent concise autosave warning. A later mutation retries recovery after the path is fixed.
+
+## 10. Future Scenarios (Not Yet Implemented)
 
 These scenarios should be added as the project evolves:
 

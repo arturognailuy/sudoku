@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/recovery"
 	"github.com/gnailuy/sudoku/sessionfile"
 	"github.com/gnailuy/sudoku/solver"
 )
@@ -34,7 +36,28 @@ const (
 	resetModal
 	saveModal
 	helpModal
+	recoveryModal
 )
+
+// RecoveryChoice pairs validated recovery metadata with its restored game.
+type RecoveryChoice struct {
+	Record recovery.Record
+	Game   game.Game
+}
+
+// RecoveryOptions configures autosave and optional startup recovery choices.
+type RecoveryOptions struct {
+	Store   *recovery.Store
+	Choices []RecoveryChoice
+	Warning string
+}
+
+type autosaveDueMsg struct{ generation uint64 }
+type autosaveDoneMsg struct {
+	generation uint64
+	id         string
+	err        error
+}
 
 // Model owns presentation state while delegating all puzzle transitions to game.Game.
 type Model struct {
@@ -51,17 +74,40 @@ type Model struct {
 	autoCandidates bool
 	savePath       string
 	writeSession   func(string, []byte) error
+
+	recoveryStore      *recovery.Store
+	recoveryChoices    []RecoveryChoice
+	recoverySelection  int
+	recoveryID         string
+	recoveryWarning    string
+	recoveryGeneration uint64
+	recoveryDue        uint64
+	recoveryWriting    bool
+	recoveryData       []byte
+	quitAfterWrite     bool
 }
 
-// NewModel creates a TUI model. resumePath becomes the default save target.
+// NewModel creates a TUI model without background recovery.
 func NewModel(current game.Game, resumePath string) Model {
-	return Model{
-		game:         &current,
-		snapshot:     current.Snapshot(),
-		savePath:     resumePath,
-		theme:        themeFromEnvironment(),
-		writeSession: sessionfile.Write,
+	return NewModelWithRecovery(current, resumePath, RecoveryOptions{})
+}
+
+// NewModelWithRecovery creates a TUI model with background recovery enabled.
+func NewModelWithRecovery(current game.Game, resumePath string, options RecoveryOptions) Model {
+	model := Model{
+		game:            &current,
+		snapshot:        current.Snapshot(),
+		savePath:        resumePath,
+		theme:           themeFromEnvironment(),
+		writeSession:    sessionfile.Write,
+		recoveryStore:   options.Store,
+		recoveryChoices: options.Choices,
+		recoveryWarning: options.Warning,
 	}
+	if len(model.recoveryChoices) > 0 {
+		model.modal = recoveryModal
+	}
+	return model
 }
 
 func themeFromEnvironment() themeName {
@@ -82,12 +128,44 @@ func (m Model) Init() tea.Cmd { return nil }
 
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch typed := message.(type) {
+	case autosaveDueMsg:
+		if typed.generation != m.recoveryGeneration {
+			return m, nil
+		}
+		m.recoveryDue = typed.generation
+		if m.recoveryWriting {
+			return m, nil
+		}
+		return m.startRecoveryWrite(typed.generation)
+	case autosaveDoneMsg:
+		m.recoveryWriting = false
+		if typed.id != m.recoveryID && m.recoveryStore != nil {
+			_ = m.recoveryStore.Delete(typed.id)
+		}
+		if m.quitAfterWrite {
+			if m.recoveryStore != nil {
+				_ = m.recoveryStore.Delete(typed.id)
+			}
+			return m, tea.Quit
+		}
+		if typed.err != nil {
+			m.recoveryWarning = "Autosave failed: " + typed.err.Error()
+			return m, nil
+		}
+		m.recoveryWarning = ""
+		if m.recoveryDue > typed.generation {
+			return m.startRecoveryWrite(m.recoveryDue)
+		}
+		return m, nil
 	case tea.WindowSizeMsg:
 		m.width, m.height = typed.Width, typed.Height
 		return m, nil
 	case tea.KeyMsg:
 		if m.width > 0 && (m.width < minWidth || m.height < minHeight) {
-			if typed.String() == "q" || typed.String() == "esc" || typed.String() == "ctrl+c" {
+			if typed.String() == "q" || typed.String() == "esc" {
+				return m, m.cleanupAndQuit()
+			}
+			if typed.String() == "ctrl+c" {
 				return m, tea.Quit
 			}
 			return m, nil
@@ -105,6 +183,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.message = ""
+	var command tea.Cmd
 	switch key.String() {
 	case "up", "k":
 		if m.row > 0 {
@@ -136,9 +215,9 @@ func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.message = "Automatic candidates hidden."
 		}
 	case "u":
-		m.apply(game.Undo{})
+		command = m.apply(game.Undo{})
 	case "r":
-		m.apply(game.Redo{})
+		command = m.apply(game.Redo{})
 	case "?":
 		m.modal = helpModal
 	case "i":
@@ -150,7 +229,7 @@ func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "enter":
 		if m.hint != nil {
-			m.apply(game.ApplyHint{})
+			command = m.apply(game.ApplyHint{})
 			m.hint = nil
 		} else {
 			m.message = "Press ? to preview a hint first."
@@ -166,30 +245,68 @@ func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.dirty {
 			m.modal = quitModal
 		} else {
-			return m, tea.Quit
+			return m, m.cleanupAndQuit()
 		}
 	case "0", "backspace", "delete":
 		position := core.NewPosition(m.row, m.column)
 		if m.mode == noteMode {
-			m.apply(game.ClearNotes{Position: position})
+			command = m.apply(game.ClearNotes{Position: position})
 		} else {
-			m.apply(game.ClearValue{Position: position})
+			command = m.apply(game.ClearValue{Position: position})
 		}
 	default:
 		if len(key.Runes) == 1 && key.Runes[0] >= '1' && key.Runes[0] <= '9' {
 			value := int(key.Runes[0] - '0')
 			position := core.NewPosition(m.row, m.column)
 			if m.mode == noteMode {
-				m.apply(game.ToggleNote{Position: position, Value: value})
+				command = m.apply(game.ToggleNote{Position: position, Value: value})
 			} else {
-				m.apply(game.SetValue{Position: position, Value: value})
+				command = m.apply(game.SetValue{Position: position, Value: value})
 			}
 		}
 	}
-	return m, nil
+	return m, command
 }
 
 func (m Model) updateModal(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.modal == recoveryModal {
+		switch key.String() {
+		case "up", "k":
+			if m.recoverySelection > 0 {
+				m.recoverySelection--
+			}
+		case "down", "j":
+			if m.recoverySelection+1 < len(m.recoveryChoices) {
+				m.recoverySelection++
+			}
+		case "enter":
+			choice := m.recoveryChoices[m.recoverySelection]
+			m.game = &choice.Game
+			m.snapshot = choice.Game.Snapshot()
+			m.recoveryID = choice.Record.ID
+			m.recoveryChoices = nil
+			m.modal = noModal
+			m.message = "Recovered game from " + choice.Record.UpdatedAt.Local().Format(time.RFC822)
+		case "d":
+			choice := m.recoveryChoices[m.recoverySelection]
+			if err := m.recoveryStore.Delete(choice.Record.ID); err != nil {
+				m.recoveryWarning = "Discard failed: " + err.Error()
+				return m, nil
+			}
+			m.recoveryChoices = append(m.recoveryChoices[:m.recoverySelection], m.recoveryChoices[m.recoverySelection+1:]...)
+			if len(m.recoveryChoices) == 0 {
+				m.modal = noModal
+			} else if m.recoverySelection == len(m.recoveryChoices) {
+				m.recoverySelection--
+			}
+		case "n", "esc":
+			m.recoveryChoices = nil
+			m.modal = noModal
+		case "q":
+			return m, tea.Quit
+		}
+		return m, nil
+	}
 	if m.modal == helpModal {
 		if key.String() == "?" || key.String() == "esc" {
 			m.modal = noModal
@@ -214,6 +331,13 @@ func (m Model) updateModal(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			} else {
 				m.dirty = false
 				m.message = "Saved to " + m.savePath
+				if m.recoveryID != "" && m.recoveryStore != nil {
+					if err := m.recoveryStore.Delete(m.recoveryID); err != nil {
+						m.recoveryWarning = "Recovery cleanup failed: " + err.Error()
+					} else {
+						m.recoveryID = ""
+					}
+				}
 			}
 			m.modal = noModal
 		case "backspace":
@@ -231,26 +355,73 @@ func (m Model) updateModal(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch key.String() {
 	case "y", "Y":
 		if m.modal == quitModal {
-			return m, tea.Quit
+			return m, m.cleanupAndQuit()
 		}
 		m.modal = noModal
-		m.apply(game.Reset{})
+		return m, m.apply(game.Reset{})
 	case "n", "N", "esc":
 		m.modal = noModal
 	}
 	return m, nil
 }
 
-func (m *Model) apply(action game.Action) {
+func (m *Model) apply(action game.Action) tea.Cmd {
 	result, err := m.game.Apply(action)
 	if err != nil {
 		m.message = err.Error()
-		return
+		return nil
 	}
 	m.snapshot = m.game.Snapshot()
 	m.dirty = true
 	m.hint = nil
 	m.message = fmt.Sprintf("Applied %s; board is %s.", result.Action, result.Status)
+	return m.scheduleRecovery()
+}
+
+func (m *Model) scheduleRecovery() tea.Cmd {
+	if m.recoveryStore == nil {
+		return nil
+	}
+	data, err := m.game.Serialize()
+	if err != nil {
+		m.recoveryWarning = "Autosave failed: " + err.Error()
+		return nil
+	}
+	if m.recoveryID == "" {
+		m.recoveryID, err = recovery.NewID()
+		if err != nil {
+			m.recoveryWarning = "Autosave failed: " + err.Error()
+			return nil
+		}
+	}
+	m.recoveryGeneration++
+	generation := m.recoveryGeneration
+	m.recoveryData = append(m.recoveryData[:0], data...)
+	return tea.Tick(time.Second, func(time.Time) tea.Msg { return autosaveDueMsg{generation: generation} })
+}
+
+func (m *Model) startRecoveryWrite(generation uint64) (tea.Model, tea.Cmd) {
+	if m.recoveryStore == nil || m.recoveryID == "" {
+		return *m, nil
+	}
+	m.recoveryWriting = true
+	store, id := m.recoveryStore, m.recoveryID
+	data := append([]byte(nil), m.recoveryData...)
+	return *m, func() tea.Msg {
+		return autosaveDoneMsg{generation: generation, id: id, err: store.Write(id, "TUI game", data)}
+	}
+}
+
+func (m *Model) cleanupAndQuit() tea.Cmd {
+	if m.recoveryWriting {
+		m.quitAfterWrite = true
+		return nil
+	}
+	if m.recoveryStore == nil || m.recoveryID == "" {
+		return tea.Quit
+	}
+	store, id := m.recoveryStore, m.recoveryID
+	return tea.Sequence(func() tea.Msg { _ = store.Delete(id); return nil }, tea.Quit)
 }
 
 func (m Model) View() string {

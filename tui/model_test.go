@@ -2,6 +2,8 @@ package tui
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/recovery"
 	"github.com/gnailuy/sudoku/solver"
 )
 
@@ -277,5 +280,132 @@ func TestSmallTerminalIgnoresGameInput(t *testing.T) {
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
 	if model.snapshot != before || model.dirty {
 		t.Fatal("small terminal accepted game input")
+	}
+}
+
+func TestAutosaveDebouncesToNewestGeneration(t *testing.T) {
+	store := recovery.NewStore(filepath.Join(t.TempDir(), "recovery"))
+	model := testModel(t)
+	model = NewModelWithRecovery(*model.game, "", RecoveryOptions{Store: &store})
+	model.width, model.height = 80, 42
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	model = updated.(Model)
+	firstGeneration := model.recoveryGeneration
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
+	model = updated.(Model)
+	secondGeneration := model.recoveryGeneration
+	if firstGeneration == secondGeneration || model.recoveryID == "" {
+		t.Fatal("mutations did not create distinct recovery generations")
+	}
+
+	updated, command := model.Update(autosaveDueMsg{generation: firstGeneration})
+	model = updated.(Model)
+	if command != nil {
+		t.Fatal("stale debounce wrote a recovery record")
+	}
+	updated, command = model.Update(autosaveDueMsg{generation: secondGeneration})
+	model = updated.(Model)
+	if command == nil {
+		t.Fatal("latest debounce did not start a write")
+	}
+	updated, _ = model.Update(command())
+	model = updated.(Model)
+	if model.recoveryWarning != "" || model.recoveryWriting {
+		t.Fatalf("autosave warning=%q writing=%v", model.recoveryWarning, model.recoveryWriting)
+	}
+
+	records, err := store.Discover(nil)
+	if err != nil || len(records) != 1 {
+		t.Fatalf("records=%v err=%v", records, err)
+	}
+	restored, err := game.Restore(records[0].Session, game.NewDefaultOptions(solver.NewStore()))
+	if err != nil || restored.Snapshot().Values[0][0] != 2 {
+		t.Fatalf("newest state was not recovered: err=%v", err)
+	}
+}
+
+func TestRecoverySelectionAndExplicitSaveCleanup(t *testing.T) {
+	store := recovery.NewStore(filepath.Join(t.TempDir(), "recovery"))
+	recovered := testModel(t)
+	result, err := recovered.game.Apply(game.SetValue{Position: core.NewPosition(0, 0), Value: 4})
+	if err != nil || result.Action != game.ActionSetValue {
+		t.Fatal(err)
+	}
+	id, _ := recovery.NewID()
+	data, _ := recovered.game.Serialize()
+	if err := store.Write(id, "Recovered test", data); err != nil {
+		t.Fatal(err)
+	}
+	records, err := store.Discover(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fresh := testModel(t)
+	model := NewModelWithRecovery(*fresh.game, "", RecoveryOptions{Store: &store, Choices: []RecoveryChoice{{Record: records[0], Game: *recovered.game}}})
+	model.width, model.height = 80, 42
+	if model.modal != recoveryModal {
+		t.Fatal("recovery chooser did not open")
+	}
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyEnter})
+	if model.recoveryID != id || model.snapshot.Values[0][0] != 4 {
+		t.Fatal("selected recovery was not restored")
+	}
+
+	model.dirty, model.modal, model.savePath = true, saveModal, filepath.Join(t.TempDir(), "saved.json")
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyEnter})
+	if model.recoveryID != "" {
+		t.Fatal("explicit save retained recovery ownership")
+	}
+	remaining, err := store.Discover(nil)
+	if err != nil || len(remaining) != 0 {
+		t.Fatalf("recovery record remains: %v err=%v", remaining, err)
+	}
+}
+
+func TestAutosaveFailureWarnsAndRetriesAfterNextMutation(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "target")
+	if err := os.Mkdir(target, 0700); err != nil {
+		t.Fatal(err)
+	}
+	directory := filepath.Join(root, "recovery")
+	if err := os.Symlink(target, directory); err != nil {
+		t.Fatal(err)
+	}
+	store := recovery.NewStore(directory)
+	model := testModel(t)
+	model = NewModelWithRecovery(*model.game, "", RecoveryOptions{Store: &store})
+	model.width, model.height = 80, 42
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	model = updated.(Model)
+	updated, command := model.Update(autosaveDueMsg{generation: model.recoveryGeneration})
+	model = updated.(Model)
+	updated, _ = model.Update(command())
+	model = updated.(Model)
+	if model.recoveryWarning == "" {
+		t.Fatal("autosave failure was not surfaced")
+	}
+
+	if err := os.Remove(directory); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(directory, 0700); err != nil {
+		t.Fatal(err)
+	}
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
+	model = updated.(Model)
+	updated, command = model.Update(autosaveDueMsg{generation: model.recoveryGeneration})
+	model = updated.(Model)
+	updated, _ = model.Update(command())
+	model = updated.(Model)
+	if model.recoveryWarning != "" {
+		t.Fatalf("successful retry retained warning: %q", model.recoveryWarning)
+	}
+	records, err := store.Discover(nil)
+	if err != nil || len(records) != 1 {
+		t.Fatalf("retry records=%v err=%v", records, err)
 	}
 }
