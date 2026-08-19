@@ -41,6 +41,8 @@ def main():
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 42, 90, 0, 0))
         env = os.environ.copy()
         env["XDG_DATA_HOME"] = os.path.join(directory, "data")
+        env["XDG_STATE_HOME"] = os.path.join(directory, "state")
+        recovery_directory = os.path.join(env["XDG_STATE_HOME"], "sudoku", "recovery")
         process = subprocess.Popen(
             [args.binary, "tui", "--input", PUZZLE],
             stdin=slave, stdout=slave, stderr=slave, env=env, close_fds=True,
@@ -94,13 +96,64 @@ def main():
         if resumed.wait(timeout=3) != 0 or b"SUDOKU" not in resumed_text or b"AUTO OFF" not in resumed_text:
             raise AssertionError("saved TUI session did not resume cleanly with candidates off")
         os.close(master)
+        # An abnormal exit retains the latest debounced record, and plain
+        # startup discovers it by durable random identifier.
+        master, slave = pty.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 42, 90, 0, 0))
+        interrupted = subprocess.Popen([args.binary, "tui", "--input", PUZZLE], stdin=slave, stdout=slave, stderr=slave, env=env, close_fds=True)
+        os.close(slave)
+        drain(master, 0.7)
+        os.write(master, b"2")
+        interrupted_output = drain(master, 3.0)
+        interrupted.kill()
+        interrupted.wait(timeout=3)
+        os.close(master)
+        records = [name for name in os.listdir(recovery_directory) if name.endswith(".json")]
+        if len(records) != 1 or len(records[0]) != 37:
+            raise AssertionError(f"interrupted TUI did not leave one random recovery record: {records}")
+        if os.stat(recovery_directory).st_mode & 0o777 != 0o700 or os.stat(os.path.join(recovery_directory, records[0])).st_mode & 0o777 != 0o600:
+            raise AssertionError("recovery storage permissions are not private")
+
+        master, slave = pty.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 42, 90, 0, 0))
+        recovery_process = subprocess.Popen([args.binary, "tui"], stdin=slave, stdout=slave, stderr=slave, env=env, close_fds=True)
+        os.close(slave)
+        recovery_output = drain(master, 8.0)
+        recovery_text = ANSI.sub(b"", recovery_output)
+        if b"RECOVER A GAME" not in recovery_text:
+            recovery_process.kill()
+            raise AssertionError(f"plain startup did not offer recovery\n{recovery_text[-3000:]!r}")
+        os.write(master, b"\r")
+        recovery_output += drain(master, 0.7)
+        os.write(master, b"q")
+        recovery_output += drain(master, 0.5)
+        if recovery_process.wait(timeout=3) != 0 or b"Recovered game" not in ANSI.sub(b"", recovery_output):
+            raise AssertionError("selected recovery did not restore and quit cleanly")
+        os.close(master)
+        if any(name.endswith(".json") for name in os.listdir(recovery_directory)):
+            raise AssertionError("clean exit retained the selected recovery record")
+
+        # Opt-out disables both discovery and record creation.
+        master, slave = pty.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 42, 90, 0, 0))
+        opted_out = subprocess.Popen([args.binary, "tui", "--input", PUZZLE, "--no-autosave"], stdin=slave, stdout=slave, stderr=slave, env=env, close_fds=True)
+        os.close(slave)
+        drain(master, 0.7)
+        os.write(master, b"2")
+        drain(master, 1.5)
+        opted_out.send_signal(signal.SIGINT)
+        opted_out.wait(timeout=3)
+        os.close(master)
+        if any(name.endswith(".json") for name in os.listdir(recovery_directory)):
+            raise AssertionError("--no-autosave created a recovery record")
+
         corrupt = os.path.join(directory, "corrupt.json")
         with open(corrupt, "w", encoding="utf-8") as handle:
             handle.write("{bad json")
         rejected = subprocess.run([args.binary, "tui", "--resume", corrupt], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, timeout=3)
         if rejected.returncode == 0 or b"resume saved session" not in rejected.stdout.lower():
             raise AssertionError("corrupt TUI restore was not rejected before startup")
-        print("PASS: TUI PTY resize, candidates, input, confirmation, history, hint, save/resume, and quit")
+        print("PASS: TUI PTY gameplay, save/resume, crash autosave, recovery selection, cleanup, and quit")
 
 
 if __name__ == "__main__":

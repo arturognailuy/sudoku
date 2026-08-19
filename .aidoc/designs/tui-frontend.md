@@ -51,7 +51,7 @@ The TUI translates keys into `game.Action` values and renders only `game.Snapsho
 
 `sudoku tui` accepts the same puzzle sources as root play: `--input`, `--level`, and `--resume`, with the same mutual exclusions and default difficulty. Shared session construction lives behind a command-level helper so the CLI and TUI do not duplicate generation, classification, solver options, or restore validation.
 
-Persistence remains explicit. A resumed session remembers its source path for the current process, but saving still requires the player to press `S` and confirm a destination. New sessions prompt for a path. Phase 7 does not add background autosave, recovery files, cloud storage, or a default save location.
+Player-owned persistence remains explicit: a resumed session remembers its source path for the running instance, while `S` confirms the destination for an intentional save. Independently, successful TUI gameplay mutations create one-second debounced private recovery records unless `--no-autosave` is set. Plain startup discovers recent records by random durable identifier rather than process ID; explicit puzzle sources bypass discovery. `.aidoc/designs/background-autosave.md` owns the recovery lifecycle and cleanup policy.
 
 The filesystem transport lives in the presentation-neutral `sessionfile` package so both frontends consume the same guarantees. The transport retains the current bounded-read, user-only permission, atomic-replacement, and source-preservation guarantees.
 
@@ -79,4 +79,4 @@ Package tests cover key-to-action translation, focus boundaries, note mode, auto
 
 ## Deferred Work
 
-Automatic note population, background autosave, mouse support, localization, web and mobile frontends, network protocols, cloud sync, and multi-user play remain separate product decisions. Later TUI work should not expand the engine contract unless the TUI exposes a concrete missing capability that cannot be expressed through snapshots, actions, hints, or serialization.
+Automatic note population, mouse support, localization, web and mobile frontends, network protocols, cloud sync, and multi-user play remain separate product decisions. Later TUI work should not expand the engine contract unless the TUI exposes a concrete missing capability that cannot be expressed through snapshots, actions, hints, or serialization.

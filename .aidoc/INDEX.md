@@ -26,6 +26,7 @@ This index provides reading chains for common starting points and a complete doc
 12. `sessionfile/session_file.go` — presentation-neutral bounded and atomic session transport
 13. `tui/model.go` — Bubble Tea event model and action translation
 14. `tui/render.go` — deterministic full-screen renderer
+15. `recovery/recovery.go` — private XDG recovery records, validation, retention, and atomic transport
 
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
@@ -40,13 +41,14 @@ This index provides reading chains for common starting points and a complete doc
 10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
-1. `.aidoc/designs/roadmap.md` — Phase 8 scope, delivery order, and exit criteria
-2. `.aidoc/designs/automatic-candidates.md` — derived candidate contract, TUI interaction, and compatibility boundaries
-3. `.aidoc/designs/tui-frontend.md` — full-screen interaction, persistence, rendering, and dependency design
-4. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-5. `.aidoc/designs/cli-sessions.md` — existing manual-note and persistence frontend design
-6. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
-7. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility and future TUI scenarios
+1. `.aidoc/designs/roadmap.md` — Phase 9 scope, delivery order, and exit criteria
+2. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
+3. `.aidoc/designs/automatic-candidates.md` — derived candidate contract, TUI interaction, and compatibility boundaries
+4. `.aidoc/designs/tui-frontend.md` — full-screen interaction, persistence, rendering, and dependency design
+5. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
+6. `.aidoc/designs/cli-sessions.md` — existing manual-note and persistence frontend design
+7. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+8. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility and future TUI scenarios
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -64,7 +66,8 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Phase 8 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/roadmap.md` | Phase 9 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/background-autosave.md` | Background autosave lifecycle, privacy, retention, and conflict design |
 | `.aidoc/designs/automatic-candidates.md` | Automatic-candidate engine contract, TUI interaction, and rendering constraints |
 | `.aidoc/designs/tui-frontend.md` | TUI interaction model, persistence policy, rendering, and dependency boundaries |
 | `.aidoc/designs/cli-sessions.md` | CLI manual notes, rendering, save, and resume design |
@@ -77,6 +80,7 @@ This index provides reading chains for common starting points and a complete doc
 | `cmd/tui.go` | Opt-in full-screen TUI command and terminal lifecycle |
 | `tui/model.go` | TUI event model, focus, modes, confirmations, and persistence |
 | `tui/render.go` | Deterministic color-independent board rendering |
+| `recovery/recovery.go` | Private XDG recovery records, discovery, validation, retention, and deletion |
 | `sessionfile/session_file.go` | Bounded reads and atomic mode-0600 session writes |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
