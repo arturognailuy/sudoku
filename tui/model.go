@@ -38,18 +38,19 @@ const (
 
 // Model owns presentation state while delegating all puzzle transitions to game.Game.
 type Model struct {
-	game          *game.Game
-	snapshot      game.Snapshot
-	row, column   int
-	width, height int
-	mode          inputMode
-	modal         modalKind
-	theme         themeName
-	message       string
-	hint          *solver.Move
-	dirty         bool
-	savePath      string
-	writeSession  func(string, []byte) error
+	game           *game.Game
+	snapshot       game.Snapshot
+	row, column    int
+	width, height  int
+	mode           inputMode
+	modal          modalKind
+	theme          themeName
+	message        string
+	hint           *solver.Move
+	dirty          bool
+	autoCandidates bool
+	savePath       string
+	writeSession   func(string, []byte) error
 }
 
 // NewModel creates a TUI model. resumePath becomes the default save target.
@@ -126,6 +127,13 @@ func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.mode = noteMode
 		} else {
 			m.mode = valueMode
+		}
+	case "a":
+		m.autoCandidates = !m.autoCandidates
+		if m.autoCandidates {
+			m.message = "Automatic candidates shown."
+		} else {
+			m.message = "Automatic candidates hidden."
 		}
 	case "u":
 		m.apply(game.Undo{})

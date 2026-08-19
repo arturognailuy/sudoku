@@ -50,6 +50,75 @@ func TestNavigationAndValueNoteModes(t *testing.T) {
 	}
 }
 
+func TestAutomaticCandidateToggleIsPresentationOnly(t *testing.T) {
+	model := testModel(t)
+	before := model.snapshot
+	beforeSerialized, err := model.game.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	afterSerialized, err := model.game.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !model.autoCandidates || model.dirty || model.snapshot != before || string(afterSerialized) != string(beforeSerialized) {
+		t.Fatal("automatic-candidate toggle mutated session state")
+	}
+	view := ansi.Strip(model.View())
+	cell := cellContent(model, 0, 0, 0) + cellContent(model, 0, 0, 1) + cellContent(model, 0, 0, 2)
+	if !strings.Contains(view, "AUTO ON") || strings.TrimSpace(cell) == "" {
+		t.Fatal("automatic candidates were not exposed in status and cells")
+	}
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	if model.autoCandidates || model.dirty || !strings.Contains(ansi.Strip(model.View()), "AUTO OFF") {
+		t.Fatal("automatic candidates did not turn off cleanly")
+	}
+}
+
+func TestAutomaticCandidatesRefreshAndCoexistWithNotes(t *testing.T) {
+	model := testModel(t)
+	model.autoCandidates = true
+	noteTarget := core.NewPosition(0, 0)
+	legalNote := model.snapshot.Candidates[noteTarget.Row][noteTarget.Column].Values()[0]
+	model.snapshot.Notes[noteTarget.Row][noteTarget.Column].Add(legalNote)
+	model.snapshot.Notes[noteTarget.Row][noteTarget.Column].Add(9)
+	content := cellContent(model, noteTarget.Row, noteTarget.Column, 0) + cellContent(model, noteTarget.Row, noteTarget.Column, 1) + cellContent(model, noteTarget.Row, noteTarget.Column, 2)
+	if !strings.Contains(content, string(rune('0'+legalNote))) || !strings.Contains(content, "9") {
+		t.Fatalf("combined candidates omitted legal or stale manual note: %q", content)
+	}
+
+	hint := model.game.Hint()
+	if hint == nil {
+		t.Fatal("test puzzle needs a hint")
+	}
+	target, legal := hint.Cell.Position, hint.Cell.Value
+	peer := core.Position{Row: -1, Column: -1}
+	for row := 0; row < 9 && !peer.IsValid(); row++ {
+		for column := 0; column < 9; column++ {
+			position := core.NewPosition(row, column)
+			isPeer := row == target.Row || column == target.Column || (row/3 == target.Row/3 && column/3 == target.Column/3)
+			if position != target && isPeer && model.snapshot.Candidates[row][column].Has(legal) {
+				peer = position
+				break
+			}
+		}
+	}
+	if !peer.IsValid() {
+		t.Fatal("test puzzle needs a peer affected by the hinted value")
+	}
+	before := model.snapshot.Candidates[peer.Row][peer.Column]
+	model.row, model.column = target.Row, target.Column
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{rune('0' + legal)}})
+	if model.snapshot.Candidates[target.Row][target.Column] != 0 || model.snapshot.Candidates[peer.Row][peer.Column] == before {
+		t.Fatal("candidate display did not refresh after a value action")
+	}
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+	if model.snapshot.Candidates[peer.Row][peer.Column] != before {
+		t.Fatal("candidate display did not refresh after undo")
+	}
+}
+
 func TestUndoRedoAndQuitConfirmation(t *testing.T) {
 	model := testModel(t)
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})

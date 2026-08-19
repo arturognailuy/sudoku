@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gnailuy/sudoku/core"
+	"github.com/gnailuy/sudoku/solver"
 )
 
 func TestSnapshotStringMatchesSessionSummary(t *testing.T) {
@@ -36,6 +37,7 @@ func TestSnapshotIsDetached(t *testing.T) {
 	snapshot.Givens[0][0] = 0
 	snapshot.Values[0][2] = 9
 	snapshot.Invalid[0][2] = true
+	snapshot.Candidates[0][2].Add(9)
 
 	fresh := game.Snapshot()
 	if fresh.Givens[0][0] != 5 {
@@ -44,11 +46,94 @@ func TestSnapshotIsDetached(t *testing.T) {
 	if fresh.Values[0][2] != 0 || fresh.Invalid[0][2] {
 		t.Fatal("mutating snapshot state changed the game")
 	}
+	if fresh.Candidates[0][2].Has(9) {
+		t.Fatal("mutating snapshot candidates changed the game")
+	}
 
 	playBoard := game.PlayBoard()
 	_ = playBoard.Set(position, 9)
 	if game.Get(position) != 0 {
 		t.Fatal("mutating PlayBoard copy changed the game")
+	}
+}
+
+func TestSnapshotCandidatesFollowSolverSafeBoard(t *testing.T) {
+	game := newTestGame()
+	target := core.NewPosition(0, 2)
+	initial := game.Snapshot()
+	peer := core.Position{Row: -1, Column: -1}
+	for column := 0; column < 9; column++ {
+		if column != target.Column && initial.Candidates[target.Row][column].Has(4) {
+			peer = core.NewPosition(target.Row, column)
+			break
+		}
+	}
+
+	if initial.Candidates[0][0] != 0 || initial.Candidates[target.Row][target.Column].IsEmpty() {
+		t.Fatal("snapshot should expose candidates only for empty cells")
+	}
+	playBoard := game.PlayBoard()
+	if got, want := initial.Candidates[target.Row][target.Column], playBoard.Candidates(target); got != want {
+		t.Fatalf("target candidates=%v, want %v", got.Values(), want.Values())
+	}
+	if !peer.IsValid() {
+		t.Fatal("test board needs a row peer that initially allows 4")
+	}
+
+	if _, err := game.Apply(ToggleNote{Position: target, Value: 9}); err != nil {
+		t.Fatal(err)
+	}
+	if got := game.Snapshot().Candidates; got != initial.Candidates {
+		t.Fatal("manual notes changed derived candidates")
+	}
+
+	if _, err := game.Apply(SetValue{Position: target, Value: 9}); err != nil {
+		t.Fatal(err)
+	}
+	invalid := game.Snapshot()
+	if !invalid.Invalid[0][2] || invalid.Values[0][2] != 9 {
+		t.Fatal("test value should be visible and invalid")
+	}
+	if invalid.Candidates != initial.Candidates {
+		t.Fatal("an invalid visible entry constrained solver-safe candidates")
+	}
+
+	if _, err := game.Apply(SetValue{Position: target, Value: 4}); err != nil {
+		t.Fatal(err)
+	}
+	accepted := game.Snapshot()
+	if accepted.Candidates[0][2] != 0 || accepted.Candidates[peer.Row][peer.Column].Has(4) {
+		t.Fatal("accepted value did not refresh target and peer candidates")
+	}
+	if _, err := game.Apply(Undo{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := game.Snapshot().Candidates; got != invalid.Candidates {
+		t.Fatal("undo did not restore candidates")
+	}
+	if _, err := game.Apply(Redo{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := game.Snapshot().Candidates; got != accepted.Candidates {
+		t.Fatal("redo did not restore candidates")
+	}
+}
+
+func TestRestoredSnapshotRecomputesCandidates(t *testing.T) {
+	original := newTestGame()
+	if _, err := original.Apply(SetValue{Position: core.NewPosition(0, 2), Value: 4}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := original.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := Restore(data, NewDefaultOptions(solver.NewStore()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := restored.Snapshot().Candidates, original.Snapshot().Candidates; got != want {
+		t.Fatal("restored candidates differ from original")
 	}
 }
 
