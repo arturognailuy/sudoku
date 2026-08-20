@@ -19,7 +19,7 @@ The CLI exposes manual notes and durable game sessions through the existing comm
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/roadmap.md` | Phase 6 scope, delivery order, and exit criteria |
+| `.aidoc/designs/roadmap.md` | Current stabilization priorities and sequencing |
 | `.aidoc/designs/game-engine.md` | Canonical note, history, snapshot, and serialization semantics |
 | `.aidoc/designs/e2e-test-scenarios.md` | Black-box scenarios for notes and restored sessions |
 | `.aidoc/architecture/guidelines.md` | Package boundaries that keep I/O out of the engine |

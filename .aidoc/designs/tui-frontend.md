@@ -12,22 +12,22 @@ dependencies:
 
 # TUI Frontend
 
-Phase 7 adds an optional full-screen terminal interface as the smallest second frontend for the stable game engine. The TUI improves keyboard play and proves that engine state, history, hints, notes, and serialization can support multiple presentations without changing the existing line-oriented CLI.
+The optional full-screen terminal interface is the smallest second frontend for the stable game engine. The TUI improves keyboard play and proves that engine state, history, hints, notes, and serialization can support multiple presentations without changing the existing line-oriented CLI.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/roadmap.md` | Phase 7 scope, delivery order, and exit criteria |
+| `.aidoc/designs/roadmap.md` | Current stabilization priorities and sequencing |
 | `.aidoc/designs/game-engine.md` | Canonical actions, snapshots, hints, notes, and serialization |
 | `.aidoc/designs/cli-sessions.md` | Existing CLI behavior and explicit persistence policy |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility and future TUI scenarios |
+| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility and TUI scenarios |
 
 ## Why the TUI Is Next
 
 A TUI reuses the Go engine directly and adds no network, browser, service, or cross-language boundary. The TUI is therefore the lowest-risk way to validate the frontend contract before a web or mobile client introduces an API or WebAssembly decision.
 
-The existing CLI remains valuable for scripts, redirected input, and minimal terminals. Phase 7 adds `sudoku tui` rather than replacing the root play command, so established commands and output remain compatible.
+The existing CLI remains valuable for scripts, redirected input, and minimal terminals. The `sudoku tui` command complements rather than replaces the root play command, so established commands and output remain compatible.
 
 ## Interaction Model
 
@@ -63,7 +63,7 @@ Given cells, player values, invalid entries, the focused cell, and peer cells re
 
 Dark and light palettes are deterministic and selected with `SUDOKU_THEME`; `NO_COLOR` or the `no-color` theme retains bold, underline, reverse-video, and faint attributes while removing color distinctions. The renderer must produce deterministic output from model state so package tests can verify layouts without a live terminal.
 
-Phase 7 uses a single event loop to serialize engine actions. Background puzzle generation and filesystem operations may return messages to the event loop, but no goroutine mutates `game.Game` directly.
+The TUI uses a single event loop to serialize engine actions. Background puzzle generation and filesystem operations may return messages to the event loop, but no goroutine mutates `game.Game` directly.
 
 ## Dependency Decision
 

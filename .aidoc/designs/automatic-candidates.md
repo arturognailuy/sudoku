@@ -13,7 +13,7 @@ dependencies:
 
 # Automatic Candidates
 
-Phase 8 adds opt-in legal-candidate assistance without changing manual notes or persisted game state. Candidate calculation belongs to the game-engine read boundary, while each frontend owns whether and how the derived data is displayed.
+Automatic candidates provide opt-in legal-candidate assistance without changing manual notes or persisted game state. Candidate calculation belongs to the game-engine read boundary, while each frontend owns whether and how the derived data is displayed.
 
 ## Related Docs
 
@@ -21,8 +21,8 @@ Phase 8 adds opt-in legal-candidate assistance without changing manual notes or 
 |----------|-------------|
 | `.aidoc/designs/game-engine.md` | Defines the detached snapshot and the distinction between engine state and derived queries |
 | `.aidoc/designs/tui-frontend.md` | Defines the keyboard, rendering, theme, and accessibility boundaries used by the first consumer |
-| `.aidoc/designs/e2e-test-scenarios.md` | Defines the black-box behaviors required before Phase 8 can ship |
-| `.aidoc/designs/roadmap.md` | Defines Phase 8 delivery order and exit criteria |
+| `.aidoc/designs/e2e-test-scenarios.md` | Defines the black-box behaviors that protect candidate assistance |
+| `.aidoc/designs/roadmap.md` | Defines current stabilization priorities |
 
 ## Why Automatic Candidates Are Derived
 
@@ -48,7 +48,7 @@ Manual-note actions do not alter legal candidates. Automatic candidate changes d
 
 The full-screen TUI adds `a` as the automatic-candidate toggle when no modal or text prompt is active. Automatic candidates start off for every process, including resumed sessions, so the existing uncluttered board remains the default. Toggling the display does not mark the session dirty and does not create an undo entry.
 
-The help overlay and one-line key guide expose the toggle. The line-oriented CLI receives no new command in Phase 8: a dense candidate board would complicate its stable text format without improving scriptability, while the shared snapshot contract remains available to future frontends.
+The help overlay and one-line key guide expose the toggle. The line-oriented CLI has no candidate command: a dense candidate board would complicate its stable text format without improving scriptability, while the shared snapshot contract remains available to future frontends.
 
 ## Rendering and Manual Notes
 
@@ -62,11 +62,11 @@ The renderer must keep the current cell dimensions, board alignment, resize thre
 
 Candidate derivation has no recoverable runtime failure path: the engine operates on a validated 9×9 board and `core.Board.Candidates` already defines legal-candidate behavior. An empty candidate set on an editable cell is valid when the accepted board leaves no legal digit; the TUI renders the empty mini-grid and existing board status remains authoritative.
 
-Phase 8 does not add candidate persistence, automatic note population, note cleanup beyond existing value actions, solver-technique explanations, background computation, a new dependency, or a serialization version. Automatic candidates do not change root CLI output, save bytes, restore validation, hint selection, or solve behavior.
+Automatic candidates do not add candidate persistence, automatic note population, note cleanup beyond existing value actions, solver-technique explanations, background computation, a new dependency, or a serialization version. Automatic candidates do not change root CLI output, save bytes, restore validation, hint selection, or solve behavior.
 
 ## Delivery and Verification
 
-Phase 8 is delivered in two implementation layers:
+Automatic candidates use two implementation layers:
 
 1. Extend detached snapshots with computed legal candidates and contract tests for empty, filled, invalid-visible, changed, restored, and mutation-isolation cases.
 2. Add the TUI toggle, combined note/candidate rendering, help text, theme tests, and pseudo-terminal black-box coverage.
