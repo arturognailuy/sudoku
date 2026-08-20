@@ -7,6 +7,7 @@ entry_points:
 dependencies:
   - .aidoc/INDEX.md
   - .aidoc/designs/game-engine.md
+  - .aidoc/designs/web-api.md
 ---
 
 # E2E Test Scenarios
@@ -441,7 +442,47 @@ Use an isolated state root with `export XDG_STATE_HOME=$SUDOKU_E2E_DIR/state`.
 **Action:** Use an inaccessible or unsafe state path and mutate the game.
 **Expected:** Gameplay continues with a persistent concise autosave warning. A later mutation retries recovery after the path is fixed.
 
-## 10. Future Scenarios (Not Yet Implemented)
+## 10. HTTP API Backend (Planned)
+
+Run Phase 10 scenarios against the built backend with isolated data and state roots. HTTP scenarios call the running `sudoku api` process rather than importing Go handlers; frontend behavior is tested in the separate client project.
+
+### 10.1 Startup, Binding, and Health
+**Action:** Start `sudoku api` with isolated XDG roots using the default listener and an explicit network listener, call `/healthz`, and request an unknown `/api/` path.
+**Expected:** The default listener is loopback, the explicit listener requires authentication configuration, startup prints the listening address, health reports healthy, the unknown route returns a stable JSON `404`, and no frontend assets or SPA fallback are served.
+
+### 10.2 Session Creation and Strict Input
+**Action:** Create sessions by difficulty and puzzle string, then send conflicting sources, unknown fields, malformed JSON, wrong content types, and oversized bodies.
+**Expected:** Valid requests return opaque IDs, revision zero, and authoritative snapshots. Invalid requests return bounded stable errors without creating sessions or leaking host details.
+
+### 10.3 OpenAPI Contract and Runtime Conformance
+**Action:** Validate and lint `api/openapi.yaml` with the pinned Redocly CLI, regenerate the strict Go boundary and confirm a clean diff, compare the contract with the target branch using `oasdiff`, then execute every declared operation and representative examples against the built server.
+**Expected:** The OpenAPI 3.1.1 contract is valid and lint-clean, generation is reproducible, no unapproved breaking change is reported, documented examples match runtime responses, and no implemented route is absent from the contract.
+
+### 10.4 Actions, Hints, and Revision Conflicts
+**Action:** Enter values and notes, preview/apply a hint, undo/redo, and submit two actions with the same expected revision.
+**Expected:** Accepted mutations increment revisions once and match engine semantics. Hint preview is read-only. The delayed mutation returns `409` with current state and never overwrites the accepted action.
+
+### 10.5 Restart Recovery and Discard
+**Action:** Mutate two API sessions, stop and restart the server, reconnect to both, then discard one.
+**Expected:** Both sessions restore from separate private records with complete values, notes, and history. Discard removes only the selected record, and another restart retains the other session.
+
+### 10.6 Concurrent Sessions and Process Lock
+**Action:** Mutate separate sessions concurrently, submit concurrent actions to one session, and start a second `sudoku api` process against the same state root.
+**Expected:** Different sessions proceed independently, one session remains revision-ordered, and the second process fails clearly without modifying recovery records.
+
+### 10.7 Origin Policy
+**Action:** Send browser-style preflight and mutation requests with no configured origin, exact allowed local and remote HTTP/HTTPS origins, a different port, `null`, a wildcard, and a path-bearing origin.
+**Expected:** Cross-origin browser access is denied by default. Only exact configured origins succeed; responses never enable wildcard CORS, and authenticated preflight permits only the required authorization header.
+
+### 10.8 Authentication and Remote Access
+**Action:** Bind to a non-loopback address with no token, then with a configured token; call API resources with a missing, incorrect, and correct bearer credential.
+**Expected:** Unsafe startup is rejected. Missing and incorrect credentials receive bounded unauthorized responses, the correct credential succeeds, and logs never contain the token.
+
+### 10.9 Existing Frontend Compatibility
+**Action:** Run all applicable root CLI, TUI, serialization, candidate, and recovery scenarios after API tests.
+**Expected:** Existing output, actions, session bytes, recovery behavior, and terminal rendering remain compatible.
+
+## 11. Future Scenarios (Not Yet Implemented)
 
 These scenarios should be added as the project evolves:
 

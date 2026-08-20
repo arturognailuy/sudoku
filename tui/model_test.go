@@ -91,24 +91,28 @@ func TestAutomaticCandidatesRefreshAndCoexistWithNotes(t *testing.T) {
 		t.Fatalf("combined candidates omitted legal or stale manual note: %q", content)
 	}
 
-	hint := model.game.Hint()
-	if hint == nil {
-		t.Fatal("test puzzle needs a hint")
-	}
-	target, legal := hint.Cell.Position, hint.Cell.Value
+	target := core.Position{Row: -1, Column: -1}
 	peer := core.Position{Row: -1, Column: -1}
-	for row := 0; row < 9 && !peer.IsValid(); row++ {
-		for column := 0; column < 9; column++ {
-			position := core.NewPosition(row, column)
-			isPeer := row == target.Row || column == target.Column || (row/3 == target.Row/3 && column/3 == target.Column/3)
-			if position != target && isPeer && model.snapshot.Candidates[row][column].Has(legal) {
-				peer = position
-				break
+	legal := 0
+	for targetRow := 0; targetRow < 9 && !peer.IsValid(); targetRow++ {
+		for targetColumn := 0; targetColumn < 9 && !peer.IsValid(); targetColumn++ {
+			position := core.NewPosition(targetRow, targetColumn)
+			for _, candidate := range model.snapshot.Candidates[targetRow][targetColumn].Values() {
+				for row := 0; row < 9 && !peer.IsValid(); row++ {
+					for column := 0; column < 9; column++ {
+						possiblePeer := core.NewPosition(row, column)
+						isPeer := row == targetRow || column == targetColumn || (row/3 == targetRow/3 && column/3 == targetColumn/3)
+						if possiblePeer != position && isPeer && model.snapshot.Candidates[row][column].Has(candidate) {
+							target, peer, legal = position, possiblePeer, candidate
+							break
+						}
+					}
+				}
 			}
 		}
 	}
 	if !peer.IsValid() {
-		t.Fatal("test puzzle needs a peer affected by the hinted value")
+		t.Fatal("test puzzle needs two peer cells sharing a candidate")
 	}
 	before := model.snapshot.Candidates[peer.Row][peer.Column]
 	model.row, model.column = target.Row, target.Column

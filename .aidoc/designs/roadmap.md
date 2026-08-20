@@ -2,61 +2,78 @@
 domain: Designs
 status: Active
 entry_points:
-  - cmd/tui.go
-  - tui/model.go
-  - sessionfile/session_file.go
+  - cmd/root.go
+  - cmd/session.go
+  - game/contract.go
+  - recovery/recovery.go
 dependencies:
-  - .aidoc/designs/background-autosave.md
-  - .aidoc/designs/tui-frontend.md
+  - .aidoc/designs/web-api.md
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/e2e-test-scenarios.md
 ---
 
 # Roadmap
 
-Phase 9 provides private background autosave and crash recovery for the full-screen TUI. The phase improves local-session reliability while preserving explicit saves, line-oriented CLI behavior, the stable game-engine contract, and version 1 serialized gameplay state.
+Phase 10 adds a client-neutral, general-purpose HTTP API after the reusable engine, complete sessions, TUI, candidate assistance, and crash recovery have stabilized. Browser UX belongs in a separate TypeScript project; this repository focuses on the Go backend contract, durability, deployment-safe defaults, and network security boundary.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/background-autosave.md` | Canonical Phase 9 lifecycle, privacy, storage, conflict, and retention decisions |
-| `.aidoc/designs/tui-frontend.md` | Current TUI event loop, dirty state, persistence, and modal behavior |
-| `.aidoc/designs/game-engine.md` | Stable serialization and restoration boundary |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility contract and Phase 9 acceptance scenarios |
+| `.aidoc/designs/web-api.md` | Canonical API resources, revisions, recovery, client access, and network security boundary |
+| `.aidoc/designs/game-engine.md` | Stable actions, snapshots, hints, and serialization reused by the API |
+| `.aidoc/designs/e2e-test-scenarios.md` | Existing compatibility contract and Phase 10 backend acceptance scenarios |
 
-## Why Phase 9 Exists
+## Why Phase 10 Exists
 
-The TUI supports long-running play with notes, history, hints, and automatic candidates. Without recovery, process or host interruption would lose unsaved progress. Recovery completes the local session lifecycle before an API, browser frontend, cloud sync, or account model introduces remote state and broader conflict policy.
+The game engine already supports multiple terminal presentations without leaking UI concerns, and private recovery protects long-running local sessions. An HTTP boundary is the next useful stress test because it introduces serialization, concurrency, lifecycle, and security concerns while proving that a separately maintained client can consume the engine safely.
 
-The engine already serializes complete sessions, and `sessionfile` already provides bounded reads and atomic private writes. Phase 9 therefore remains a frontend lifecycle feature instead of changing Sudoku rules, history, solver behavior, or the serialized gameplay schema.
+A bundled browser application would mix backend and UX release cycles, dependencies, tests, and product decisions. Phase 10 keeps the Go repository client-neutral so a separate TypeScript project can evolve its interaction model without embedding frontend build tooling or assets into the Sudoku binary.
 
-## Phase 9 Outcome
+## Phase 10 Outcome
 
-The TUI writes debounced recovery records after successful gameplay mutations and offers valid recent records when a plain TUI session starts. Recovery files use a private XDG state location, support concurrent local games, survive abnormal termination, and disappear after successful explicit save or confirmed discard.
+`sudoku api` starts on loopback by default and can bind to an explicitly selected network address. Local tools and separately deployed clients can create a puzzle by difficulty or puzzle string, inspect authoritative snapshots, enter values and notes, use undo/redo and hints, recover interrupted sessions, and discard or export a game.
 
-Autosave is enabled by default with an explicit opt-out. Intentional startup using `--input`, `--level`, or `--resume` remains deterministic and bypasses recovery discovery. The line-oriented CLI never creates recovery files.
+The Go process remains authoritative. Every Sudoku state transition passes through `game.Game.Apply`, and every response derives from detached snapshots. The line CLI, TUI, serialized gameplay format, and recovery security guarantees remain compatible.
 
-## Implementation Structure
+## Delivery Structure
 
-1. A presentation-neutral recovery package owns wrapper validation, secure XDG paths, discovery, retention, atomic writes, and deletion.
-2. The TUI owns mutation generations, one-second debounce, single-flight writes, warning and retry behavior, and cleanup policy.
-3. Command startup owns recovery selection eligibility, `--no-autosave`, and deterministic bypass for explicit puzzle sources.
-4. Player help, package tests, pseudo-terminal coverage, black-box scenarios, and current-state documentation describe the same lifecycle.
+1. **Application and API boundary**
+   - Define `api/openapi.yaml` as the OpenAPI 3.1.1 source of truth before implementing routes.
+   - Generate strict Go transport models and server interfaces with `oapi-codegen`; keep adapters and application logic handwritten.
+   - Add a transport-independent session registry around `game.Game` with opaque IDs and monotonic revisions.
+   - Add strict `/api/v1` JSON models for session creation, snapshots, hint preview, actions, conflicts, export, and discard.
+   - Keep generation, fallback, and solver policy injected from command wiring rather than duplicated in handlers.
 
-Implementation keeps recovery metadata outside `game`, uses `game.Serialize` and `game.Restore` as opaque boundaries, and adds no external dependency.
+2. **Durability and network security**
+   - Persist accepted API mutations through the validated private recovery store.
+   - Keep loopback as the safe default while supporting explicit network binding with mandatory bearer authentication.
+   - Enforce bounded JSON, safe HTTP timeouts, private logging, and clean shutdown.
+   - Preserve recoverable sessions across process restarts without accepting arbitrary host paths.
+
+3. **External-client boundary**
+   - Keep API models independent from Go engine structs and frontend-specific view models.
+   - Disable browser cross-origin access by default; allow explicitly configured exact HTTP or HTTPS origins for separately deployed clients.
+   - Publish stable machine-readable errors and static API reference documentation from the canonical contract.
+   - Generate clients only from tagged or released contracts, with each client repository owning its generated code and release policy.
+
+4. **Black-box verification and documentation**
+   - Validate and lint OpenAPI with a pinned Redocly CLI, reject stale generated Go code, and detect breaking changes with `oasdiff`.
+   - Exercise the built server through HTTP with isolated XDG roots.
+   - Cover every declared operation and representative OpenAPI examples plus stale revisions, restart recovery, invalid input, request limits, origin policy, and concurrent sessions.
+   - Keep all existing CLI/TUI scenarios green; browser rendering and accessibility tests belong to the frontend project.
 
 ## Exit Criteria
 
-- Only successful gameplay mutations create or refresh recovery state; presentation-only actions do not.
-- Recovery uses mode-`0700` directories, mode-`0600` regular files, bounded atomic replacement, random opaque names, and rejection of symlink directories and records.
-- One-second debounce and single-flight writes preserve the newest generation without concurrent-session overwrites.
-- Plain TUI startup can resume or discard recent valid records, while explicit startup sources and opt-out remain deterministic.
-- Successful explicit save, clean unmodified exit, and confirmed discard remove the current record; abnormal termination leaves the latest successful record.
-- Invalid records are ignored, records older than 30 days are pruned, and write failures remain visible without terminating play.
-- Root CLI behavior, explicit save bytes, version 1 restore semantics, engine actions, TUI gameplay, and automatic candidates remain compatible.
-- Package tests, pseudo-terminal scenarios, applicable root CLI E2E scenarios, build, vet, lint, diff checks, documentation audit, and CI pass.
+- `sudoku api` starts a backend-only server, defaults to loopback, supports explicit network binding, and does not embed, build, open, or serve frontend assets.
+- `api/openapi.yaml` is a valid and lint-clean OpenAPI 3.1.1 contract; generated strict Go boundary code is reproducible and current.
+- API version 1 has strict bounded requests, stable errors, opaque session IDs, per-session serialization, and revision conflicts that prevent silent stale writes.
+- Every accepted action uses the game-engine contract and returns an authoritative detached snapshot; API code contains no duplicate Sudoku rules.
+- Accepted API mutations are recoverable after process restart, and discard removes only the selected record.
+- Non-loopback binding requires bearer authentication; opaque session IDs are never treated as credentials.
+- Cross-origin browser access is disabled by default and limited to explicit exact HTTP or HTTPS origins when enabled.
+- Contract compatibility checks, handler tests, built-binary HTTP E2E, build, vet, lint, diff checks, documentation audit, existing CLI/TUI E2E, and CI pass.
 
-## Later Work
+## Deferred Work
 
-A web or API boundary follows local-session reliability work only when hosting and deployment requirements are concrete. Mouse support, localization, cloud sync, encryption, mobile clients, account identity, cross-device merge, and multi-user features remain deferred until their product need justifies new architectural and privacy costs.
+The browser frontend, frontend hosting, in-process TLS termination, accounts, account-specific authorization, analytics, cloud synchronization, shared games, cross-device merge, mobile-native clients, localization, and multi-user collaboration remain outside this repository's Phase 10 scope. Each capability changes the threat model or product contract and requires a separately reviewed design in its owning project.

@@ -41,14 +41,14 @@ This index provides reading chains for common starting points and a complete doc
 10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
-1. `.aidoc/designs/roadmap.md` — Phase 9 scope, delivery order, and exit criteria
-2. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
-3. `.aidoc/designs/automatic-candidates.md` — derived candidate contract, TUI interaction, and compatibility boundaries
-4. `.aidoc/designs/tui-frontend.md` — full-screen interaction, persistence, rendering, and dependency design
-5. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-6. `.aidoc/designs/cli-sessions.md` — existing manual-note and persistence frontend design
+1. `.aidoc/designs/roadmap.md` — Phase 10 backend scope, delivery order, and exit criteria
+2. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
+3. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
+4. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
+5. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
+6. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
 7. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
-8. `.aidoc/designs/e2e-test-scenarios.md` — CLI compatibility and future TUI scenarios
+8. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -66,13 +66,15 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Phase 9 scope, delivery plan, and exit criteria |
+| `.aidoc/designs/roadmap.md` | Phase 10 backend scope, delivery plan, and exit criteria |
+| `.aidoc/designs/web-api.md` | Contract-first OpenAPI workflow, resources, revisions, recovery, client access, and network security boundary |
 | `.aidoc/designs/background-autosave.md` | Background autosave lifecycle, privacy, retention, and conflict design |
 | `.aidoc/designs/automatic-candidates.md` | Automatic-candidate engine contract, TUI interaction, and rendering constraints |
 | `.aidoc/designs/tui-frontend.md` | TUI interaction model, persistence policy, rendering, and dependency boundaries |
 | `.aidoc/designs/cli-sessions.md` | CLI manual notes, rendering, save, and resume design |
 | `.aidoc/designs/game-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
+| `api/openapi.yaml` | Canonical OpenAPI 3.1.1 HTTP wire contract |
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |
 | `cmd/play.go` | Interactive play mode, fallback flow, auto-store |
