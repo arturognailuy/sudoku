@@ -27,7 +27,7 @@ Phase 10 adds a versioned, general-purpose HTTP backend around the existing game
 
 ## Why the API Is Client-Neutral
 
-The HTTP boundary makes `game.Game` available to local tools, separately hosted browser applications, and other network clients through one stable contract. Keeping frontend source and build tooling in a separate TypeScript project lets backend and UX contracts evolve and deploy independently.
+The HTTP boundary makes `game.Game` available to local tools, separately hosted browser applications, and other network clients through one stable contract. Keeping frontend source and build tooling in a separate TypeScript project lets backend and UX contracts evolve and deploy independently. A contract-first OpenAPI document lets those projects agree on HTTP behavior without sharing Go implementation types.
 
 The backend is safe by default rather than local-only: it binds to loopback unless an operator explicitly selects another address, and non-loopback operation requires authentication. Transport models remain independent from Go engine structs, errors and revisions are machine-readable, and handlers are tested through HTTP.
 
@@ -38,6 +38,16 @@ The backend is safe by default rather than local-only: it binds to loopback unle
 Each active API session owns one `game.Game`, one opaque random session ID, one monotonically increasing revision, and one recovery record. A registry serializes access per session; different sessions may proceed independently. `game.Game` remains non-concurrent and unaware of HTTP.
 
 Session creation reuses existing puzzle input, difficulty generation, solver configuration, and database fallback policies through dependencies wired by `cmd`. The API must not import `cmd` or duplicate generation rules.
+
+## Contract-First OpenAPI Workflow
+
+`api/openapi.yaml` is the canonical external contract and uses OpenAPI 3.1.1. Paths, operation identifiers, request and response schemas, authentication, stable error codes, limits, examples, and revision semantics are designed in that document before handlers are implemented. Prose in this design explains intent and cross-cutting constraints; the OpenAPI document owns exact wire names and shapes.
+
+The implementation uses `oapi-codegen` to generate transport models and a strict Go server interface from the pinned contract. Generated code remains confined to the HTTP boundary: handwritten adapters perform dependency wiring, authentication, origin checks, session coordination, and translation to `game.Game`; generated code never owns Sudoku rules, persistence policy, or application implementation. Generated files are committed and CI rejects stale generated output.
+
+CI validates and lints the OpenAPI document with a pinned Redocly CLI, verifies generated-code freshness, and uses `oasdiff` against the target branch to report breaking contract changes. Deliberate breaking changes require a new URL namespace rather than silently changing `/api/v1`. Representative examples and every declared operation are exercised through the built server so schema validity does not substitute for runtime conformance.
+
+Static API reference documentation is rendered from `api/openapi.yaml` by the pinned Redocly CLI and published as a CI artifact or site. `sudoku api` does not embed or serve Swagger UI, Scalar, Redoc, or other documentation assets. Released or tagged contracts are the source for separately versioned client generation; a TypeScript client may use `openapi-typescript`, while other client repositories may select an appropriate generator without changing this backend.
 
 ## Version 1 Resource Model
 
@@ -82,4 +92,4 @@ Opaque session IDs prevent accidental collisions and never substitute for authen
 
 ## Verification
 
-Handler tests exercise real HTTP requests, strict decoding, body limits, action translation, typed errors, revision conflicts, recovery failure, concurrent access, authentication, default CORS denial, and exact-origin allowlisting. Black-box tests start the built binary with isolated XDG roots on both default and explicit listen addresses, call the versioned API, restart the process, and confirm recovery without importing Go packages or relying on a frontend.
+Handler tests exercise real HTTP requests, strict decoding, body limits, action translation, typed errors, revision conflicts, recovery failure, concurrent access, authentication, default CORS denial, and exact-origin allowlisting. Contract verification validates and lints `api/openapi.yaml`, confirms generated Go code is current, checks compatibility with `oasdiff`, and executes representative OpenAPI examples against the built server. Black-box tests start the built binary with isolated XDG roots on both default and explicit listen addresses, call every versioned operation, restart the process, and confirm recovery without importing Go packages or relying on a frontend.

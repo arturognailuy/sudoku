@@ -39,6 +39,8 @@ The Go process remains authoritative. Every Sudoku state transition passes throu
 ## Delivery Structure
 
 1. **Application and API boundary**
+   - Define `api/openapi.yaml` as the OpenAPI 3.1.1 source of truth before implementing routes.
+   - Generate strict Go transport models and server interfaces with `oapi-codegen`; keep adapters and application logic handwritten.
    - Add a transport-independent session registry around `game.Game` with opaque IDs and monotonic revisions.
    - Add strict `/api/v1` JSON models for session creation, snapshots, hint preview, actions, conflicts, export, and discard.
    - Keep generation, fallback, and solver policy injected from command wiring rather than duplicated in handlers.
@@ -52,22 +54,25 @@ The Go process remains authoritative. Every Sudoku state transition passes throu
 3. **External-client boundary**
    - Keep API models independent from Go engine structs and frontend-specific view models.
    - Disable browser cross-origin access by default; allow explicitly configured exact HTTP or HTTPS origins for separately deployed clients.
-   - Publish stable machine-readable errors and a versioned schema that a separate TypeScript client can consume.
+   - Publish stable machine-readable errors and static API reference documentation from the canonical contract.
+   - Generate clients only from tagged or released contracts, with each client repository owning its generated code and release policy.
 
 4. **Black-box verification and documentation**
+   - Validate and lint OpenAPI with a pinned Redocly CLI, reject stale generated Go code, and detect breaking changes with `oasdiff`.
    - Exercise the built server through HTTP with isolated XDG roots.
-   - Cover stale revisions, restart recovery, invalid input, request limits, origin policy, and concurrent sessions.
+   - Cover every declared operation and representative OpenAPI examples plus stale revisions, restart recovery, invalid input, request limits, origin policy, and concurrent sessions.
    - Keep all existing CLI/TUI scenarios green; browser rendering and accessibility tests belong to the frontend project.
 
 ## Exit Criteria
 
 - `sudoku api` starts a backend-only server, defaults to loopback, supports explicit network binding, and does not embed, build, open, or serve frontend assets.
+- `api/openapi.yaml` is a valid and lint-clean OpenAPI 3.1.1 contract; generated strict Go boundary code is reproducible and current.
 - API version 1 has strict bounded requests, stable errors, opaque session IDs, per-session serialization, and revision conflicts that prevent silent stale writes.
 - Every accepted action uses the game-engine contract and returns an authoritative detached snapshot; API code contains no duplicate Sudoku rules.
 - Accepted API mutations are recoverable after process restart, and discard removes only the selected record.
 - Non-loopback binding requires bearer authentication; opaque session IDs are never treated as credentials.
 - Cross-origin browser access is disabled by default and limited to explicit exact HTTP or HTTPS origins when enabled.
-- Handler tests, built-binary HTTP E2E, build, vet, lint, diff checks, documentation audit, existing CLI/TUI E2E, and CI pass.
+- Contract compatibility checks, handler tests, built-binary HTTP E2E, build, vet, lint, diff checks, documentation audit, existing CLI/TUI E2E, and CI pass.
 
 ## Deferred Work
 
