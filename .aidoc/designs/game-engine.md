@@ -13,7 +13,7 @@ dependencies:
 
 # Game Engine
 
-Phase 5 turns `game.Game` into a stable, reusable engine for the CLI and future TUI, web, or mobile frontends. The engine owns game rules and state transitions; frontends own input, rendering, navigation, and persistence transport.
+`game.Game` is the stable, reusable engine for the CLI, TUI, and HTTP API. The engine owns game rules and state transitions; frontends own input, rendering, navigation, and persistence transport.
 
 ## Related Docs
 
@@ -27,7 +27,7 @@ Phase 5 turns `game.Game` into a stable, reusable engine for the CLI and future 
 
 `game.Game` already avoids terminal I/O, but public mutable boards, command-shaped methods, and unexported history state prevent a frontend from treating it as a durable engine contract. A stable boundary lets every frontend observe the same state, submit the same actions, and receive the same validation results without duplicating Sudoku rules.
 
-The Phase 5 work extends the existing `game` package rather than introducing a second game model. The CLI remains the first consumer until the contract is proven; no graphical frontend is part of this phase.
+The engine extends the original `game` package rather than introducing a second game model. The CLI, TUI, and HTTP API share this contract; graphical frontends remain outside this repository.
 
 ## Engine Responsibilities
 
@@ -95,7 +95,7 @@ Unknown future schema versions fail explicitly; migrations can be added per vers
 
 ## Compatibility and Failure Boundaries
 
-Phase 5 preserves existing CLI commands and black-box behavior unless a separately reviewed UX change says otherwise. The CLI renders snapshots and translates commands into actions; it must not inspect engine internals.
+The engine preserves existing CLI commands and black-box behavior unless a separately reviewed UX change says otherwise. The CLI renders snapshots and translates commands into actions; it must not inspect engine internals.
 
 Serialization failures, invalid actions, unavailable undo/redo, and attempts to edit givens are expected errors. Solver inability to produce a hint is a valid no-hint result, not an engine failure. Corrupt restored state must never produce a partially initialized game.
 

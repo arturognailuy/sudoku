@@ -15,7 +15,7 @@ dependencies:
 
 # HTTP API Backend
 
-Phase 10 adds a versioned, general-purpose HTTP backend around the existing game engine without adding frontend code. A `sudoku api` process remains authoritative for gameplay, recovery, validation, and concurrency while separately deployed clients own presentation and may connect from any explicitly permitted origin.
+The versioned, general-purpose HTTP backend exposes the existing game engine without adding frontend code. A `sudoku api` process remains authoritative for gameplay, recovery, validation, and concurrency while separately deployed clients own presentation and may connect from any explicitly permitted origin.
 
 ## Related Docs
 

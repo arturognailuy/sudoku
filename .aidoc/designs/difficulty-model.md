@@ -9,8 +9,7 @@ dependencies:
 
 # Difficulty Model
 
-Difficulty combines clue count with solving-technique requirements.
-This doc captures the current model and the migration path toward fully strategy-based difficulty.
+Difficulty combines clue count with solving-technique requirements and weighted solving moves. This document defines the current invariants and the evidence required before calibration changes those parameters.
 
 ## Related Docs
 
@@ -146,9 +145,8 @@ All tunable parameters — solver weights and clue-count ranges — are centrali
 `solver/config.go`. This is the single file to update when tuning parameters or
 calibrating the difficulty system.
 
-### Future: Score-Based Difficulty Ranges
+## Calibration Boundary
 
-`MinScore` and `MaxScore` fields on `Difficulty` will be added in Phase 4,
-when the puzzle database provides enough data to calibrate score ranges.
-The scoring infrastructure is ready — each new solver just sets its weight
-in the constructor.
+Score ranges, solver weights, clue bands, generation budgets, and success-rate policy must not change from intuition alone. Calibration requires a representative puzzle corpus, reproducible local reports, and stable CI coverage for generation, classification, persistence, and black-box gameplay.
+
+The current scoring infrastructure records the data needed for calibration, while `solver/config.go` remains the single configuration boundary. Any proposal to add score bands or alter difficulty classification requires measured distributions, pathological-input analysis, and a separately reviewed design.

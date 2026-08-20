@@ -41,14 +41,16 @@ This index provides reading chains for common starting points and a complete doc
 10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
-1. `.aidoc/designs/roadmap.md` — Phase 10 backend scope, delivery order, and exit criteria
-2. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
-3. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
-4. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-5. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
-6. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
-7. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
-8. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
+1. `.aidoc/designs/roadmap.md` — stabilization priorities, sequencing, and exit criteria
+2. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
+3. `.aidoc/designs/difficulty-model.md` — calibration boundary and current difficulty invariants
+4. `.aidoc/designs/future-directions.md` — deliberately non-priority product and production directions
+5. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
+6. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
+7. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
+8. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
+9. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
+10. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -65,8 +67,9 @@ This index provides reading chains for common starting points and a complete doc
 | `AGENT.md` | AI operator entry point — rules and repo layout |
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
-| `.aidoc/designs/difficulty-model.md` | Difficulty model: current state, limitations, and target design |
-| `.aidoc/designs/roadmap.md` | Phase 10 backend scope, delivery plan, and exit criteria |
+| `.aidoc/designs/difficulty-model.md` | Difficulty invariants, scoring model, and calibration boundary |
+| `.aidoc/designs/roadmap.md` | Stabilization priorities, sequencing, and exit criteria |
+| `.aidoc/designs/future-directions.md` | Non-priority product and production directions with decision gates |
 | `.aidoc/designs/web-api.md` | Contract-first OpenAPI workflow, resources, revisions, recovery, client access, and network security boundary |
 | `.aidoc/designs/background-autosave.md` | Background autosave lifecycle, privacy, retention, and conflict design |
 | `.aidoc/designs/automatic-candidates.md` | Automatic-candidate engine contract, TUI interaction, and rendering constraints |

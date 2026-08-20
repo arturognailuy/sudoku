@@ -1,0 +1,38 @@
+---
+domain: Designs
+status: Active
+entry_points:
+  - cmd/api.go
+  - webapi/server.go
+dependencies:
+  - .aidoc/designs/roadmap.md
+  - .aidoc/designs/web-api.md
+---
+
+# Future Directions
+
+Sudoku may eventually support hosted and multi-user use cases, but those capabilities are not current priorities. Each direction below changes product ownership, persistence, or security assumptions and therefore requires a separately approved design before implementation.
+
+## Related Docs
+
+| Document | Relationship |
+|----------|-------------|
+| `.aidoc/designs/roadmap.md` | Current stabilization priorities and sequencing |
+| `.aidoc/designs/web-api.md` | Existing API trust boundary and safe defaults |
+| `api/openapi.yaml` | Canonical external contract that future clients consume |
+
+## Product Directions
+
+Possible later product work includes accounts and account-scoped authorization, multi-tenancy, cloud synchronization, shared games, cross-device merge, localization, mobile clients, and collaboration.
+
+A TypeScript client and browser UI belong to a separate project. This Go repository remains client-neutral unless a future design establishes a backend capability that multiple clients need.
+
+## Production Exposure
+
+The current API is suitable for deliberate deployment behind an operator-controlled boundary, but a public multi-user service needs additional controls. Before such exposure, a design should cover rate limiting, account-scoped authorization, operational metrics, backup and restore guidance, and a documented TLS reverse-proxy profile.
+
+Production design must also define tenant isolation, credential lifecycle, abuse handling, retention, upgrades, and recovery objectives. Loopback defaults, mandatory authentication for non-loopback binding, bounded requests, and exact-origin CORS remain baseline protections rather than substitutes for those controls.
+
+## Decision Gate
+
+Future work starts only when a concrete user need establishes ownership, threat model, data lifecycle, compatibility expectations, and test strategy. Until then, these directions remain context for design decisions, not committed roadmap items.

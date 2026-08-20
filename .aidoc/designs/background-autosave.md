@@ -14,13 +14,13 @@ dependencies:
 
 # Background Autosave and Crash Recovery
 
-Phase 9 protects active TUI games from process, terminal, and host failures without changing the game-engine serialization contract. Recovery stays local, private, bounded, and distinct from the player-owned explicit save workflow.
+Background autosave protects active TUI games from process, terminal, and host failures without changing the game-engine serialization contract. Recovery stays local, private, bounded, and distinct from the player-owned explicit save workflow.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/roadmap.md` | Phase 9 delivery order and exit criteria |
+| `.aidoc/designs/roadmap.md` | Current stabilization priorities and sequencing |
 | `.aidoc/designs/game-engine.md` | Canonical serialized gameplay state restored from recovery data |
 | `.aidoc/designs/tui-frontend.md` | Event-loop, dirty-state, modal, and explicit-save behavior |
 | `.aidoc/designs/cli-sessions.md` | Existing atomic transport and player-owned save contract |

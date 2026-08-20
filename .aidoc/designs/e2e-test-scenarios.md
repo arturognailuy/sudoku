@@ -488,9 +488,9 @@ The harness calls the running `sudoku api` process rather than importing Go hand
 **Action:** Run all applicable root CLI, TUI, serialization, candidate, and recovery scenarios after API tests.
 **Expected:** Existing output, actions, session bytes, recovery behavior, and terminal rendering remain compatible.
 
-## 11. Future Scenarios (Not Yet Implemented)
+## 11. Deferred Database Scenarios
 
-These scenarios should be added as the project evolves:
+These scenarios begin only after stabilization and difficulty calibration, as sequenced in `.aidoc/designs/roadmap.md`:
 
 - **Large import progress indicator:** Import 150+ puzzles → progress indicator fires every 100 puzzles.
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).

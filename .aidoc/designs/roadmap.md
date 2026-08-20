@@ -2,78 +2,80 @@
 domain: Designs
 status: Active
 entry_points:
-  - cmd/root.go
-  - cmd/session.go
-  - game/contract.go
-  - recovery/recovery.go
+  - .github/workflows/ci.yml
+  - scripts/e2e_api.py
+  - scripts/e2e_tui.py
+  - solver/config.go
 dependencies:
-  - .aidoc/designs/web-api.md
-  - .aidoc/designs/game-engine.md
   - .aidoc/designs/e2e-test-scenarios.md
+  - .aidoc/designs/difficulty-model.md
+  - .aidoc/designs/future-directions.md
 ---
 
-# Roadmap
+# Stabilization Roadmap
 
-Phase 10 adds a client-neutral, general-purpose HTTP API after the reusable engine, complete sessions, TUI, candidate assistance, and crash recovery have stabilized. Browser UX belongs in a separate TypeScript project; this repository focuses on the Go backend contract, durability, deployment-safe defaults, and network security boundary.
+Sudoku's feature baseline is complete: the Go repository owns the engine, CLI, TUI, persistence, recovery, and client-neutral HTTP API. The next work cycle stabilizes that baseline through stronger CI, unit coverage, and automated black-box testing before difficulty calibration or database behavior changes.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
-| `.aidoc/designs/web-api.md` | Canonical API resources, revisions, recovery, client access, and network security boundary |
-| `.aidoc/designs/game-engine.md` | Stable actions, snapshots, hints, and serialization reused by the API |
-| `.aidoc/designs/e2e-test-scenarios.md` | Existing compatibility contract and Phase 10 backend acceptance scenarios |
+| `.aidoc/designs/e2e-test-scenarios.md` | Canonical black-box behavior catalog and current automation pointers |
+| `.aidoc/designs/difficulty-model.md` | Difficulty invariants and the calibration boundary |
+| `.aidoc/designs/future-directions.md` | Deliberately non-priority product and production directions |
+| `.aidoc/designs/web-api.md` | Current HTTP contract, security boundary, and deployment defaults |
 
-## Why Phase 10 Exists
+## Why Stabilization Comes Next
 
-The game engine already supports multiple terminal presentations without leaking UI concerns, and private recovery protects long-running local sessions. An HTTP boundary is the next useful stress test because it introduces serialization, concurrency, lifecycle, and security concerns while proving that a separately maintained client can consume the engine safely.
+The current product spans terminal interaction, durable local state, generation, SQLite, and a network API. Additional features would increase the number of failure modes before the existing boundaries have consistent regression protection.
 
-A bundled browser application would mix backend and UX release cycles, dependencies, tests, and product decisions. Phase 10 keeps the Go repository client-neutral so a separate TypeScript project can evolve its interaction model without embedding frontend build tooling or assets into the Sudoku binary.
+The stabilization cycle prioritizes repeatable evidence over new behavior. Reliable CI and black-box tests make later calibration results meaningful and reduce the risk of changing database selection or import policy.
 
-## Phase 10 Outcome
+## Completed Baseline
 
-`sudoku api` starts on loopback by default and can bind to an explicitly selected network address. Local tools and separately deployed clients can create a puzzle by difficulty or puzzle string, inspect authoritative snapshots, enter values and notes, use undo/redo and hints, recover interrupted sessions, and discard or export a game.
+All previously planned phases 1–10 are complete. The repository provides the following maintained product boundaries rather than open roadmap items:
 
-The Go process remains authoritative. Every Sudoku state transition passes through `game.Game.Apply`, and every response derives from detached snapshots. The line CLI, TUI, serialized gameplay format, and recovery security guarantees remain compatible.
+- reusable game actions, detached snapshots, notes, unified history, and versioned sessions;
+- line-oriented CLI and opt-in accessible TUI with automatic candidates;
+- private autosave and crash recovery;
+- bounded puzzle generation, import, SQLite storage, and fallback;
+- contract-first OpenAPI 3.1.1 HTTP API with recovery, revisions, authentication, and CORS controls.
 
-## Delivery Structure
+A TypeScript client and browser UI are explicitly outside this repository. A separate project will own their design, implementation, release cycle, and tests.
 
-1. **Application and API boundary**
-   - Define `api/openapi.yaml` as the OpenAPI 3.1.1 source of truth before implementing routes.
-   - Generate strict Go transport models and server interfaces with `oapi-codegen`; keep adapters and application logic handwritten.
-   - Add a transport-independent session registry around `game.Game` with opaque IDs and monotonic revisions.
-   - Add strict `/api/v1` JSON models for session creation, snapshots, hint preview, actions, conflicts, export, and discard.
-   - Keep generation, fallback, and solver policy injected from command wiring rather than duplicated in handlers.
+## Next Work Cycle
 
-2. **Durability and network security**
-   - Persist accepted API mutations through the validated private recovery store.
-   - Keep loopback as the safe default while supporting explicit network binding with mandatory bearer authentication.
-   - Enforce bounded JSON, safe HTTP timeouts, private logging, and clean shutdown.
-   - Preserve recoverable sessions across process restarts without accepting arbitrary host paths.
+### 1. Strengthen CI and Black-Box E2E
 
-3. **External-client boundary**
-   - Keep API models independent from Go engine structs and frontend-specific view models.
-   - Disable browser cross-origin access by default; allow explicitly configured exact HTTP or HTTPS origins for separately deployed clients.
-   - Publish stable machine-readable errors and static API reference documentation from the canonical contract.
-   - Generate clients only from tagged or released contracts, with each client repository owning its generated code and release policy.
+- Run `go test -race ./...` on pull requests rather than relying only on local verification.
+- Run `scripts/e2e_tui.py` in a supported Linux PTY environment in CI.
+- Add an automated built-binary harness for the line CLI and command workflows currently represented only by the scenario catalog.
+- Keep `scripts/e2e_api.py` and the OpenAPI compatibility gates mandatory.
+- Preserve isolated XDG directories, temporary databases, and deterministic puzzle inputs so lanes can run independently.
 
-4. **Black-box verification and documentation**
-   - Validate and lint OpenAPI with a pinned Redocly CLI, reject stale generated Go code, and detect breaking changes with `oasdiff`.
-   - Exercise the built server through HTTP with isolated XDG roots.
-   - Cover every declared operation and representative OpenAPI examples plus stale revisions, restart recovery, invalid input, request limits, origin policy, and concurrent sessions.
-   - Keep all existing CLI/TUI scenarios green; browser rendering and accessibility tests belong to the frontend project.
+### 2. Raise Boundary Unit and Integration Coverage
 
-## Exit Criteria
+- Add failure, lifecycle, persistence, authentication, CORS, revision-conflict, and concurrency tests around `webapi`.
+- Test `cmd` dependency wiring and process behavior at the lowest useful layer; prefer black-box coverage when package tests would only restate Cobra wiring.
+- Record package coverage in CI and use package-specific goals instead of one repository-wide threshold.
+- Require every fixed defect to gain a regression test at the narrowest layer that proves the behavior.
 
-- `sudoku api` starts a backend-only server, defaults to loopback, supports explicit network binding, and does not embed, build, open, or serve frontend assets.
-- `api/openapi.yaml` is a valid and lint-clean OpenAPI 3.1.1 contract; generated strict Go boundary code is reproducible and current.
-- API version 1 has strict bounded requests, stable errors, opaque session IDs, per-session serialization, and revision conflicts that prevent silent stale writes.
-- Every accepted action uses the game-engine contract and returns an authoritative detached snapshot; API code contains no duplicate Sudoku rules.
-- Accepted API mutations are recoverable after process restart, and discard removes only the selected record.
-- Non-loopback binding requires bearer authentication; opaque session IDs are never treated as credentials.
-- Cross-origin browser access is disabled by default and limited to explicit exact HTTP or HTTPS origins when enabled.
-- Contract compatibility checks, handler tests, built-binary HTTP E2E, build, vet, lint, diff checks, documentation audit, existing CLI/TUI E2E, and CI pass.
+### 3. Calibrate Difficulty with Data
 
-## Deferred Work
+Calibration begins only after the CI and test lanes are stable. A representative puzzle corpus should measure score distributions, generation success rates, time budgets, clue-count effects, and pathological inputs before changing `solver/config.go`.
 
-The browser frontend, frontend hosting, in-process TLS termination, accounts, account-specific authorization, analytics, cloud synchronization, shared games, cross-device merge, mobile-native clients, localization, and multi-user collaboration remain outside this repository's Phase 10 scope. Each capability changes the threat model or product contract and requires a separately reviewed design in its owning project.
+Calibration output should be local and telemetry-free. Proposed score bands or generation budgets require a separately reviewed design backed by reproducible reports.
+
+### 4. Complete Deferred Database Behaviors
+
+Database behavior changes follow calibration so selection policy is based on measured difficulty rather than unstable assumptions. Candidate work includes played-state filtering, large-import progress verification, minimum-clue handling, and concurrent SQLite stress coverage.
+
+Each database behavior requires explicit semantics, migration impact analysis, black-box scenarios, and regression tests before implementation.
+
+## Exit Criteria for Stabilization
+
+- Pull-request CI runs race detection, API E2E, TUI PTY E2E, and automated line-CLI/command E2E.
+- Boundary failures and lifecycles in `webapi` and `cmd` have materially improved regression coverage.
+- Coverage reports are reproducible and package-specific goals are documented without incentivizing low-value tests.
+- All black-box lanes run against built artifacts with isolated state and deterministic fixtures.
+- The difficulty calibration plan can begin from a green, stable baseline.
