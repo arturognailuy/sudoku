@@ -2,6 +2,7 @@
 domain: Designs
 status: Active
 entry_points:
+  - api/openapi.yaml
   - cmd/root.go
   - cmd/session.go
   - game/contract.go
@@ -41,7 +42,7 @@ Session creation reuses existing puzzle input, difficulty generation, solver con
 
 ## Contract-First OpenAPI Workflow
 
-`api/openapi.yaml` is the canonical external contract and uses OpenAPI 3.1.1. Paths, operation identifiers, request and response schemas, authentication, stable error codes, limits, examples, and revision semantics are designed in that document before handlers are implemented. Prose in this design explains intent and cross-cutting constraints; the OpenAPI document owns exact wire names and shapes.
+`api/openapi.yaml` is the canonical external contract and uses OpenAPI 3.1.1. The contract defines paths, operation identifiers, strict request and response schemas, optional bearer authentication, stable error codes, one-mebibyte session transfer limits, examples, and revision semantics before handlers are implemented. Prose in this design explains intent and cross-cutting constraints; the OpenAPI document owns exact wire names and shapes.
 
 The implementation uses `oapi-codegen` to generate transport models and a strict Go server interface from the pinned contract. Generated code remains confined to the HTTP boundary: handwritten adapters perform dependency wiring, authentication, origin checks, session coordination, and translation to `game.Game`; generated code never owns Sudoku rules, persistence policy, or application implementation. Generated files are committed and CI rejects stale generated output.
 

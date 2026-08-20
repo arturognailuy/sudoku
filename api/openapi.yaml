@@ -1,0 +1,989 @@
+openapi: 3.1.1
+info:
+  title: Sudoku HTTP API
+  version: 1.0.0
+  license:
+    name: MIT
+    identifier: MIT
+  summary: Authoritative Sudoku game sessions over HTTP
+  description: |
+    The Sudoku HTTP API exposes the existing game engine to local tools and
+    separately deployed clients. The server is authoritative for state,
+    revisions, validation, and recovery.
+
+    The server listens on loopback by default. Operators that configure a
+    non-loopback listener must also configure bearer authentication. Clients
+    should send a bearer credential whenever their deployment requires one.
+servers:
+  - url: http://127.0.0.1:8080
+    description: Default loopback deployment
+
+tags:
+  - name: Health
+    description: Payload-free process health
+  - name: Sessions
+    description: Durable authoritative game sessions
+  - name: Gameplay
+    description: Session reads and game-engine actions
+
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Check process health
+      security: []
+      responses:
+        "200":
+          description: The process is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+              example:
+                status: healthy
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/sessions:
+    get:
+      tags: [Sessions]
+      operationId: listSessions
+      summary: List active and recovered sessions
+      description: Returns bounded summaries and never returns session payloads.
+      responses:
+        "200":
+          description: Session summaries ordered by most recently updated first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Sessions]
+      operationId: createSession
+      summary: Create a session from a difficulty or puzzle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+            examples:
+              byDifficulty:
+                summary: Generate or load an easy puzzle
+                value:
+                  source:
+                    kind: difficulty
+                    difficulty: easy
+              byPuzzle:
+                summary: Start from a supplied puzzle
+                value:
+                  source:
+                    kind: puzzle
+                    puzzle: "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+      responses:
+        "201":
+          description: The session was created at revision zero.
+          headers:
+            Location:
+              description: Relative URL of the new session.
+              schema:
+                type: string
+                pattern: ^/api/v1/sessions/[A-Za-z0-9_-]+$
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/sessions/import:
+    post:
+      tags: [Sessions]
+      operationId: importSession
+      summary: Import a serialized game session
+      description: |
+        Restores a bounded versioned session document. The request body is the
+        session document itself; the API never accepts a host filesystem path.
+      requestBody:
+        required: true
+        content:
+          application/vnd.sudoku.session+json:
+            schema:
+              type: string
+              format: binary
+              contentMediaType: application/json
+              maxLength: 1048576
+      responses:
+        "201":
+          description: The imported session was validated and made durable.
+          headers:
+            Location:
+              description: Relative URL of the imported session.
+              schema:
+                type: string
+                pattern: ^/api/v1/sessions/[A-Za-z0-9_-]+$
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/sessions/{sessionId}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Gameplay]
+      operationId: getSession
+      summary: Read the authoritative session state
+      responses:
+        "200":
+          description: The current session revision and detached snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Sessions]
+      operationId: deleteSession
+      summary: Discard a session and its recovery record
+      responses:
+        "204":
+          description: The session and only its recovery record were deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/sessions/{sessionId}/hint:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Gameplay]
+      operationId: previewHint
+      summary: Preview a hint without mutating the session
+      responses:
+        "200":
+          description: A hint for the current revision. The revision is unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HintPreview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/sessions/{sessionId}/export:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Sessions]
+      operationId: exportSession
+      summary: Export the versioned serialized session
+      description: Returns the persistence document as bounded bytes, not a host path.
+      responses:
+        "200":
+          description: The versioned session document.
+          headers:
+            Content-Disposition:
+              description: Suggested download filename.
+              schema:
+                type: string
+                example: attachment; filename="sudoku-session.json"
+          content:
+            application/vnd.sudoku.session+json:
+              schema:
+                type: string
+                format: binary
+                contentMediaType: application/json
+                maxLength: 1048576
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/sessions/{sessionId}/actions:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      tags: [Gameplay]
+      operationId: applyAction
+      summary: Apply one typed game action
+      description: |
+        The expected revision provides optimistic concurrency control. Every
+        accepted mutation increments the revision exactly once. Rejected and
+        stale actions leave state and revision unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActionRequest"
+            examples:
+              setValue:
+                value:
+                  expected_revision: 0
+                  kind: set-value
+                  row: 1
+                  column: 1
+                  value: 4
+              undo:
+                value:
+                  expected_revision: 3
+                  kind: undo
+      responses:
+        "200":
+          description: The action was accepted and durably persisted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The expected revision is stale.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevisionConflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-token
+      description: Required whenever the server is configured for authenticated access.
+
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      description: Opaque random session identifier. It is not a credential.
+      schema:
+        $ref: "#/components/schemas/SessionId"
+
+  responses:
+    BadRequest:
+      description: The request is malformed or violates the transport contract.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: invalid-request
+              message: source must select exactly one supported kind
+              field: source
+    Unauthorized:
+      description: A required bearer credential is missing or invalid.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+            const: Bearer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: unauthorized
+              message: bearer authentication is required
+    NotFound:
+      description: The requested session does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: session-not-found
+              message: session was not found
+    PayloadTooLarge:
+      description: The request exceeds the configured body limit.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: payload-too-large
+              message: request body exceeds the maximum size
+    UnsupportedMediaType:
+      description: The request Content-Type is not supported by this operation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: unsupported-media-type
+              message: the request Content-Type is not supported
+    UnprocessableEntity:
+      description: The request is well formed but cannot be applied.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            engineRejection:
+              value:
+                error:
+                  code: immutable-cell
+                  message: cannot change a problem cell
+                  cell:
+                    row: 1
+                    column: 3
+            invalidSession:
+              value:
+                error:
+                  code: invalid-session
+                  message: serialized session validation failed
+    InternalError:
+      description: An unexpected or durability failure occurred without leaking internals.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: internal-error
+              message: the request could not be completed
+
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: healthy
+
+    SessionId:
+      type: string
+      minLength: 22
+      maxLength: 64
+      pattern: ^[A-Za-z0-9_-]+$
+      examples: [mS44bM7xN9pQc2VtL6wD8A]
+
+    Revision:
+      type: integer
+      format: int64
+      minimum: 0
+
+    Difficulty:
+      type: string
+      enum: [easy, medium, hard, expert, evil]
+
+    GameStatus:
+      type: string
+      enum: [in-progress, invalid, solved]
+
+    ActionKind:
+      type: string
+      enum:
+        - set-value
+        - clear-value
+        - reset
+        - undo
+        - redo
+        - apply-hint
+        - toggle-note
+        - clear-notes
+        - repair
+        - solve
+
+    ErrorCode:
+      type: string
+      enum:
+        - invalid-request
+        - invalid-json
+        - unsupported-media-type
+        - payload-too-large
+        - unauthorized
+        - forbidden-origin
+        - session-not-found
+        - revision-conflict
+        - invalid-session
+        - invalid-action
+        - invalid-cell
+        - immutable-cell
+        - note-not-allowed
+        - no-undo
+        - no-redo
+        - no-hint
+        - persistence-failed
+        - internal-error
+
+    CellPosition:
+      type: object
+      additionalProperties: false
+      required: [row, column]
+      properties:
+        row:
+          type: integer
+          minimum: 1
+          maximum: 9
+        column:
+          type: integer
+          minimum: 1
+          maximum: 9
+
+    Digit:
+      type: integer
+      minimum: 1
+      maximum: 9
+
+    CellValue:
+      type: integer
+      minimum: 0
+      maximum: 9
+      description: Zero represents an empty cell.
+
+    DigitSet:
+      type: array
+      minItems: 0
+      maxItems: 9
+      uniqueItems: true
+      items:
+        $ref: "#/components/schemas/Digit"
+
+    ValueRow:
+      type: array
+      minItems: 9
+      maxItems: 9
+      items:
+        $ref: "#/components/schemas/CellValue"
+
+    ValueGrid:
+      type: array
+      minItems: 9
+      maxItems: 9
+      items:
+        $ref: "#/components/schemas/ValueRow"
+
+    BooleanRow:
+      type: array
+      minItems: 9
+      maxItems: 9
+      items:
+        type: boolean
+
+    BooleanGrid:
+      type: array
+      minItems: 9
+      maxItems: 9
+      items:
+        $ref: "#/components/schemas/BooleanRow"
+
+    DigitSetRow:
+      type: array
+      minItems: 9
+      maxItems: 9
+      items:
+        $ref: "#/components/schemas/DigitSet"
+
+    DigitSetGrid:
+      type: array
+      minItems: 9
+      maxItems: 9
+      items:
+        $ref: "#/components/schemas/DigitSetRow"
+
+    Snapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - givens
+        - values
+        - invalid
+        - notes
+        - candidates
+        - status
+        - can_undo
+        - can_redo
+      properties:
+        givens:
+          $ref: "#/components/schemas/ValueGrid"
+        values:
+          $ref: "#/components/schemas/ValueGrid"
+        invalid:
+          $ref: "#/components/schemas/BooleanGrid"
+        notes:
+          $ref: "#/components/schemas/DigitSetGrid"
+        candidates:
+          $ref: "#/components/schemas/DigitSetGrid"
+        status:
+          $ref: "#/components/schemas/GameStatus"
+        can_undo:
+          type: boolean
+        can_redo:
+          type: boolean
+
+    Session:
+      type: object
+      additionalProperties: false
+      required: [id, revision, snapshot]
+      properties:
+        id:
+          $ref: "#/components/schemas/SessionId"
+        revision:
+          $ref: "#/components/schemas/Revision"
+        snapshot:
+          $ref: "#/components/schemas/Snapshot"
+
+    SessionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, revision, status, updated_at, recovered]
+      properties:
+        id:
+          $ref: "#/components/schemas/SessionId"
+        revision:
+          $ref: "#/components/schemas/Revision"
+        status:
+          $ref: "#/components/schemas/GameStatus"
+        updated_at:
+          type: string
+          format: date-time
+        recovered:
+          type: boolean
+          description: True when the summary was discovered from durable recovery at startup.
+
+    SessionList:
+      type: object
+      additionalProperties: false
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/SessionSummary"
+
+    CreateSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [source]
+      properties:
+        source:
+          oneOf:
+            - $ref: "#/components/schemas/DifficultySource"
+            - $ref: "#/components/schemas/PuzzleSource"
+          discriminator:
+            propertyName: kind
+            mapping:
+              difficulty: "#/components/schemas/DifficultySource"
+              puzzle: "#/components/schemas/PuzzleSource"
+
+    DifficultySource:
+      type: object
+      additionalProperties: false
+      required: [kind, difficulty]
+      properties:
+        kind:
+          type: string
+          const: difficulty
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+
+    PuzzleSource:
+      type: object
+      additionalProperties: false
+      required: [kind, puzzle]
+      properties:
+        kind:
+          type: string
+          const: puzzle
+        puzzle:
+          type: string
+          minLength: 81
+          maxLength: 81
+          pattern: ^[0-9.]{81}$
+          description: An 81-cell puzzle; dot or zero represents an empty cell.
+
+    Hint:
+      type: object
+      additionalProperties: false
+      required: [row, column, value, technique, reason]
+      properties:
+        row:
+          type: integer
+          minimum: 1
+          maximum: 9
+        column:
+          type: integer
+          minimum: 1
+          maximum: 9
+        value:
+          $ref: "#/components/schemas/Digit"
+        technique:
+          type: string
+          minLength: 1
+          maxLength: 100
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+
+    HintPreview:
+      type: object
+      additionalProperties: false
+      required: [revision, hint]
+      properties:
+        revision:
+          $ref: "#/components/schemas/Revision"
+        hint:
+          $ref: "#/components/schemas/Hint"
+
+    ActionRequest:
+      oneOf:
+        - $ref: "#/components/schemas/SetValueAction"
+        - $ref: "#/components/schemas/ClearValueAction"
+        - $ref: "#/components/schemas/ResetAction"
+        - $ref: "#/components/schemas/UndoAction"
+        - $ref: "#/components/schemas/RedoAction"
+        - $ref: "#/components/schemas/ApplyHintAction"
+        - $ref: "#/components/schemas/ToggleNoteAction"
+        - $ref: "#/components/schemas/ClearNotesAction"
+        - $ref: "#/components/schemas/RepairAction"
+        - $ref: "#/components/schemas/SolveAction"
+      discriminator:
+        propertyName: kind
+        mapping:
+          set-value: "#/components/schemas/SetValueAction"
+          clear-value: "#/components/schemas/ClearValueAction"
+          reset: "#/components/schemas/ResetAction"
+          undo: "#/components/schemas/UndoAction"
+          redo: "#/components/schemas/RedoAction"
+          apply-hint: "#/components/schemas/ApplyHintAction"
+          toggle-note: "#/components/schemas/ToggleNoteAction"
+          clear-notes: "#/components/schemas/ClearNotesAction"
+          repair: "#/components/schemas/RepairAction"
+          solve: "#/components/schemas/SolveAction"
+
+    SetValueAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind, row, column, value]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: set-value
+        row:
+          type: integer
+          minimum: 1
+          maximum: 9
+        column:
+          type: integer
+          minimum: 1
+          maximum: 9
+        value:
+          $ref: "#/components/schemas/Digit"
+
+    ClearValueAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind, row, column]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: clear-value
+        row:
+          type: integer
+          minimum: 1
+          maximum: 9
+        column:
+          type: integer
+          minimum: 1
+          maximum: 9
+
+    ToggleNoteAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind, row, column, value]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: toggle-note
+        row:
+          type: integer
+          minimum: 1
+          maximum: 9
+        column:
+          type: integer
+          minimum: 1
+          maximum: 9
+        value:
+          $ref: "#/components/schemas/Digit"
+
+    ClearNotesAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind, row, column]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: clear-notes
+        row:
+          type: integer
+          minimum: 1
+          maximum: 9
+        column:
+          type: integer
+          minimum: 1
+          maximum: 9
+
+    ResetAction:
+      $ref: "#/components/schemas/NoArgumentResetAction"
+    UndoAction:
+      $ref: "#/components/schemas/NoArgumentUndoAction"
+    RedoAction:
+      $ref: "#/components/schemas/NoArgumentRedoAction"
+    ApplyHintAction:
+      $ref: "#/components/schemas/NoArgumentApplyHintAction"
+    RepairAction:
+      $ref: "#/components/schemas/NoArgumentRepairAction"
+    SolveAction:
+      $ref: "#/components/schemas/NoArgumentSolveAction"
+
+    NoArgumentResetAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: reset
+    NoArgumentUndoAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: undo
+    NoArgumentRedoAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: redo
+    NoArgumentApplyHintAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: apply-hint
+    NoArgumentRepairAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: repair
+    NoArgumentSolveAction:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, kind]
+      properties:
+        expected_revision:
+          $ref: "#/components/schemas/Revision"
+        kind:
+          type: string
+          const: solve
+
+    CellChange:
+      type: object
+      additionalProperties: false
+      required:
+        - row
+        - column
+        - before
+        - after
+        - invalid_before
+        - invalid_after
+        - notes_before
+        - notes_after
+      properties:
+        row:
+          type: integer
+          minimum: 1
+          maximum: 9
+        column:
+          type: integer
+          minimum: 1
+          maximum: 9
+        before:
+          $ref: "#/components/schemas/CellValue"
+        after:
+          $ref: "#/components/schemas/CellValue"
+        invalid_before:
+          type: boolean
+        invalid_after:
+          type: boolean
+        notes_before:
+          $ref: "#/components/schemas/DigitSet"
+        notes_after:
+          $ref: "#/components/schemas/DigitSet"
+
+    ActionResult:
+      type: object
+      additionalProperties: false
+      required: [action, changes, status, can_undo, can_redo]
+      properties:
+        action:
+          $ref: "#/components/schemas/ActionKind"
+        changes:
+          type: array
+          maxItems: 81
+          items:
+            $ref: "#/components/schemas/CellChange"
+        status:
+          $ref: "#/components/schemas/GameStatus"
+        can_undo:
+          type: boolean
+        can_redo:
+          type: boolean
+        hint:
+          $ref: "#/components/schemas/Hint"
+
+    ActionResponse:
+      type: object
+      additionalProperties: false
+      required: [revision, snapshot, result]
+      properties:
+        revision:
+          $ref: "#/components/schemas/Revision"
+        snapshot:
+          $ref: "#/components/schemas/Snapshot"
+        result:
+          $ref: "#/components/schemas/ActionResult"
+
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        message:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        field:
+          type: string
+          minLength: 1
+          maxLength: 100
+        cell:
+          $ref: "#/components/schemas/CellPosition"
+
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorDetail"
+
+    RevisionConflict:
+      type: object
+      additionalProperties: false
+      required: [error, current_revision, snapshot]
+      properties:
+        error:
+          allOf:
+            - $ref: "#/components/schemas/ErrorDetail"
+            - type: object
+              properties:
+                code:
+                  type: string
+                  const: revision-conflict
+        current_revision:
+          $ref: "#/components/schemas/Revision"
+        snapshot:
+          $ref: "#/components/schemas/Snapshot"
+
+security:
+  - {}
+  - bearerAuth: []

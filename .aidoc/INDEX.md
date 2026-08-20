@@ -43,11 +43,12 @@ This index provides reading chains for common starting points and a complete doc
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — Phase 10 backend scope, delivery order, and exit criteria
 2. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
-3. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-4. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
-5. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
-6. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
-7. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
+3. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
+4. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
+5. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
+6. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
+7. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+8. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -73,6 +74,7 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/designs/cli-sessions.md` | CLI manual notes, rendering, save, and resume design |
 | `.aidoc/designs/game-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
+| `api/openapi.yaml` | Canonical OpenAPI 3.1.1 HTTP wire contract |
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |
 | `cmd/play.go` | Interactive play mode, fallback flow, auto-store |
