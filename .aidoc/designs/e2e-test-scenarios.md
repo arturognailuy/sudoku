@@ -442,9 +442,15 @@ Use an isolated state root with `export XDG_STATE_HOME=$SUDOKU_E2E_DIR/state`.
 **Action:** Use an inaccessible or unsafe state path and mutate the game.
 **Expected:** Gameplay continues with a persistent concise autosave warning. A later mutation retries recovery after the path is fixed.
 
-## 10. HTTP API Backend (Planned)
+## 10. HTTP API Backend
 
-Run Phase 10 scenarios against the built backend with isolated data and state roots. HTTP scenarios call the running `sudoku api` process rather than importing Go handlers; frontend behavior is tested in the separate client project.
+Run the automated black-box lifecycle against the built backend with isolated state roots:
+
+```bash
+python3 scripts/e2e_api.py ./sudoku
+```
+
+The harness calls the running `sudoku api` process rather than importing Go handlers. It covers startup safety, health, strict input, exact-origin CORS, lifecycle operations, revision conflict, export/import, restart recovery, and discard. The scenarios below define the broader acceptance contract; frontend behavior remains in the separate client project.
 
 ### 10.1 Startup, Binding, and Health
 **Action:** Start `sudoku api` with isolated XDG roots using the default listener and an explicit network listener, call `/healthz`, and request an unknown `/api/` path.

@@ -80,6 +80,9 @@ This index provides reading chains for common starting points and a complete doc
 | `cmd/play.go` | Interactive play mode, fallback flow, auto-store |
 | `cmd/session.go` | Shared CLI/TUI session startup and restore validation |
 | `cmd/tui.go` | Opt-in full-screen TUI command and terminal lifecycle |
+| `cmd/api.go` | API flags, dependency wiring, and signal-aware server shutdown |
+| `webapi/server.go` | HTTP security boundary, session registry, recovery, and engine translation |
+| `webapi/generated.go` | Generated OpenAPI models and strict server interface |
 | `tui/model.go` | TUI event model, focus, modes, confirmations, and persistence |
 | `tui/render.go` | Deterministic color-independent board rendering |
 | `recovery/recovery.go` | Private XDG recovery records, discovery, validation, retention, and deletion |

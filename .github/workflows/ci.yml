@@ -11,10 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Build
         run: go build ./...
@@ -22,8 +28,22 @@ jobs:
       - name: Test
         run: go test ./... -v
 
+      - name: HTTP API end-to-end
+        run: |
+          go build -o sudoku .
+          python3 scripts/e2e_api.py ./sudoku
+
       - name: Vet
         run: go vet ./...
+
+      - name: API contract and generated code
+        run: scripts/check-api-contract.sh
+
+      - name: API compatibility
+        if: github.event_name == 'pull_request'
+        run: |
+          git show "origin/${GITHUB_BASE_REF}:api/openapi.yaml" > /tmp/openapi-base.yaml
+          go run github.com/tufin/oasdiff@v1.10.0 breaking /tmp/openapi-base.yaml api/openapi.yaml
 
   lint:
     runs-on: ubuntu-latest

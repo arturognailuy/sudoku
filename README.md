@@ -14,6 +14,7 @@ Features:
 - Opt-in full-screen Bubble Tea interface with keyboard navigation
 - Opt-in automatic legal candidates in the full-screen TUI
 - Private background autosave and crash recovery for TUI games
+- Versioned HTTP API with optimistic concurrency, recovery, bearer auth, and explicit CORS allowlisting
 
 ## Build
 
@@ -56,6 +57,24 @@ The TUI autosaves gameplay changes to a private XDG state directory after a one-
 Use arrows or `h`/`j`/`k`/`l` to move, `1`–`9` to enter a value, `n` to toggle note mode, `a` to show or hide automatic legal candidates, `u`/`r` for history, `i` then Enter to preview/apply a hint, `?` for keyboard help, `S` to save, and `q` to quit. Automatic candidates start hidden and are not saved; manual notes remain player-owned. Unsaved sessions require confirmation.
 
 The TUI defaults to a deterministic dark palette. Set `SUDOKU_THEME=light` for the light palette or `SUDOKU_THEME=no-color` (also selected by `NO_COLOR`) for an attribute-only accessible fallback.
+
+## HTTP API
+
+Start the backend-only API on its safe loopback default:
+
+```bash
+./sudoku api
+./sudoku api --listen 127.0.0.1:9090
+```
+
+For non-loopback addresses, configure a bearer token. Browser origins remain denied unless each exact origin is explicitly allowed:
+
+```bash
+./sudoku api --listen 0.0.0.0:8080 --auth-token "$SUDOKU_API_TOKEN" \
+  --allowed-origin https://sudoku.example.com
+```
+
+The OpenAPI 3.1 contract is [`api/openapi.yaml`](api/openapi.yaml). All game operations are under `/api/v1`; `GET /healthz` is payload-free. API sessions use opaque identifiers and monotonic revisions, persist accepted mutations to the private recovery store, and reject stale writes with `409 Conflict`.
 
 ## Batch Generate
 

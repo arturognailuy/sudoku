@@ -1,0 +1,7 @@
+package: webapi
+generate:
+  models: true
+  std-http-server: true
+  strict-server: true
+  embedded-spec: true
+output: webapi/generated.go
