@@ -39,10 +39,12 @@ def request(base, method, path, body=None, content_type="application/json", head
     return response.status, parsed, response.headers
 
 
-def start(binary, state, port):
+def start(binary, state, port, extra_args=None):
     env = dict(os.environ, XDG_STATE_HOME=state)
+    command = [binary, "api", "--listen", f"127.0.0.1:{port}", "--allowed-origin", ORIGIN]
+    command.extend(extra_args or [])
     process = subprocess.Popen(
-        [binary, "api", "--listen", f"127.0.0.1:{port}", "--allowed-origin", ORIGIN],
+        command,
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -100,6 +102,16 @@ def main():
 
             status, exported, _ = request(base, "GET", path + "/export")
             expect(status, 200, "export")
+
+            contender = subprocess.run(
+                [binary, "api", "--listen", f"127.0.0.1:{free_port()}"],
+                env=dict(os.environ, XDG_STATE_HOME=state),
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if contender.returncode == 0 or "another sudoku api process" not in contender.stderr:
+                raise AssertionError("second API process was not rejected by the recovery lock")
         finally:
             stop(process)
 
@@ -116,6 +128,25 @@ def main():
         unsafe = subprocess.run([binary, "api", "--listen", "0.0.0.0:0"], env=dict(os.environ, XDG_STATE_HOME=state), capture_output=True, text=True, timeout=5)
         if unsafe.returncode == 0 or "--auth-token is required" not in unsafe.stderr:
             raise AssertionError("non-loopback startup did not require authentication")
+
+        for invalid_origin in ("*", "null", "https://client.example/path"):
+            invalid = subprocess.run(
+                [binary, "api", "--listen", "127.0.0.1:0", "--allowed-origin", invalid_origin],
+                env=dict(os.environ, XDG_STATE_HOME=state),
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if invalid.returncode == 0 or "expected an exact http or https origin" not in invalid.stderr:
+                raise AssertionError(f"invalid origin was accepted: {invalid_origin}")
+
+        process, base = start(binary, state, free_port(), ["--auth-token", "secret"])
+        try:
+            expect(request(base, "GET", "/api/v1/sessions")[0], 401, "missing bearer token")
+            expect(request(base, "GET", "/api/v1/sessions", headers={"Authorization": "secret"})[0], 401, "bare token")
+            expect(request(base, "GET", "/api/v1/sessions", headers={"Authorization": "Bearer secret"})[0], 200, "valid bearer token")
+        finally:
+            stop(process)
 
     print("HTTP API E2E passed")
 
