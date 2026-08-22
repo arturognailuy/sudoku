@@ -36,6 +36,7 @@ These scenarios are designed to be run manually or via shell scripts against a b
 | OpenAPI contract and compatibility | `scripts/check-api-contract.sh` | Independent mandatory `api-contract` job |
 | Generator behavior | `generator/*_test.go` | Unit and race jobs |
 | Command storage and reporting | `cmd.batchGenerateWith` tests with fixed puzzles | Unit and race jobs |
+| Package coverage evidence | `scripts/coverage_report.py` | Unit job summary; no pass/fail threshold |
 | Probabilistic database fallback | Section 5.2 | Manual; deterministic package boundaries cover DB lookup |
 | Deferred database behavior | Section 11 | Deferred until calibration |
 

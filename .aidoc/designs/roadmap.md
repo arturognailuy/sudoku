@@ -6,6 +6,7 @@ entry_points:
   - scripts/e2e_api.py
   - scripts/e2e_cli.py
   - scripts/e2e_tui.py
+  - scripts/coverage_report.py
   - solver/config.go
 dependencies:
   - .aidoc/designs/e2e-test-scenarios.md
@@ -56,9 +57,10 @@ The API, TUI, and line-CLI harnesses build and execute the real binary with isol
 
 ### 2. Raise Boundary Unit and Integration Coverage
 
-- Add failure, lifecycle, persistence, authentication, CORS, revision-conflict, and concurrency tests around `webapi`.
-- Test `cmd` dependency wiring and process behavior at the lowest useful layer; prefer black-box coverage when package tests would only restate Cobra wiring.
-- Record package coverage in CI and use package-specific goals instead of one repository-wide threshold.
+- `webapi` tests cover malformed input, lifecycle and persistence failures, exact authentication and CORS boundaries, revision conflicts, concurrent sessions, and process-lock exclusion.
+- `cmd` tests cover deterministic generation/storage composition, session restoration and source rejection, API startup-policy validation, and process-lock ownership. CLI dispatch and Cobra workflows remain in built-binary E2E instead of being reimplemented in test-only controllers.
+- The unit job records a cross-package Go coverage profile and publishes a package summary through `scripts/coverage_report.py`. Coverage is review evidence rather than a pass/fail threshold.
+- Review prioritizes meaningful branches by risk: `webapi`, `cmd`, `recovery`, and `sessionfile` failure/lifecycle paths; `game` state invariants; and generator/solver correctness. Low-risk wrappers and generated boundary code do not justify artificial tests solely to raise a percentage.
 - Require every fixed defect to gain a regression test at the narrowest layer that proves the behavior.
 
 ### 3. Calibrate Difficulty with Data
@@ -76,7 +78,7 @@ Each database behavior requires explicit semantics, migration impact analysis, b
 ## Exit Criteria for Stabilization
 
 - Pull-request CI runs race detection, API E2E, TUI PTY E2E, and automated line-CLI/command E2E.
-- Boundary failures and lifecycles in `webapi` and `cmd` have materially improved regression coverage.
-- Coverage reports are reproducible and package-specific goals are documented without incentivizing low-value tests.
+- Boundary failures and lifecycles in `webapi` and `cmd` have focused regression coverage without duplicating black-box command tests.
+- CI publishes reproducible package coverage for risk-based review without a global threshold.
 - All black-box lanes run against built artifacts with isolated state and deterministic fixtures.
 - The difficulty calibration plan can begin from a green, stable baseline.
