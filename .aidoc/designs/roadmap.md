@@ -4,6 +4,7 @@ status: Active
 entry_points:
   - .github/workflows/ci.yml
   - scripts/e2e_api.py
+  - scripts/e2e_cli.py
   - scripts/e2e_tui.py
   - solver/config.go
 dependencies:
@@ -51,7 +52,7 @@ Pull-request CI separates unit tests, race detection, vet, lint, API contract ch
 
 Storage and command-wiring tests use fixed classified puzzles through the `cmd.batchGenerateWith` generation seam. Real randomized generation remains covered in `generator`, while `cmd` tests prove reporting and SQLite composition without waiting for a target difficulty. Solver fallback fixtures use `solver.Backtracker.SolveDeterministic`; randomized `solver.Backtracker.Solve` remains available for diverse full-board generation without making race-test duration depend on a lucky search path. These boundaries keep `go test -race -count=1 ./...` viable as a mandatory gate without weakening generation or fallback coverage.
 
-The API and TUI harnesses build and execute the real binary with isolated temporary state. The next black-box increment adds a built-binary line CLI and command harness for the manual scenarios in `.aidoc/designs/e2e-test-scenarios.md`; probabilistic database fallback remains excluded until it has a deterministic public behavior or a package-level seam.
+The API, TUI, and line-CLI harnesses build and execute the real binary with isolated temporary state. The line-CLI lane covers parsing, gameplay/history, durable sessions, import normalization and deduplication, bounded generation, and SQLite-visible composition. Probabilistic database fallback remains excluded until it has a deterministic public behavior or a package-level seam.
 
 ### 2. Raise Boundary Unit and Integration Coverage
 

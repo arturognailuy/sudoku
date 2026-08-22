@@ -92,6 +92,9 @@ This index provides reading chains for common starting points and a complete doc
 | `sessionfile/session_file.go` | Bounded reads and atomic mode-0600 session writes |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
+| `scripts/e2e_cli.py` | Built-binary line CLI, session, import, generation, and SQLite E2E harness |
+| `scripts/e2e_api.py` | Built-binary HTTP lifecycle E2E harness |
+| `scripts/e2e_tui.py` | Built-binary PTY TUI and recovery E2E harness |
 | `db/db.go` | SQLite puzzle database — open, close, schema migration |
 | `db/puzzle.go` | Puzzle CRUD, random query by difficulty, statistics |
 | `game/contract.go` | Stable engine actions, snapshots, results, and typed errors |
