@@ -25,8 +25,14 @@ jobs:
       - name: Build
         run: go build ./...
 
-      - name: Test
-        run: go test -count=1 ./...
+      - name: Test with package coverage
+        run: go test -count=1 -coverpkg=./... -coverprofile=coverage.out ./...
+
+      - name: Package coverage summary
+        run: python3 scripts/coverage_report.py coverage.out >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Coverage report tests
+        run: python3 -m unittest scripts/test_coverage_report.py
 
   race:
     runs-on: ubuntu-latest

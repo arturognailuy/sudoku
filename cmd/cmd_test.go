@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -93,6 +93,28 @@ func TestBatchGenerateUsesInjectedGenerator(t *testing.T) {
 	report := batchGenerateWith(puzzleDB, 3, "easy", 2*time.Second, 3, 1, generate)
 	if calls != 3 || report.generated != 3 || report.stored != 1 || report.duplicates != 2 {
 		t.Fatalf("unexpected report: calls=%d generated=%d stored=%d duplicates=%d", calls, report.generated, report.stored, report.duplicates)
+	}
+}
+
+func TestBatchGenerateParallelUsesInjectedGenerator(t *testing.T) {
+	puzzleDB, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer puzzleDB.Close()
+
+	var calls atomic.Int32
+	generate := func(level string, timeout time.Duration, rounds int) generator.GenerationResult {
+		calls.Add(1)
+		if level != "easy" || timeout != time.Second || rounds != 2 {
+			t.Errorf("unexpected generation arguments: %q, %s, %d", level, timeout, rounds)
+		}
+		return fixedGenerationResult()
+	}
+
+	report := batchGenerateWith(puzzleDB, 8, "easy", time.Second, 2, 3, generate)
+	if calls.Load() != 8 || report.generated != 8 || report.stored != 1 || report.duplicates != 7 {
+		t.Fatalf("unexpected report: calls=%d generated=%d stored=%d duplicates=%d", calls.Load(), report.generated, report.stored, report.duplicates)
 	}
 }
 
@@ -222,6 +244,67 @@ func TestParseDifficulty(t *testing.T) {
 		if d.MinimumClues <= 0 {
 			t.Errorf("parseDifficultyQuiet(%q): MinimumClues should be > 0", level)
 		}
+	}
+}
+
+func TestCreateSessionRestoresSerializedState(t *testing.T) {
+	store := solver.NewStore()
+	options := game.NewDefaultOptions(store)
+	original := game.NewGame(loadBoard(testKnownPuzzle), options)
+	position := *findFirstEmptyCell(loadBoard(testKnownPuzzle))
+	solved := loadBoard(testKnownPuzzle)
+	store.GetDefaultSolver().Solve(&solved)
+	value := solved.Get(position)
+	if _, err := original.Apply(game.SetValue{Position: position, Value: value}); err != nil {
+		t.Fatalf("set value: %v", err)
+	}
+
+	data, err := original.Serialize()
+	if err != nil {
+		t.Fatalf("serialize session: %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "session.json")
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatalf("write session: %v", err)
+	}
+
+	restored, source, err := createSession(sessionRequest{resume: path}, os.Stdout, os.Stderr)
+	if err != nil {
+		t.Fatalf("restore session: %v", err)
+	}
+	if source != path {
+		t.Fatalf("source = %q, want %q", source, path)
+	}
+	if got := restored.Snapshot().Values[position.Row][position.Column]; got != value {
+		t.Fatalf("restored value = %d, want %d", got, value)
+	}
+}
+
+func TestCreateSessionRejectsInvalidSources(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		request sessionRequest
+		want    string
+	}{
+		{name: "invalid puzzle", request: sessionRequest{input: "123"}, want: "not a valid Sudoku problem"},
+		{name: "invalid difficulty", request: sessionRequest{level: "impossible"}, want: "invalid difficulty level"},
+		{name: "missing resume", request: sessionRequest{resume: filepath.Join(t.TempDir(), "missing.json")}, want: "unable to read saved session"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, _, err := createSession(test.request, os.Stdout, os.Stderr)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v, want substring %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestDefaultDBPathUsesXDGDataHome(t *testing.T) {
+	dataHome := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataHome)
+	want := filepath.Join(dataHome, "sudoku", "puzzles.db")
+	if got := defaultDBPath(); got != want {
+		t.Fatalf("defaultDBPath() = %q, want %q", got, want)
 	}
 }
 
@@ -427,41 +510,6 @@ func TestImportEmptyFile(t *testing.T) {
 	}
 }
 
-// --- Shorthand digit input ---
-// Tests that bare digits are dispatched as add commands via CLI dispatch logic.
-func TestShorthandDigitInput(t *testing.T) {
-	board := core.NewEmptyBoard()
-	board.FromString(testKnownPuzzle)
-
-	store := solver.NewStore()
-	opts := game.NewDefaultOptions(store)
-	g := game.NewGame(board, opts)
-
-	solvedBoard := board.Copy()
-	store.GetDefaultSolver().Solve(&solvedBoard)
-
-	emptyPos := findFirstEmptyCell(board)
-	if emptyPos == nil {
-		t.Fatal("no empty cell found in test puzzle")
-	}
-
-	correctValue := solvedBoard.Get(*emptyPos)
-	ctrl := newTestCtrl(&g)
-
-	// Shorthand input format: "row col value" (1-indexed) — no "add" prefix.
-	shorthand := fmt.Sprintf("%d %d %d", emptyPos.Row+1, emptyPos.Column+1, correctValue)
-	changed := ctrl.RunCommand(shorthand)
-
-	if !changed {
-		t.Error("shorthand digit input should return true (board changed)")
-	}
-	actual := g.Snapshot().Values[emptyPos.Row][emptyPos.Column]
-	if actual != correctValue {
-		t.Errorf("after shorthand input, expected %d at (%d,%d), got %d",
-			correctValue, emptyPos.Row, emptyPos.Column, actual)
-	}
-}
-
 // --- Test helpers ---
 
 // findFirstEmptyCell returns the first empty cell position in the board.
@@ -475,99 +523,4 @@ func findFirstEmptyCell(board core.Board) *core.Position {
 		}
 	}
 	return nil
-}
-
-// testController is a minimal wrapper for testing RunCommand logic
-// that mirrors cli.Controller's dispatch without terminal I/O.
-type testController struct {
-	game *game.Game
-}
-
-func newTestCtrl(g *game.Game) testController {
-	return testController{game: g}
-}
-
-func (ctrl *testController) RunCommand(command string) bool {
-	commandFields := strings.SplitN(command, " ", 2)
-
-	if len(commandFields) == 0 || len(commandFields[0]) == 0 {
-		return false
-	}
-
-	switch commandFields[0] {
-	case "add", "a", "clear", "d":
-		if len(commandFields) != 2 {
-			return false
-		}
-		switch commandFields[0] {
-		case "add", "a":
-			return ctrl.runAddCommand(commandFields[1])
-		case "clear", "d":
-			return ctrl.runClearCommand(commandFields[1])
-		}
-	case "check", "c":
-		return false
-	case "undo", "u":
-		_, err := ctrl.game.Apply(game.Undo{})
-		return err == nil
-	case "redo", "r":
-		_, err := ctrl.game.Apply(game.Redo{})
-		return err == nil
-	case "repair", "f":
-		_, err := ctrl.game.Apply(game.Repair{})
-		return err == nil
-	case "hint", "i":
-		_, err := ctrl.game.Apply(game.ApplyHint{})
-		return err == nil
-	case "solve", "s":
-		_, err := ctrl.game.Apply(game.Solve{})
-		return err == nil
-	case "reset", "e":
-		_, err := ctrl.game.Apply(game.Reset{})
-		return err == nil
-	default:
-		// Shorthand: bare digits treated as add.
-		return ctrl.runAddCommand(command)
-	}
-	return false
-}
-
-func (ctrl *testController) runAddCommand(args string) bool {
-	var row, column, value int
-	_, err := fmt.Sscanf(args, "%1d%1d%1d", &row, &column, &value)
-	if err != nil {
-		return false
-	}
-	return ctrl.setValue(row, column, value)
-}
-
-func (ctrl *testController) runClearCommand(args string) bool {
-	var row, column int
-	_, err := fmt.Sscanf(args, "%1d%1d", &row, &column)
-	if err != nil {
-		return false
-	}
-	return ctrl.setValue(row, column, 0)
-}
-
-func (ctrl *testController) setValue(rowInput, columnInput, valueInput int) bool {
-	positionPointer, err := core.NewPositionFromInput(rowInput, columnInput)
-	if err != nil {
-		return false
-	}
-
-	if valueInput < 0 || valueInput > 9 {
-		return false
-	}
-
-	if ctrl.game.Snapshot().Values[positionPointer.Row][positionPointer.Column] == valueInput {
-		return false
-	}
-
-	var action game.Action = game.ClearValue{Position: *positionPointer}
-	if valueInput != 0 {
-		action = game.SetValue{Position: *positionPointer, Value: valueInput}
-	}
-	_, err = ctrl.game.Apply(action)
-	return err == nil
 }
