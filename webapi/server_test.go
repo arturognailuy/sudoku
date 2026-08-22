@@ -189,3 +189,114 @@ func TestImportRejectsOversizedPayload(t *testing.T) {
 		t.Fatalf("status=%d", w.Code)
 	}
 }
+
+func TestAuthenticationRequiresExactBearerCredential(t *testing.T) {
+	handler, _, _ := testHandler(t, "secret", nil)
+	tests := []struct {
+		name   string
+		header string
+		want   int
+	}{
+		{name: "missing", want: http.StatusUnauthorized},
+		{name: "bare token", header: "secret", want: http.StatusUnauthorized},
+		{name: "wrong scheme", header: "Basic secret", want: http.StatusUnauthorized},
+		{name: "wrong token", header: "Bearer other", want: http.StatusUnauthorized},
+		{name: "valid", header: "Bearer secret", want: http.StatusOK},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			headers := map[string]string{}
+			if tt.header != "" {
+				headers["Authorization"] = tt.header
+			}
+			w := request(t, handler, http.MethodGet, "/api/v1/sessions", "", "", headers)
+			if w.Code != tt.want {
+				t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+			}
+			if w.Code == http.StatusUnauthorized && w.Header().Get("WWW-Authenticate") != "Bearer" {
+				t.Fatalf("missing bearer challenge")
+			}
+		})
+	}
+}
+
+func TestCORSRequiresExactOriginAndBoundedPreflight(t *testing.T) {
+	handler, _, _ := testHandler(t, "", []string{"https://client.example:8443"})
+	allowed := map[string]string{"Origin": "https://client.example:8443", "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "content-type"}
+	if w := request(t, handler, http.MethodOptions, "/api/v1/sessions", "", "", allowed); w.Code != http.StatusNoContent {
+		t.Fatalf("allowed preflight status=%d body=%s", w.Code, w.Body.String())
+	}
+	for name, headers := range map[string]map[string]string{
+		"different port": {"Origin": "https://client.example", "Access-Control-Request-Method": "POST"},
+		"null origin":    {"Origin": "null", "Access-Control-Request-Method": "POST"},
+		"wrong method":   {"Origin": "https://client.example:8443", "Access-Control-Request-Method": "PATCH"},
+		"wrong header":   {"Origin": "https://client.example:8443", "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "x-secret"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			w := request(t, handler, http.MethodOptions, "/api/v1/sessions", "", "", headers)
+			if w.Code != http.StatusForbidden {
+				t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+			}
+			if w.Header().Get("Access-Control-Allow-Origin") == "*" {
+				t.Fatal("wildcard origin must never be emitted")
+			}
+		})
+	}
+}
+
+func TestMalformedRequestsReturnBoundedStableErrors(t *testing.T) {
+	handler, _, _ := testHandler(t, "", nil)
+	tests := []struct {
+		name, body string
+	}{
+		{name: "malformed", body: `{`},
+		{name: "trailing JSON", body: `{"source":{"kind":"puzzle","puzzle":"` + knownPuzzle + `"}} {}`},
+		{name: "missing source", body: `{}`},
+		{name: "unknown source", body: `{"source":{"kind":"file","value":"x"}}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := request(t, handler, http.MethodPost, "/api/v1/sessions", "application/json", tt.body, nil)
+			if w.Code != http.StatusBadRequest || w.Body.Len() > 1024 {
+				t.Fatalf("status=%d bytes=%d body=%s", w.Code, w.Body.Len(), w.Body.String())
+			}
+			var envelope Error
+			if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || envelope.Error.Code == "" {
+				t.Fatalf("invalid error envelope: %v body=%s", err, w.Body.String())
+			}
+			if strings.Contains(w.Body.String(), knownPuzzle) {
+				t.Fatalf("error leaked request data: %s", w.Body.String())
+			}
+		})
+	}
+}
+
+func TestConcurrentSessionsAdvanceIndependently(t *testing.T) {
+	handler, _, _ := testHandler(t, "", nil)
+	first := createTestSession(t, handler, nil)
+	second := createTestSession(t, handler, nil)
+	ids := []string{first.Id, second.Id}
+	codes := make(chan int, len(ids))
+	var wg sync.WaitGroup
+	for _, id := range ids {
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			codes <- request(t, handler, http.MethodPost, "/api/v1/sessions/"+id+"/actions", "application/json", `{"kind":"set-value","expected_revision":0,"row":1,"column":1,"value":4}`, nil).Code
+		}(id)
+	}
+	wg.Wait()
+	close(codes)
+	for code := range codes {
+		if code != http.StatusOK {
+			t.Fatalf("status=%d", code)
+		}
+	}
+	for _, id := range ids {
+		w := request(t, handler, http.MethodGet, "/api/v1/sessions/"+id, "", "", nil)
+		var session Session
+		if err := json.Unmarshal(w.Body.Bytes(), &session); err != nil || session.Revision != 1 {
+			t.Fatalf("session %s did not advance independently: %+v err=%v", id, session, err)
+		}
+	}
+}

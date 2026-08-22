@@ -369,13 +369,17 @@ func middleware(next http.Handler, token string, origins map[string]struct{}) ht
 			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 			if r.Method == http.MethodOptions {
+				if !validPreflight(r) {
+					writeError(w, 403, ErrorCodeForbiddenOrigin, "preflight request is not allowed")
+					return
+				}
 				w.WriteHeader(204)
 				return
 			}
 		}
 		if r.URL.Path != "/healthz" && token != "" {
-			value := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-			if subtle.ConstantTimeCompare([]byte(value), []byte(token)) != 1 {
+			value, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if !ok || value == "" || subtle.ConstantTimeCompare([]byte(value), []byte(token)) != 1 {
 				w.Header().Set("WWW-Authenticate", "Bearer")
 				writeError(w, 401, ErrorCodeUnauthorized, "valid bearer token required")
 				return
@@ -410,6 +414,24 @@ func middleware(next http.Handler, token string, origins map[string]struct{}) ht
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func validPreflight(r *http.Request) bool {
+	switch r.Header.Get("Access-Control-Request-Method") {
+	case http.MethodGet, http.MethodPost, http.MethodDelete:
+	default:
+		return false
+	}
+	for _, header := range strings.Split(r.Header.Get("Access-Control-Request-Headers"), ",") {
+		header = strings.TrimSpace(header)
+		if header == "" {
+			continue
+		}
+		if !strings.EqualFold(header, "Authorization") && !strings.EqualFold(header, "Content-Type") {
+			return false
+		}
+	}
+	return true
 }
 
 func translateAction(body ActionRequest) (game.Action, int64, error) {

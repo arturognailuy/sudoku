@@ -475,7 +475,7 @@ Run the automated black-box lifecycle against the built backend with isolated st
 python3 scripts/e2e_api.py ./sudoku
 ```
 
-The harness calls the running `sudoku api` process rather than importing Go handlers. It covers startup safety, health, strict input, exact-origin CORS, lifecycle operations, revision conflict, export/import, restart recovery, and discard. The scenarios below define the broader acceptance contract; frontend behavior remains in the separate client project.
+The harness calls the running `sudoku api` process rather than importing Go handlers. It covers startup safety, process-lock exclusion, health, strict input, exact-origin CORS configuration, exact bearer authentication, lifecycle operations, revision conflict, export/import, restart recovery, and discard. Handler and command tests complement the black-box lane with malformed-input envelopes, preflight method/header rejection, concurrent session isolation, allowed-origin validation, and lock ownership. The scenarios below define the broader acceptance contract; frontend behavior remains in the separate client project.
 
 ### 10.1 Startup, Binding, and Health
 **Action:** Start `sudoku api` with isolated XDG roots using the default listener and an explicit network listener, call `/healthz`, and request an unknown `/api/` path.

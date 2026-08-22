@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -61,6 +62,9 @@ func runAPI(command *cobra.Command, config apiConfig) error {
 	}
 	if strings.ContainsAny(config.token, "\r\n") {
 		return errors.New("--auth-token contains invalid characters")
+	}
+	if err := validateAllowedOrigins(config.origins); err != nil {
+		return err
 	}
 
 	base, err := recovery.DefaultDirectory()
@@ -119,6 +123,16 @@ func runAPI(command *cobra.Command, config apiConfig) error {
 		}
 		return nil
 	}
+}
+
+func validateAllowedOrigins(origins []string) error {
+	for _, origin := range origins {
+		parsed, err := url.Parse(origin)
+		if err != nil || strings.Contains(origin, "*") || parsed.String() != origin || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" || parsed.User != nil || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+			return fmt.Errorf("invalid --allowed-origin %q: expected an exact http or https origin", origin)
+		}
+	}
+	return nil
 }
 
 func acquireAPILock(directory string) (*os.File, error) {
