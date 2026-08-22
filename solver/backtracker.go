@@ -108,6 +108,60 @@ func (s Backtracker) Solve(board *core.Board) bool {
 	return solve(board, state, newSolveOptions(true, false, false))
 }
 
+// SolveDeterministic solves the board in place with stable candidate ordering
+// and a minimum-remaining-values search. It is intended for repeatable
+// verification and callers that do not need randomized full-board generation.
+func (s Backtracker) SolveDeterministic(board *core.Board) bool {
+	if !board.IsValid() {
+		return false
+	}
+
+	return solveDeterministic(board)
+}
+
+func solveDeterministic(board *core.Board) bool {
+	var position core.Position
+	var candidates []int
+	found := false
+
+search:
+	for row := 0; row < 9; row++ {
+		for column := 0; column < 9; column++ {
+			candidatePosition := core.NewPosition(row, column)
+			if board.Get(candidatePosition) != 0 {
+				continue
+			}
+
+			candidateValues := board.Candidates(candidatePosition).Values()
+			if len(candidateValues) == 0 {
+				return false
+			}
+			if !found || len(candidateValues) < len(candidates) {
+				position = candidatePosition
+				candidates = candidateValues
+				found = true
+				if len(candidates) == 1 {
+					break search
+				}
+			}
+		}
+	}
+
+	if !found {
+		return true
+	}
+
+	for _, value := range candidates {
+		_ = board.Set(position, value)
+		if solveDeterministic(board) {
+			return true
+		}
+		board.Unset(position)
+	}
+
+	return false
+}
+
 // Hint returns the next determinable move without modifying the board.
 func (s Backtracker) Hint(board *core.Board) *Move {
 	if !board.IsValid() {

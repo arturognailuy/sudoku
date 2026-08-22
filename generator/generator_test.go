@@ -9,8 +9,8 @@ import (
 func TestGenerateBestEffortEasy(t *testing.T) {
 	store := solver.NewStore()
 	opts := NewBestEffortOptions(store, NewEasyDifficulty())
-	opts.MaxRounds = 5
-	opts.MaxDurationMs = 10000 // 10 seconds
+	opts.MaxRounds = 1
+	opts.MaxDurationMs = 30000 // Keep the single real generation round bounded.
 
 	result := GenerateBestEffort(opts)
 
@@ -38,35 +38,31 @@ func TestGenerateBestEffortEasy(t *testing.T) {
 	}
 }
 
-func TestGenerateBestEffortTimeLimited(t *testing.T) {
+func TestGenerateBestEffortStopsAfterTimeBudgetBetweenRounds(t *testing.T) {
 	store := solver.NewStore()
 	opts := NewBestEffortOptions(store, NewEasyDifficulty())
-	opts.MaxRounds = 100
-	opts.MaxDurationMs = 200 // Very short — should stop early.
+	opts.MaxRounds = 2
+	opts.MaxDurationMs = 1
 
 	result := GenerateBestEffort(opts)
 
-	// Should respect the time limit. Allow some overhead for the round
-	// that was in progress when the limit was hit.
-	if result.DurationMs > 5000 {
-		t.Fatalf("Expected generation to stop reasonably quickly, took %dms", result.DurationMs)
-	}
-	// The key assertion: rounds should be limited by the time budget.
-	if result.RoundsUsed >= 100 {
-		t.Fatalf("Expected time limit to stop generation before 100 rounds, used %d", result.RoundsUsed)
+	// Generation cannot interrupt a round already in progress. Once that
+	// round returns, the expired budget must prevent another randomized round.
+	if result.RoundsUsed != 1 {
+		t.Fatalf("Expected the expired budget to stop after one round, used %d", result.RoundsUsed)
 	}
 }
 
 func TestGenerateBestEffortRoundLimited(t *testing.T) {
 	store := solver.NewStore()
 	opts := NewBestEffortOptions(store, NewHardDifficulty())
-	opts.MaxRounds = 2
+	opts.MaxRounds = 1
 	opts.MaxDurationMs = 30000 // Long time — round limit should hit first.
 
 	result := GenerateBestEffort(opts)
 
-	if result.RoundsUsed > 2 {
-		t.Fatalf("Expected at most 2 rounds, used %d", result.RoundsUsed)
+	if result.RoundsUsed > 1 {
+		t.Fatalf("Expected at most 1 round, used %d", result.RoundsUsed)
 	}
 }
 

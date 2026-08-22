@@ -1019,29 +1019,28 @@ func TestIntegration_AllSolversRegistered(t *testing.T) {
 // TestIntegration_DefaultSolverCanSolveAny verifies the backtracker can solve
 // all test puzzles (it's the ultimate fallback).
 func TestIntegration_DefaultSolverCanSolveAny(t *testing.T) {
-	store := solver.NewStore()
 	puzzles := map[string]string{
-		"easy":                       easyPuzzle,
-		"naked-pair":                 nakedSubsetPuzzle,
-		"pointing-pair":              pointingPairPuzzle,
-		"x-wing":                     xWingPuzzle,
-		"swordfish":                  swordfishPuzzle,
-		"hidden-subset":              hiddenSubsetPuzzle,
-		"xy-wing":                    xyWingPuzzle,
-		"simple-coloring":            simpleColoringPuzzle,
-		"hard-xy-wing":               hardXYWingPuzzle,
-		"hard-hidden-pair":           hardHiddenPairPuzzle,
-		"expert-hidden-quad-color":   expertHiddenQuadColoringPuzzle,
-		"expert-triple-requirement":  expertTripleRequirementPuzzle,
-		"evil-jellyfish":             evilJellyfishPuzzle,
-		"evil-bug-ur":                evilBUGURPuzzle,
-		"w-wing":                     wWingPuzzle,
+		"easy":                      easyPuzzle,
+		"naked-pair":                nakedSubsetPuzzle,
+		"pointing-pair":             pointingPairPuzzle,
+		"x-wing":                    xWingPuzzle,
+		"swordfish":                 swordfishPuzzle,
+		"hidden-subset":             hiddenSubsetPuzzle,
+		"xy-wing":                   xyWingPuzzle,
+		"simple-coloring":           simpleColoringPuzzle,
+		"hard-xy-wing":              hardXYWingPuzzle,
+		"hard-hidden-pair":          hardHiddenPairPuzzle,
+		"expert-hidden-quad-color":  expertHiddenQuadColoringPuzzle,
+		"expert-triple-requirement": expertTripleRequirementPuzzle,
+		"evil-jellyfish":            evilJellyfishPuzzle,
+		"evil-bug-ur":               evilBUGURPuzzle,
+		"w-wing":                    wWingPuzzle,
 	}
 
 	for name, p := range puzzles {
 		t.Run(name, func(t *testing.T) {
 			board := boardFromString(t, p)
-			solved := store.GetDefaultSolver().Solve(&board)
+			solved := solver.NewBacktracker().SolveDeterministic(&board)
 			if !solved {
 				t.Errorf("Backtracker failed to solve %s puzzle", name)
 			}

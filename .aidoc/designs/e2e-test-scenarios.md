@@ -24,6 +24,22 @@ These scenarios are designed to be run manually or via shell scripts against a b
 | `.aidoc/designs/game-engine.md` | Engine actions and state that frontends expose to users |
 | `.aidoc/designs/cli-sessions.md` | Manual-note rendering and persistence transport contract |
 | `AGENT.md` | Required verification discipline for feature and bug-fix PRs |
+| `.aidoc/designs/roadmap.md` | Stabilization sequencing and deterministic-test constraints |
+
+## Automation Map
+
+| Boundary | Automated entry point | CI status |
+|----------|-----------------------|-----------|
+| HTTP API lifecycle | `scripts/e2e_api.py` | Independent mandatory `api-e2e` job |
+| TUI, sessions, and recovery | `scripts/e2e_tui.py` | Independent mandatory `tui-e2e` job |
+| OpenAPI contract and compatibility | `scripts/check-api-contract.sh` | Independent mandatory `api-contract` job |
+| Generator behavior | `generator/*_test.go` | Unit and race jobs |
+| Command storage and reporting | `cmd.batchGenerateWith` tests with fixed puzzles | Unit and race jobs |
+| Root line CLI, generate, and import workflows | Sections 1–7 | Manual until the built-binary CLI harness is added |
+| Probabilistic database fallback | Section 5.2 | Manual; deterministic package boundaries cover DB lookup |
+| Deferred database behavior | Section 11 | Deferred until calibration |
+
+Every automated black-box entry point builds or receives the repository binary and owns isolated temporary XDG roots. Package tests do not count as E2E coverage; they keep deterministic seams narrow while the scripts verify complete user-facing composition.
 
 ## Prerequisites
 

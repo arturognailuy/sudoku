@@ -47,6 +47,8 @@ type generateReport struct {
 	duration   time.Duration
 }
 
+type puzzleGenerator func(level string, timeout time.Duration, rounds int) generator.GenerationResult
+
 func runGenerate(cmd *cobra.Command) error {
 	count, _ := cmd.Flags().GetInt("count")
 	level, _ := cmd.Flags().GetString("difficulty")
@@ -97,6 +99,10 @@ func runGenerate(cmd *cobra.Command) error {
 }
 
 func batchGenerate(puzzleDB *db.DB, count int, level string, timeout time.Duration, rounds int, workers int) generateReport {
+	return batchGenerateWith(puzzleDB, count, level, timeout, rounds, workers, generateOnePuzzle)
+}
+
+func batchGenerateWith(puzzleDB *db.DB, count int, level string, timeout time.Duration, rounds int, workers int, generate puzzleGenerator) generateReport {
 	report := generateReport{
 		byLevel: make(map[string]int),
 	}
@@ -104,7 +110,7 @@ func batchGenerate(puzzleDB *db.DB, count int, level string, timeout time.Durati
 	if workers <= 1 {
 		// Single-threaded generation.
 		for i := 0; i < count; i++ {
-			result := generateOnePuzzle(level, timeout, rounds)
+			result := generate(level, timeout, rounds)
 			stored := storePuzzle(puzzleDB, result)
 
 			report.generated++
@@ -125,11 +131,11 @@ func batchGenerate(puzzleDB *db.DB, count int, level string, timeout time.Durati
 	} else {
 		// Parallel generation.
 		var (
-			mu          sync.Mutex
-			generated   int64
-			stored      int64
-			duplicates  int64
-			byLevel     = make(map[string]int)
+			mu         sync.Mutex
+			generated  int64
+			stored     int64
+			duplicates int64
+			byLevel    = make(map[string]int)
 		)
 
 		sem := make(chan struct{}, workers)
@@ -143,7 +149,7 @@ func batchGenerate(puzzleDB *db.DB, count int, level string, timeout time.Durati
 				defer wg.Done()
 				defer func() { <-sem }() // release worker slot
 
-				result := generateOnePuzzle(level, timeout, rounds)
+				result := generate(level, timeout, rounds)
 				wasStored := storePuzzle(puzzleDB, result)
 
 				atomic.AddInt64(&generated, 1)

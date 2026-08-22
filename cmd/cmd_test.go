@@ -7,23 +7,25 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/db"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/generator"
 	"github.com/gnailuy/sudoku/solver"
 )
 
-func TestGenerateOnePuzzle(t *testing.T) {
-	result := generateOnePuzzle("hard", 5000, 5)
-	if result.Puzzle.GetFilledCellsCount() == 0 {
-		t.Fatal("generated puzzle has no filled cells")
-	}
-	if result.Classification.Difficulty == "" {
-		t.Fatal("classification has no difficulty")
-	}
-	if result.Classification.Score <= 0 {
-		t.Fatal("classification has no score")
+func fixedGenerationResult() generator.GenerationResult {
+	return generator.GenerationResult{
+		Puzzle: loadBoard(testKnownPuzzle),
+		Classification: solver.Classification{
+			Difficulty:   "easy",
+			Score:        1,
+			MaxTechnique: "fixture",
+		},
+		Matched:    true,
+		RoundsUsed: 1,
 	}
 }
 
@@ -35,7 +37,7 @@ func TestStorePuzzle(t *testing.T) {
 	}
 	defer puzzleDB.Close()
 
-	result := generateOnePuzzle("hard", 5000, 5)
+	result := fixedGenerationResult()
 
 	// Store once — should return true (inserted).
 	stored := storePuzzle(puzzleDB, result)
@@ -57,10 +59,10 @@ func TestStorePuzzleDBStats(t *testing.T) {
 	}
 	defer puzzleDB.Close()
 
-	// Generate and store 3 puzzles.
+	// Repeated fixture storage exercises the DB boundary without making this
+	// storage test depend on randomized generation.
 	for i := 0; i < 3; i++ {
-		result := generateOnePuzzle("evil", 5000, 5)
-		storePuzzle(puzzleDB, result)
+		storePuzzle(puzzleDB, fixedGenerationResult())
 	}
 
 	stats, err := puzzleDB.GetStats()
@@ -69,6 +71,28 @@ func TestStorePuzzleDBStats(t *testing.T) {
 	}
 	if stats.Total == 0 {
 		t.Fatal("no puzzles stored")
+	}
+}
+
+func TestBatchGenerateUsesInjectedGenerator(t *testing.T) {
+	puzzleDB, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer puzzleDB.Close()
+
+	calls := 0
+	generate := func(level string, timeout time.Duration, rounds int) generator.GenerationResult {
+		calls++
+		if level != "easy" || timeout != 2*time.Second || rounds != 3 {
+			t.Fatalf("unexpected generation arguments: %q, %s, %d", level, timeout, rounds)
+		}
+		return fixedGenerationResult()
+	}
+
+	report := batchGenerateWith(puzzleDB, 3, "easy", 2*time.Second, 3, 1, generate)
+	if calls != 3 || report.generated != 3 || report.stored != 1 || report.duplicates != 2 {
+		t.Fatalf("unexpected report: calls=%d generated=%d stored=%d duplicates=%d", calls, report.generated, report.stored, report.duplicates)
 	}
 }
 
@@ -307,8 +331,7 @@ func TestGenerateCustomDBPath(t *testing.T) {
 	}
 
 	for i := 0; i < 2; i++ {
-		result := generateOnePuzzle("hard", 5000, 5)
-		storePuzzle(puzzleDB, result)
+		storePuzzle(puzzleDB, fixedGenerationResult())
 	}
 	puzzleDB.Close()
 

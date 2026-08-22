@@ -47,11 +47,11 @@ A TypeScript client and browser UI are explicitly outside this repository. A sep
 
 ### 1. Strengthen CI and Black-Box E2E
 
-- Run `go test -race ./...` on pull requests rather than relying only on local verification.
-- Run `scripts/e2e_tui.py` in a supported Linux PTY environment in CI.
-- Add an automated built-binary harness for the line CLI and command workflows currently represented only by the scenario catalog.
-- Keep `scripts/e2e_api.py` and the OpenAPI compatibility gates mandatory.
-- Preserve isolated XDG directories, temporary databases, and deterministic puzzle inputs so lanes can run independently.
+Pull-request CI separates unit tests, race detection, vet, lint, API contract checks, API E2E, and TUI E2E into independent jobs. Independent jobs keep a slow boundary from hiding fast failures and allow every gate to report its own timeout and diagnostics.
+
+Storage and command-wiring tests use fixed classified puzzles through the `cmd.batchGenerateWith` generation seam. Real randomized generation remains covered in `generator`, while `cmd` tests prove reporting and SQLite composition without waiting for a target difficulty. Solver fallback fixtures use `solver.Backtracker.SolveDeterministic`; randomized `solver.Backtracker.Solve` remains available for diverse full-board generation without making race-test duration depend on a lucky search path. These boundaries keep `go test -race -count=1 ./...` viable as a mandatory gate without weakening generation or fallback coverage.
+
+The API and TUI harnesses build and execute the real binary with isolated temporary state. The next black-box increment adds a built-binary line CLI and command harness for the manual scenarios in `.aidoc/designs/e2e-test-scenarios.md`; probabilistic database fallback remains excluded until it has a deterministic public behavior or a package-level seam.
 
 ### 2. Raise Boundary Unit and Integration Coverage
 
