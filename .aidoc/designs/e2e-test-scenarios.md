@@ -32,14 +32,23 @@ These scenarios are designed to be run manually or via shell scripts against a b
 |----------|-----------------------|-----------|
 | HTTP API lifecycle | `scripts/e2e_api.py` | Independent mandatory `api-e2e` job |
 | TUI, sessions, and recovery | `scripts/e2e_tui.py` | Independent mandatory `tui-e2e` job |
+| Root line CLI, sessions, generate, import, and SQLite composition | `scripts/e2e_cli.py` | Independent mandatory `cli-e2e` job |
 | OpenAPI contract and compatibility | `scripts/check-api-contract.sh` | Independent mandatory `api-contract` job |
 | Generator behavior | `generator/*_test.go` | Unit and race jobs |
 | Command storage and reporting | `cmd.batchGenerateWith` tests with fixed puzzles | Unit and race jobs |
-| Root line CLI, generate, and import workflows | Sections 1–7 | Manual until the built-binary CLI harness is added |
 | Probabilistic database fallback | Section 5.2 | Manual; deterministic package boundaries cover DB lookup |
 | Deferred database behavior | Section 11 | Deferred until calibration |
 
 Every automated black-box entry point builds or receives the repository binary and owns isolated temporary XDG roots. Package tests do not count as E2E coverage; they keep deterministic seams narrow while the scripts verify complete user-facing composition.
+
+Run the line-oriented boundary locally with:
+
+```bash
+go build -o sudoku .
+python3 scripts/e2e_cli.py ./sudoku
+```
+
+The harness uses fixed puzzle fixtures for gameplay and import assertions. Its generation smoke test bounds real generation to one round and one millisecond; it verifies command/worker/database composition without asserting a random difficulty result. Section 5.2 remains manual because the public binary has no deterministic way to force the fallback branch.
 
 ## Prerequisites
 

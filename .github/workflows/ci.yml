@@ -109,6 +109,21 @@ jobs:
           go build -o sudoku .
           python3 scripts/e2e_tui.py ./sudoku
 
+  cli-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Line CLI and command end-to-end
+        run: |
+          go build -o sudoku .
+          python3 scripts/e2e_cli.py ./sudoku
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
