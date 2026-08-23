@@ -76,6 +76,16 @@ For non-loopback addresses, configure a bearer token. Browser origins remain den
 
 The OpenAPI 3.1 contract is [`api/openapi.yaml`](api/openapi.yaml). All game operations are under `/api/v1`; `GET /healthz` is payload-free. API sessions use opaque identifiers and monotonic revisions, persist accepted mutations to the private recovery store, and reject stale writes with `409 Conflict`.
 
+## Measure Difficulty Locally
+
+Run deterministic classifications over an immutable JSON corpus and resume safely in the same output directory:
+
+```bash
+./sudoku calibrate --manifest corpus.json --output calibration-run
+```
+
+The command classifies each puzzle twice, appends manifest-bound observations to `observations.jsonl`, checkpoints progress, and derives JSON and Markdown reports. Reusing the output directory with a changed manifest is rejected rather than mixing evidence.
+
 ## Batch Generate
 
 Generate puzzles and store them in the database:
