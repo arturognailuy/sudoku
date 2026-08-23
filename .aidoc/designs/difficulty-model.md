@@ -104,8 +104,9 @@ the minimum solving complexity.
 
 ### Architecture Support
 
-The plumbing in `generator/difficulty.go`:
-- `tierRegistry` (map) + `tierOrder` (slice) define the tier hierarchy — single source of truth.
+The canonical hierarchy lives behind `solver.StrategyTierNames`, `solver.StrategySolverKeysForTier`, and `solver.StrategyTierForTechnique`. `generator/difficulty.go` uses a detached package-local view of that hierarchy so generation and classification cannot drift.
+
+The generation plumbing:
 - `Difficulty.SolverKeys` lists solver keys introduced at this tier.
 - `Difficulty.AllowedSolverKeys()` returns the full allowed set (lower tiers + this tier).
 - `Difficulty.LowerTierSolverKeys()` returns cumulative keys from all tiers below.
@@ -127,6 +128,10 @@ The plumbing in `generator/difficulty.go`:
 
 **Evil:** `SolverKeys: ["jellyfish", "bug-plus-one", "unique-rectangle", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain"]`.
 `LowerTierSolverKeys()` returns Easy + Medium + Hard + Expert keys.
+
+## Classification Outcome
+
+`solver.Classification.Outcome` reports either `solved` or `strategy-unsolved`. Difficulty remains the highest explicit technique tier reached, but a stalled trace with no applicable technique has no tier and is never promoted to Evil or backtracking. Generator target matching accepts only completed strategy solves.
 
 ## Scoring System
 

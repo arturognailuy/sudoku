@@ -1,10 +1,12 @@
 package solver
 
+import "sort"
+
 // Store maps solver keys to Solver implementations and provides typed access
 // for CompleteSolver and StrategySolver lookups.
 type Store struct {
-	complete  map[string]CompleteSolver
-	strategy  map[string]StrategySolver
+	complete map[string]CompleteSolver
+	strategy map[string]StrategySolver
 }
 
 // NewStore creates a Store and registers the default backtracking solver
@@ -83,9 +85,22 @@ func (store Store) GetStrategySolverByKey(key string) StrategySolver {
 // GetAllStrategySolverKeys returns the keys of all registered strategy solvers.
 func (store Store) GetAllStrategySolverKeys() []string {
 	keys := make([]string, 0, len(store.strategy))
-	for key := range store.strategy {
-		keys = append(keys, key)
+	seen := make(map[string]struct{}, len(store.strategy))
+	for _, tier := range StrategyTierNames() {
+		for _, key := range StrategySolverKeysForTier(tier) {
+			if _, registered := store.strategy[key]; registered {
+				keys = append(keys, key)
+				seen[key] = struct{}{}
+			}
+		}
 	}
 
-	return keys
+	var extras []string
+	for key := range store.strategy {
+		if _, canonical := seen[key]; !canonical {
+			extras = append(extras, key)
+		}
+	}
+	sort.Strings(extras)
+	return append(keys, extras...)
 }

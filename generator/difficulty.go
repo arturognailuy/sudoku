@@ -28,19 +28,17 @@ type Difficulty struct {
 
 // tierOrder defines the sequence of difficulty tiers from lowest to
 // highest. Used alongside tierRegistry to derive lower-tier solver keys.
-var tierOrder = []string{"easy", "medium", "hard", "expert", "evil"}
+var tierOrder = solver.StrategyTierNames()
 
-// tierRegistry maps each difficulty level name to the strategy solvers
-// introduced at that tier. This is the single source of truth for the
-// tier hierarchy — lower-tier solver keys are derived from tierOrder
-// and this map.
-var tierRegistry = map[string][]string{
-	"easy":   {"naked-single", "hidden-single"},
-	"medium": {"naked-pair", "naked-triple", "pointing-pair", "hidden-pair"},
-	"hard":   {"x-wing", "xy-wing", "hidden-triple", "w-wing"},
-	"expert": {"swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing"},
-	"evil":   {"jellyfish", "bug-plus-one", "unique-rectangle", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain"},
-}
+// tierRegistry is a package-local detached view of the canonical solver tier
+// hierarchy. Classification and generation therefore use the same ordering.
+var tierRegistry = func() map[string][]string {
+	registry := make(map[string][]string, len(tierOrder))
+	for _, name := range tierOrder {
+		registry[name] = solver.StrategySolverKeysForTier(name)
+	}
+	return registry
+}()
 
 // lowerTierSolverKeys returns the cumulative solver keys from all tiers
 // below the tier that owns the given SolverKeys. Returns nil if the
