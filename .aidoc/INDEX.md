@@ -29,28 +29,30 @@ This index provides reading chains for common starting points and a complete doc
 15. `recovery/recovery.go` — private XDG recovery records, validation, retention, and atomic transport
 
 ### Understanding Puzzle Generation
-1. `.aidoc/designs/difficulty-model.md` — current model (clue-count), limitations, target model
-2. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
-3. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
-4. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
-5. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
-6. `db/db.go` — SQLite database open/close/migrate
-7. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
-8. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
-9. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
-10. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
+1. `.aidoc/designs/difficulty-model.md` — current model, tier invariants, and configuration boundary
+2. `.aidoc/designs/difficulty-calibration.md` — measurement contract, evidence, reports, and decision gates
+3. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
+4. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
+5. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
+6. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
+7. `db/db.go` — SQLite database open/close/migrate
+8. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
+9. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
+10. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
+11. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — stabilization priorities, sequencing, and exit criteria
 2. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
 3. `.aidoc/designs/difficulty-model.md` — calibration boundary and current difficulty invariants
-4. `.aidoc/designs/future-directions.md` — deliberately non-priority product and production directions
-5. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
-6. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
-7. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
-8. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
-9. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
-10. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
+4. `.aidoc/designs/difficulty-calibration.md` — measurement methodology, report contract, and product decisions
+5. `.aidoc/designs/future-directions.md` — deliberately non-priority product and production directions
+6. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
+7. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
+8. `.aidoc/designs/game-engine.md` — stable engine API, notes, history, and serialization design
+9. `.aidoc/designs/background-autosave.md` — recovery lifecycle, privacy, storage, retention, and conflict policy
+10. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
+11. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
 
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
@@ -68,6 +70,7 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
 | `.aidoc/designs/difficulty-model.md` | Difficulty invariants, scoring model, and calibration boundary |
+| `.aidoc/designs/difficulty-calibration.md` | Calibration methodology, corpus contract, evidence, reports, and decision gates |
 | `.aidoc/designs/roadmap.md` | Stabilization priorities, sequencing, and exit criteria |
 | `.aidoc/designs/future-directions.md` | Non-priority product and production directions with decision gates |
 | `.aidoc/designs/web-api.md` | Contract-first OpenAPI workflow, resources, revisions, recovery, client access, and network security boundary |
