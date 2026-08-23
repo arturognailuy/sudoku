@@ -5,6 +5,7 @@ entry_points:
   - generator/difficulty.go
 dependencies:
   - .aidoc/architecture/guidelines.md
+  - .aidoc/designs/difficulty-calibration.md
 ---
 
 # Difficulty Model
@@ -16,6 +17,7 @@ Difficulty combines clue count with solving-technique requirements and weighted 
 | Document | Relationship |
 |----------|-------------|
 | `.aidoc/architecture/guidelines.md` | Solver interface contract and layer boundaries |
+| `.aidoc/designs/difficulty-calibration.md` | Measurement contract and evidence required for policy changes |
 | `.aidoc/INDEX.md` | Discovery index |
 
 ## Current Model (Clue-Count + Strategy Tiers)
@@ -28,7 +30,7 @@ Difficulty combines clue count with technique requirements in `generator/difficu
 | Medium | 32–44 | Intermediate | naked-pair, naked-triple, pointing-pair, hidden-pair |
 | Hard | 25–31 | Advanced | x-wing, xy-wing, hidden-triple, w-wing |
 | Expert | 22–24 | Expert | swordfish, naked-quad, simple-coloring, hidden-quad, xyz-wing |
-| Evil | 17–22 | Evil | jellyfish, bug-plus-one, unique-rectangle, unique-rectangle-2, unique-rectangle-3, unique-rectangle-4, x-cycles, xy-chain |
+| Evil | 17–21 | Evil | jellyfish, bug-plus-one, unique-rectangle, unique-rectangle-2, unique-rectangle-3, unique-rectangle-4, x-cycles, xy-chain |
 
 Each level's allowed solvers = its own SolverKeys + all solvers from lower tiers.
 During generation, the generator verifies that lower-tier solvers alone cannot solve
@@ -90,9 +92,9 @@ Tiers are based on SudokuWiki's human-difficulty ordering (frequency × difficul
 |-------|---------------|--------|
 | Easy | Basic only | Solvable with naked/hidden singles alone |
 | Medium | Up to Intermediate | Requires at least one naked-pair, naked-triple, pointing-pair, or hidden-pair |
-| Hard | Up to Advanced | Requires at least one X-Wing, XY-Wing, or hidden-triple step |
-| Expert | Up to Expert | Requires at least one swordfish, naked-quad, simple-coloring, or hidden-quad step |
-| Evil | Up to Evil | Requires at least one jellyfish, BUG+1, or unique-rectangle step |
+| Hard | Up to Advanced | Requires at least one X-Wing, XY-Wing, Hidden Triple, or W-Wing step |
+| Expert | Up to Expert | Requires at least one Swordfish, Naked Quad, Simple Coloring, Hidden Quad, or XYZ-Wing step |
+| Evil | Up to Evil | Requires at least one Jellyfish, BUG+1, Unique Rectangle, X-Cycles, or XY-Chain step |
 
 ### Clue Count as Secondary Constraint
 
@@ -147,6 +149,6 @@ calibrating the difficulty system.
 
 ## Calibration Boundary
 
-Score ranges, solver weights, clue bands, generation budgets, and success-rate policy must not change from intuition alone. Calibration requires a representative puzzle corpus, reproducible local reports, and stable CI coverage for generation, classification, persistence, and black-box gameplay.
+Score ranges, solver weights, clue bands, generation budgets, and success-rate policy must not change from intuition alone. `.aidoc/designs/difficulty-calibration.md` defines the corpus, deterministic classification semantics, measurements, report artifacts, and decision gates required before policy changes.
 
-The current scoring infrastructure records the data needed for calibration, while `solver/config.go` remains the single configuration boundary. Any proposal to add score bands or alter difficulty classification requires measured distributions, pathological-input analysis, and a separately reviewed design.
+The current scoring infrastructure records calibration inputs, while `solver/config.go` remains the single configuration boundary. Any proposal to add score bands or alter classification requires baseline distributions, pathological-input analysis, and before-and-after validation.

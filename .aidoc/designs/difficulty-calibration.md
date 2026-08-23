@@ -1,0 +1,96 @@
+---
+domain: Designs
+status: Active
+entry_points:
+  - solver/classify.go
+  - generator/generator.go
+dependencies:
+  - .aidoc/designs/difficulty-model.md
+  - .aidoc/designs/roadmap.md
+---
+
+# Difficulty Calibration
+
+Difficulty calibration turns solver traces and generation attempts into reproducible evidence for product policy. The first calibrated contract is solver-relative strategy difficulty; external human ratings validate that approximation but do not redefine it without evidence.
+
+## Related Docs
+
+| Document | Relationship |
+|----------|--------------|
+| `.aidoc/designs/difficulty-model.md` | Current tiers, weights, clue constraints, and configuration boundary |
+| `.aidoc/designs/roadmap.md` | Sequencing after baseline stabilization |
+| `.aidoc/designs/e2e-test-scenarios.md` | Black-box behavior catalog for later policy changes |
+
+## Why Calibration Exists
+
+The current model combines technique tiers, accumulated HoDoKu-derived weights, and clue bands, but those inputs have not been measured together on a controlled corpus. Calibration must distinguish actual tier separation from accidental effects of clue count, solver ordering, repeated moves, or generator search budgets.
+
+Calibration reports support policy decisions; calibration tooling does not silently make them. Weight changes, score bands, clue bands, generation budgets, and fallback semantics require a separate proposal with before-and-after evidence.
+
+## Measurement Preconditions
+
+Classification must be deterministic before a baseline becomes authoritative. `solver.ClassifyPuzzle` currently consumes keys obtained from a map-backed store, so available-strategy order can change the trace and score. The classifier also selects its maximum technique by numeric weight even though weights overlap tier boundaries.
+
+The intended classification semantics are:
+
+- apply strategies in one documented canonical order: tier order first, then stable order within each tier;
+- derive the highest required tier from the explicit Easy-to-Evil hierarchy, never from numeric weight;
+- retain total weighted score and move counts as measurements independent of the tier label;
+- report a strategy-unsolved outcome separately when the registered strategies stall;
+- produce identical outcome, score, maximum tier, and trace for identical inputs and configuration.
+
+<!-- TODO: (calibration) make solver.ClassifyPuzzle strategy order and highest-tier selection deterministic before recording the authoritative baseline -->
+
+## Corpus Contract
+
+The corpus combines independently rated puzzles, puzzles generated for every requested tier, provenance-permitted database/import samples, and deliberately pathological inputs. Pathological groups include minimal-clue boards, boundary clue counts, unusually long traces, and uniquely solvable puzzles that the strategy inventory cannot finish.
+
+Each record carries a normalized 81-cell puzzle, a content hash, source category, source identifier or citation, original rating when available, license or redistribution constraint, and collection method. Normalization and hash-based deduplication occur before sampling. Reports aggregate restricted sources without republishing their puzzle strings.
+
+Generated samples record the requested tier, generator configuration, attempt or round number, elapsed duration, resulting clue count, and classification outcome. Generator-only evidence cannot validate the assumptions that created the generator, so conclusions must be shown separately for generated, external, imported, and pathological groups.
+
+Corpus versions are immutable manifests. Exploratory data informs candidate policy; a held-out validation subset measures the final candidate once and prevents thresholds from being tuned to every observed puzzle.
+
+## Metrics and Methods
+
+The baseline report answers distinct questions with distinct measurements:
+
+| Question | Evidence |
+|----------|----------|
+| Reproducibility | Repeated classifications with exact equality of outcome, score, maximum tier, move count, and trace digest |
+| Tier meaning | Technique usage, move-count, score, and clue distributions by assigned tier and source group |
+| Tier separation | Neighboring-tier overlap, monotonic trends, and representative inversions rather than averages alone |
+| External validity | Agreement matrix plus ordinal association against independently rated puzzles; disagreements remain inspectable cases |
+| Generation quality | Target-hit rate by round and elapsed budget, mismatch matrix, p50/p95 latency, rounds, clue count, and failure rate |
+| Strategy coverage | Strategy-unsolved rate by source group with representative trace-stall cases |
+
+Confidence intervals accompany rates and percentiles where sample size permits. Sample counts and missing-data rules appear beside every aggregate. External rating systems are analyzed separately before any justified normalization because equally named tiers need not mean the same thing.
+
+## Reproducibility and Report Artifacts
+
+Every run records the corpus manifest hash, repository commit, Go version, operating system and architecture, solver configuration digest, generator options, random seed where the public boundary supports one, start time, and command invocation. No user telemetry or network service is required to reproduce local analysis.
+
+The runner emits machine-readable per-puzzle observations and aggregate tables, plus a concise Markdown report for review. The report contains methodology, corpus composition, data-quality exclusions, distributions, mismatch matrices, anomalies, limitations, and explicit decision questions. Raw observations are append-only run artifacts; derived reports can be regenerated from them.
+
+## Decision Gates
+
+The baseline report must let a reviewer decide:
+
+1. whether labels promise solver-relative difficulty only or also claim an externally validated human approximation;
+2. whether score orders puzzles only within a tier or contributes to cross-tier boundaries;
+3. whether clue bands remain constraints, become generation guidance, or change from measured evidence;
+4. whether round and time budgets differ by requested tier;
+5. how strategy-unsolved puzzles appear in classification, storage, and fallback behavior;
+6. which stability, separation, hit-rate, and latency thresholds define an acceptable calibrated model.
+
+No threshold is fixed in this design because the baseline exists to supply the evidence. A calibration proposal must state rejected alternatives and compare current and candidate behavior on both exploratory and held-out data.
+
+## Delivery Sequence
+
+1. Correct deterministic classification semantics and lock them with regression tests.
+2. Implement corpus manifests, observation schemas, and a local runner without tuning product policy.
+3. Publish the baseline report and representative anomalies.
+4. Review policy choices and propose calibration with before-and-after comparisons.
+5. Apply approved policy with unit coverage and applicable built-binary E2E scenarios.
+
+Primary code boundaries are `solver.ClassifyPuzzle`, `solver.ScorePuzzle`, `generator.Difficulty`, `generator.GenerateBestEffort`, and `solver/config.go`.

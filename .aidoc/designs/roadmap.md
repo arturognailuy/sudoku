@@ -11,6 +11,7 @@ entry_points:
 dependencies:
   - .aidoc/designs/e2e-test-scenarios.md
   - .aidoc/designs/difficulty-model.md
+  - .aidoc/designs/difficulty-calibration.md
   - .aidoc/designs/future-directions.md
 ---
 
@@ -24,6 +25,7 @@ Sudoku's feature baseline is complete: the Go repository owns the engine, CLI, T
 |----------|-------------|
 | `.aidoc/designs/e2e-test-scenarios.md` | Canonical black-box behavior catalog and current automation pointers |
 | `.aidoc/designs/difficulty-model.md` | Difficulty invariants and the calibration boundary |
+| `.aidoc/designs/difficulty-calibration.md` | Measurement methodology, report artifacts, and review decisions |
 | `.aidoc/designs/future-directions.md` | Deliberately non-priority product and production directions |
 | `.aidoc/designs/web-api.md` | Current HTTP contract, security boundary, and deployment defaults |
 
@@ -65,9 +67,9 @@ The API, TUI, and line-CLI harnesses build and execute the real binary with isol
 
 ### 3. Calibrate Difficulty with Data
 
-Calibration begins only after the CI and test lanes are stable. A representative puzzle corpus should measure score distributions, generation success rates, time budgets, clue-count effects, and pathological inputs before changing `solver/config.go`.
+Calibration starts from the stable CI baseline with deterministic classifier semantics, then measures a versioned mixed corpus before changing `solver/config.go`. `.aidoc/designs/difficulty-calibration.md` defines the corpus groups, reproducibility metadata, score and tier distributions, external-rating validation, generation hit-rate and latency measurements, pathological inputs, and strategy-unsolved reporting.
 
-Calibration output should be local and telemetry-free. Proposed score bands or generation budgets require a separately reviewed design backed by reproducible reports.
+Calibration output remains local and telemetry-free. The baseline report informs separately reviewed decisions about label meaning, score use, clue bands, tier-specific budgets, unsolved states, and acceptance thresholds before any product-policy change.
 
 ### 4. Complete Deferred Database Behaviors
 
