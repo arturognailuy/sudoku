@@ -29,17 +29,11 @@ Calibration reports support policy decisions; calibration tooling does not silen
 
 ## Measurement Preconditions
 
-Classification must be deterministic before a baseline becomes authoritative. `solver.ClassifyPuzzle` currently consumes keys obtained from a map-backed store, so available-strategy order can change the trace and score. The classifier also selects its maximum technique by numeric weight even though weights overlap tier boundaries.
+`solver.ClassifyPuzzle` applies strategies in the canonical registration order defined by the shared tier hierarchy. `solver.StrategyTierForTechnique` selects the highest required tier independently of numeric weights, so overlapping weight ranges cannot demote an Expert technique below a Hard technique.
 
-The intended classification semantics are:
+Classification preserves total weighted score and the ordered move trace as independent measurements. `solver.Classification.Outcome` distinguishes a completed strategy solve from `strategy-unsolved`; a stalled trace is not promoted to Evil or represented as backtracking. A solved input with no moves belongs to the lowest tier, while a stalled input with no applicable technique has no assigned tier.
 
-- apply strategies in one documented canonical order: tier order first, then stable order within each tier;
-- derive the highest required tier from the explicit Easy-to-Evil hierarchy, never from numeric weight;
-- retain total weighted score and move counts as measurements independent of the tier label;
-- report a strategy-unsolved outcome separately when the registered strategies stall;
-- produce identical outcome, score, maximum tier, and trace for identical inputs and configuration.
-
-<!-- TODO: (calibration) make solver.ClassifyPuzzle strategy order and highest-tier selection deterministic before recording the authoritative baseline -->
+Identical input, store configuration, and code version must produce identical outcome, score, maximum technique, and trace. The baseline runner must persist these fields and verify repeated exact equality before treating observations as authoritative.
 
 ## Corpus Contract
 
@@ -87,10 +81,12 @@ No threshold is fixed in this design because the baseline exists to supply the e
 
 ## Delivery Sequence
 
-1. Correct deterministic classification semantics and lock them with regression tests.
+1. Preserve deterministic classification semantics with regression tests.
 2. Implement corpus manifests, observation schemas, and a local runner without tuning product policy.
 3. Publish the baseline report and representative anomalies.
 4. Review policy choices and propose calibration with before-and-after comparisons.
 5. Apply approved policy with unit coverage and applicable built-binary E2E scenarios.
 
-Primary code boundaries are `solver.ClassifyPuzzle`, `solver.ScorePuzzle`, `generator.Difficulty`, `generator.GenerateBestEffort`, and `solver/config.go`.
+Primary code boundaries are `solver.ClassifyPuzzle`, `solver.StrategyTierForTechnique`, `solver.ScorePuzzle`, `generator.Difficulty`, `generator.GenerateBestEffort`, and `solver/config.go`.
+
+<!-- TODO: (calibration) implement immutable corpus manifests, append-only observations, resumable checkpoints, and derived reports -->

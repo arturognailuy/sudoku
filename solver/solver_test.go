@@ -1,6 +1,7 @@
 package solver_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/gnailuy/sudoku/core"
@@ -134,15 +135,21 @@ func TestStoreGetAllStrategySolverKeys(t *testing.T) {
 		t.Fatalf("Expected 23 strategy solver keys, got %d: %v", len(keys), keys)
 	}
 
-	// Check all keys are present (order is not guaranteed from map iteration).
-	keySet := map[string]bool{}
-	for _, k := range keys {
-		keySet[k] = true
+	expected := []string{
+		"naked-single", "hidden-single",
+		"naked-pair", "naked-triple", "pointing-pair", "hidden-pair",
+		"x-wing", "xy-wing", "hidden-triple", "w-wing",
+		"swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing",
+		"jellyfish", "bug-plus-one", "unique-rectangle", "unique-rectangle-2",
+		"unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain",
 	}
-	for _, expected := range []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "naked-quad", "pointing-pair", "hidden-pair", "hidden-triple", "hidden-quad", "x-wing", "swordfish", "jellyfish", "xy-wing", "simple-coloring", "bug-plus-one", "unique-rectangle", "w-wing", "xyz-wing", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain"} {
-		if !keySet[expected] {
-			t.Errorf("Expected %q in keys", expected)
-		}
+	if !reflect.DeepEqual(keys, expected) {
+		t.Fatalf("strategy solver order = %v, want %v", keys, expected)
+	}
+
+	keys[0] = "mutated"
+	if got := store.GetAllStrategySolverKeys()[0]; got != "naked-single" {
+		t.Fatalf("returned key slice mutates store order: first key = %q", got)
 	}
 }
 

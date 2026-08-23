@@ -1,6 +1,7 @@
 package solver
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/gnailuy/sudoku/core"
@@ -38,8 +39,14 @@ func TestClassifyPuzzleFullySolved(t *testing.T) {
 
 	c := ClassifyPuzzle(store, board)
 
-	if !c.Solved {
-		t.Fatal("Expected solved to be true for already-solved board")
+	if !c.Solved || c.Outcome != ClassificationSolved {
+		t.Fatalf("Expected solved outcome, got solved=%v outcome=%q", c.Solved, c.Outcome)
+	}
+	if c.Difficulty != "easy" {
+		t.Fatalf("Expected a complete board to use the lowest tier, got %q", c.Difficulty)
+	}
+	if c.MaxTechnique != "" {
+		t.Fatalf("Expected no maximum technique, got %q", c.MaxTechnique)
 	}
 	if c.Score != 0 {
 		t.Fatalf("Expected score 0 for solved board, got %d", c.Score)
@@ -65,14 +72,57 @@ func TestDetermineDifficulty(t *testing.T) {
 		{"jellyfish", "evil"},
 		{"bug-plus-one", "evil"},
 		{"unique-rectangle", "evil"},
-		{"backtracker", "evil"},
-		{"unknown", "evil"},
+		{"backtracker", ""},
+		{"unknown", ""},
 	}
 
 	for _, tt := range tests {
 		got := determineDifficulty(tt.technique)
 		if got != tt.expected {
 			t.Errorf("determineDifficulty(%q) = %q, want %q", tt.technique, got, tt.expected)
+		}
+	}
+}
+
+func TestFindMaxTechniqueUsesExplicitTierHierarchy(t *testing.T) {
+	moves := []Move{
+		{Technique: "xy-wing"},    // Hard, weight 160.
+		{Technique: "naked-quad"}, // Expert, weight 120.
+		{Technique: "x-wing"},     // Hard, weight 140.
+	}
+
+	if got := findMaxTechnique(moves); got != "naked-quad" {
+		t.Fatalf("findMaxTechnique() = %q, want expert technique naked-quad", got)
+	}
+}
+
+func TestClassifyPuzzleReportsStrategyUnsolvedSeparately(t *testing.T) {
+	store := NewStore()
+	board := core.NewEmptyBoard()
+
+	classification := ClassifyPuzzle(store, board)
+
+	if classification.Solved {
+		t.Fatal("expected empty board to stall strategy solvers")
+	}
+	if classification.Outcome != ClassificationStrategyUnsolved {
+		t.Fatalf("outcome = %q, want %q", classification.Outcome, ClassificationStrategyUnsolved)
+	}
+	if classification.Difficulty == "evil" || classification.MaxTechnique == "backtracker" {
+		t.Fatalf("strategy-unsolved puzzle was promoted to evil/backtracker: %+v", classification)
+	}
+}
+
+func TestClassifyPuzzleIsDeterministic(t *testing.T) {
+	store := NewStore()
+	board := core.NewEmptyBoard()
+	board.FromString("..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..")
+
+	first := ClassifyPuzzle(store, board)
+	for run := 0; run < 25; run++ {
+		got := ClassifyPuzzle(store, board)
+		if !reflect.DeepEqual(got, first) {
+			t.Fatalf("classification run %d differs:\nfirst=%+v\ngot=%+v", run+2, first, got)
 		}
 	}
 }

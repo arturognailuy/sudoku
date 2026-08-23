@@ -196,11 +196,11 @@ func requiresThisTierSolver(board core.Board, options Options) bool {
 
 // GenerationResult holds the output of a best-effort generation attempt.
 type GenerationResult struct {
-	Puzzle         core.Board             // The generated puzzle.
-	Classification solver.Classification  // Difficulty classification of the puzzle.
-	Matched        bool                   // Whether the puzzle matched the requested difficulty.
-	RoundsUsed     int                    // Number of generation rounds attempted.
-	DurationMs     int64                  // Wall-clock time used in milliseconds.
+	Puzzle         core.Board            // The generated puzzle.
+	Classification solver.Classification // Difficulty classification of the puzzle.
+	Matched        bool                  // Whether the puzzle matched the requested difficulty.
+	RoundsUsed     int                   // Number of generation rounds attempted.
+	DurationMs     int64                 // Wall-clock time used in milliseconds.
 }
 
 // GenerateBestEffort generates a puzzle at the target difficulty using
@@ -240,7 +240,7 @@ func GenerateBestEffort(opts BestEffortOptions) GenerationResult {
 
 		// Check if the puzzle matches the target difficulty.
 		targetLevel := difficultyLevelName(opts.Difficulty)
-		if classification.Difficulty == targetLevel && requiresThisTierSolver(problem, opts.Options) {
+		if classification.Solved && classification.Difficulty == targetLevel && requiresThisTierSolver(problem, opts.Options) {
 			result.Matched = true
 			return result
 		}

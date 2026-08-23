@@ -35,6 +35,7 @@ These scenarios are designed to be run manually or via shell scripts against a b
 | Root line CLI, sessions, generate, import, and SQLite composition | `scripts/e2e_cli.py` | Independent mandatory `cli-e2e` job |
 | OpenAPI contract and compatibility | `scripts/check-api-contract.sh` | Independent mandatory `api-contract` job |
 | Generator behavior | `generator/*_test.go` | Unit and race jobs |
+| Deterministic difficulty classification | `solver/classify_test.go` | Unit and race jobs; composed through generate/import black-box flows |
 | Command storage and reporting | `cmd.batchGenerateWith` tests with fixed puzzles | Unit and race jobs |
 | Package coverage evidence | `scripts/coverage_report.py` | Unit job summary; no pass/fail threshold |
 | Probabilistic database fallback | Section 5.2 | Manual; deterministic package boundaries cover DB lookup |

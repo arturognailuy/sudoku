@@ -76,8 +76,9 @@ def main():
         contains(run(binary, ["--level", "banana"], root, expected=1), "invalid difficulty level")
         contains(
             run(binary, ["--level", "easy"], root, "q\n", timeout=60),
-            "Requested difficulty: Easy.",
+            "Generating a random Easy Sudoku problem...",
             "Exiting the game.",
+            "Problem:",
         )
         contains(
             run(binary, ["--input", MULTIPLE_SOLUTIONS], root, "q\n"),
