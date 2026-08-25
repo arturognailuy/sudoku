@@ -1,0 +1,10 @@
+{
+  "manifest": "calibration/testdata/mixed-external-expansion-v3.json",
+  "manifest_sha256": "5d26ab6413e56bb3f59ce8637b82916c719217e88cd6bce9ac70968f99ad59b0",
+  "source_commit": "d21428a0826f23466aeef0325fb49f1bc42afb86",
+  "command": "sudoku calibrate --manifest calibration/testdata/mixed-external-expansion-v3.json --output calibration/baselines/mixed-external-expansion-v3",
+  "go_version": "go version go1.25.7 linux/amd64",
+  "os_arch": "Linux 6.17.0-1010-azure x86_64",
+  "external_source_commit": "norvig/pytudes@0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5",
+  "selection": "pilot records plus source-order external lines 4-10 (easy50/top95) and 4-11 (hardest), without outcome-based replacement"
+}

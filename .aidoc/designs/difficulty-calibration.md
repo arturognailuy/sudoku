@@ -72,11 +72,13 @@ The local `sudoku calibrate` boundary accepts an immutable, ordered version 2 JS
 
 The runner emits `observations.jsonl`, `checkpoint.json`, `report.json`, and `report.md`. Raw observations are append-only run artifacts; checkpoints and deterministic reports are derived state that can be rebuilt without changing observations. Reports stratify outcomes and Wilson intervals by source and split, summarize nearest-rank score/move/clue distributions by assigned tier, show neighboring score-range overlap, preserve each external rating system as a separate agreement matrix, and report generated target mismatches, hit rates, latency, and rounds.
 
-## Current Baseline
+## Current Evidence
 
-`calibration/testdata/mixed-pilot-v2.json` is the immutable 30-record pilot across external, generated, imported, and pathological sources. `calibration/baselines/mixed-pilot-v2/` publishes its append-only observations, derived JSON/Markdown reports, and run metadata. The external subset pins the MIT-licensed `norvig/pytudes` source commit and keeps its `easy50`, `top95`, and `hardest` groups distinct instead of inventing a shared scale.
+`calibration/testdata/mixed-pilot-v2.json` preserves the immutable 30-record pilot across external, generated, imported, and pathological sources. `calibration/testdata/mixed-external-expansion-v3.json` adds source-order records from the same pinned MIT-licensed `norvig/pytudes` groups without outcome-based selection, increasing the external stratum from 9 to 31 puzzles. Each manifest has a matching directory under `calibration/baselines/` with append-only observations, deterministic reports, and exact run metadata.
 
-The pilot is a measurement baseline, not calibration policy. Small strata produce wide confidence intervals, and the generated subset has only two records per requested tier. The baseline therefore supports targeted expansion and a later policy proposal; it does not justify changing weights, thresholds, clue bands, budgets, or fallback behavior.
+The external expansion makes the pilot's apparent score separation less credible: all four neighboring assigned tiers now have overlapping observed score ranges, and 10 of 31 external puzzles are strategy-unsolved. The `easy50`, `top95`, and `hardest` groups remain separate because their labels do not define a shared human-difficulty scale.
+
+The published evidence remains a measurement baseline, not calibration policy. Generated records still number only two per requested tier, imported and pathological strata remain small, and the external corpus comes from one source family. The evidence supports targeted generated/imported expansion and an independent human-rating source before any proposal changes weights, thresholds, clue bands, budgets, or fallback behavior.
 
 ## Decision Gates
 
