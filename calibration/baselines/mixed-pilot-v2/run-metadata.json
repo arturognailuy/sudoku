@@ -1,0 +1,9 @@
+{
+  "manifest": "calibration/testdata/mixed-pilot-v2.json",
+  "manifest_sha256": "1cc1f09fea0d3696b6377a081217e8651b018c647a570538377a72db514a2533",
+  "source_commit": "002272e1a9d98982a1b1f3ad45cf36c28e71d22d",
+  "command": "sudoku calibrate --manifest calibration/testdata/mixed-pilot-v2.json --output calibration/baselines/mixed-pilot-v2",
+  "go_version": "go version go1.25.7 linux/amd64",
+  "os_arch": "Linux 6.17.0-1010-azure x86_64",
+  "external_source_commit": "norvig/pytudes@0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5"
+}
