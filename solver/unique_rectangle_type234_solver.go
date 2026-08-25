@@ -596,7 +596,18 @@ func scanURPatterns(board *core.Board, technique string, checkFn urCheckFunc) *M
 	}
 
 	// For each pair with >= 4 cells, try all rectangles.
-	for pair, positions := range pairCells {
+	pairKeys := make([]pairKey, 0, len(pairCells))
+	for pair := range pairCells {
+		pairKeys = append(pairKeys, pair)
+	}
+	sort.Slice(pairKeys, func(i, j int) bool {
+		if pairKeys[i].a != pairKeys[j].a {
+			return pairKeys[i].a < pairKeys[j].a
+		}
+		return pairKeys[i].b < pairKeys[j].b
+	})
+	for _, pair := range pairKeys {
+		positions := pairCells[pair]
 		if len(positions) < 4 {
 			continue
 		}

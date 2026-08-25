@@ -218,3 +218,52 @@ func TestLoadManifestValidatesGeneratedMetadata(t *testing.T) {
 		t.Fatalf("valid generated metadata rejected: %v", err)
 	}
 }
+
+func TestDeriveReportBuildsStratifiedBaseline(t *testing.T) {
+	generated := Puzzle{
+		ID: "generated-1", Puzzle: knownPuzzle, SourceCategory: "generated", Split: "exploratory",
+		Generator: &GeneratorMetadata{RequestedDifficulty: "hard", Attempt: 4, ElapsedMilliseconds: 250, ClueCount: 32, ClassificationOutcome: string(solver.ClassificationSolved)},
+	}
+	external := Puzzle{
+		ID: "external-1", Puzzle: strings.Repeat(".", 81), SourceCategory: "external", Split: "held-out",
+		OriginalRating: &OriginalRating{System: "fixture-scale", Label: "challenging"},
+	}
+	manifest := Manifest{Version: Version, Name: "mixed", Puzzles: []Puzzle{generated, external}}
+	observations := []Observation{
+		{Index: 0, Outcome: solver.ClassificationSolved, Difficulty: "medium", Score: 25, MoveCount: 10, RepeatCount: 2},
+		{Index: 1, Outcome: solver.ClassificationStrategyUnsolved, Score: 0, MoveCount: 0, RepeatCount: 2},
+	}
+
+	report := deriveReport(manifest, "hash", observations)
+	if report.Reproducible != 2 || report.BySource["external"].StrategyUnsolved != 1 {
+		t.Fatalf("unexpected source report: %+v", report)
+	}
+	if report.BySource["external"].StrategyUnsolvedRate.Lower95 <= 0 || report.BySource["external"].StrategyUnsolvedRate.Upper95 != 1 {
+		t.Fatalf("unexpected Wilson interval: %+v", report.BySource["external"].StrategyUnsolvedRate)
+	}
+	if got := report.ExternalAgreement["fixture-scale"]["challenging"]["unassigned"]; got != 1 {
+		t.Fatalf("external agreement count = %d, want 1", got)
+	}
+	if got := report.GenerationMismatch["hard"]["medium"]; got != 1 {
+		t.Fatalf("generation mismatch count = %d, want 1", got)
+	}
+	if hit := report.GenerationHitRate["hard"]; hit.Numerator != 0 || hit.Denominator != 1 {
+		t.Fatalf("generation hit rate = %+v", hit)
+	}
+	if latency := report.GenerationLatencyMS["hard"]; latency.Median != 250 || latency.P95 != 250 {
+		t.Fatalf("generation latency = %+v", latency)
+	}
+	if metrics := report.MetricsByDifficulty["medium"]; metrics.Clues.Min != 32 || metrics.Score.Median != 25 {
+		t.Fatalf("tier metrics = %+v", metrics)
+	}
+	if len(report.NeighboringScoreOverlap) != 0 {
+		t.Fatalf("unexpected neighboring overlap for one assigned tier: %+v", report.NeighboringScoreOverlap)
+	}
+}
+
+func TestNumericReportUsesNearestRankPercentiles(t *testing.T) {
+	report := numericReport([]int{100, 1, 3, 2, 4})
+	if report != (NumericReport{Count: 5, Min: 1, Median: 3, P95: 100, Max: 100}) {
+		t.Fatalf("numeric report = %+v", report)
+	}
+}

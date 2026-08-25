@@ -32,16 +32,17 @@ This index provides reading chains for common starting points and a complete doc
 1. `.aidoc/designs/difficulty-model.md` — current model, tier invariants, and configuration boundary
 2. `.aidoc/designs/difficulty-calibration.md` — measurement contract, evidence, reports, and decision gates
 3. `calibration/runner.go` — immutable manifests, reproducibility checks, observations, checkpoints, and reports
-4. `cmd/calibrate.go` — resumable local measurement command
-5. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
-6. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
-7. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
-8. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
-9. `db/db.go` — SQLite database open/close/migrate
-10. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
-11. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
-12. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
-13. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
+4. `calibration/baselines/mixed-pilot-v2/report.md` — current mixed-corpus baseline results and limitations
+5. `cmd/calibrate.go` — resumable local measurement command
+6. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
+7. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
+8. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
+9. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
+10. `db/db.go` — SQLite database open/close/migrate
+11. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
+12. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
+13. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
+14. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — stabilization priorities, sequencing, and exit criteria
@@ -96,6 +97,8 @@ This index provides reading chains for common starting points and a complete doc
 | `recovery/recovery.go` | Private XDG recovery records, discovery, validation, retention, and deletion |
 | `sessionfile/session_file.go` | Bounded reads and atomic mode-0600 session writes |
 | `calibration/runner.go` | Immutable corpus manifests, append-only observations, resumable checkpoints, and derived reports |
+| `calibration/testdata/mixed-pilot-v2.json` | Immutable traceable mixed-corpus pilot manifest |
+| `calibration/baselines/mixed-pilot-v2/report.md` | Published pilot baseline and statistical limitations |
 | `cmd/calibrate.go` | Local difficulty measurement CLI boundary |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |

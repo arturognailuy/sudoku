@@ -2,6 +2,7 @@ package solver
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/gnailuy/sudoku/core"
 )
@@ -59,7 +60,18 @@ func (s *UniqueRectangleSolver) Apply(board *core.Board) *Move {
 	}
 
 	// For each pair, check if 3 bivalue cells can form a rectangle with a 4th cell.
-	for pair, cells := range bivalueCells {
+	pairKeys := make([]pairKey, 0, len(bivalueCells))
+	for pair := range bivalueCells {
+		pairKeys = append(pairKeys, pair)
+	}
+	sort.Slice(pairKeys, func(i, j int) bool {
+		if pairKeys[i].a != pairKeys[j].a {
+			return pairKeys[i].a < pairKeys[j].a
+		}
+		return pairKeys[i].b < pairKeys[j].b
+	})
+	for _, pair := range pairKeys {
+		cells := bivalueCells[pair]
 		if len(cells) < 3 {
 			continue
 		}
@@ -106,6 +118,8 @@ func (s *UniqueRectangleSolver) checkTriple(board *core.Board, three [3]core.Pos
 	for c := range cols {
 		colKeys = append(colKeys, c)
 	}
+	sort.Ints(rowKeys)
+	sort.Ints(colKeys)
 
 	// Find the missing corner (the intersection not in 'three').
 	threeSet := make(map[[2]int]bool)

@@ -70,7 +70,13 @@ Every run records the corpus manifest hash, repository commit, Go version, opera
 
 The local `sudoku calibrate` boundary accepts an immutable, ordered version 2 JSON manifest and an output directory. Direct measurement accepts only canonical dot notation and verifies every declared content hash, preventing the preparation and measurement boundaries from disagreeing. `calibration.Run` binds checkpoints and observations to the exact manifest SHA-256, rejects changed manifests and non-prefix logs, classifies every puzzle twice for exact reproducibility, appends one JSON Lines observation only after agreement, and resumes from the durable log when a checkpoint is missing or lagging.
 
-The runner emits `observations.jsonl`, `checkpoint.json`, `report.json`, and `report.md`. Raw observations are append-only run artifacts; checkpoints and deterministic reports are derived state that can be rebuilt without changing observations. The initial report intentionally covers progress, outcomes, assigned tiers, and expected-label agreement; richer distributions and generation measurements remain later measurement increments rather than hidden policy changes.
+The runner emits `observations.jsonl`, `checkpoint.json`, `report.json`, and `report.md`. Raw observations are append-only run artifacts; checkpoints and deterministic reports are derived state that can be rebuilt without changing observations. Reports stratify outcomes and Wilson intervals by source and split, summarize nearest-rank score/move/clue distributions by assigned tier, show neighboring score-range overlap, preserve each external rating system as a separate agreement matrix, and report generated target mismatches, hit rates, latency, and rounds.
+
+## Current Baseline
+
+`calibration/testdata/mixed-pilot-v2.json` is the immutable 30-record pilot across external, generated, imported, and pathological sources. `calibration/baselines/mixed-pilot-v2/` publishes its append-only observations, derived JSON/Markdown reports, and run metadata. The external subset pins the MIT-licensed `norvig/pytudes` source commit and keeps its `easy50`, `top95`, and `hardest` groups distinct instead of inventing a shared scale.
+
+The pilot is a measurement baseline, not calibration policy. Small strata produce wide confidence intervals, and the generated subset has only two records per requested tier. The baseline therefore supports targeted expansion and a later policy proposal; it does not justify changing weights, thresholds, clue bands, budgets, or fallback behavior.
 
 ## Decision Gates
 
@@ -88,8 +94,8 @@ No threshold is fixed in this design because the baseline exists to supply the e
 ## Delivery Sequence
 
 1. Preserve deterministic classification semantics with regression tests.
-2. Implement corpus manifests, observation schemas, and a local runner without tuning product policy.
-3. Publish the baseline report and representative anomalies.
+2. Maintain immutable corpus manifests, append-only observations, and deterministic reports without tuning product policy.
+3. Expand only pilot strata whose intervals, overlap, or rare-failure estimates remain unstable.
 4. Review policy choices and propose calibration with before-and-after comparisons.
 5. Apply approved policy with unit coverage and applicable built-binary E2E scenarios.
 

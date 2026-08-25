@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -89,16 +90,70 @@ type checkpoint struct {
 
 // Report is deterministically derived from an observation log.
 type Report struct {
-	Version      int            `json:"version"`
-	ManifestName string         `json:"manifest_name"`
-	ManifestHash string         `json:"manifest_hash"`
-	Observed     int            `json:"observed"`
-	Total        int            `json:"total"`
-	Complete     bool           `json:"complete"`
-	ByOutcome    map[string]int `json:"by_outcome"`
-	ByDifficulty map[string]int `json:"by_difficulty"`
-	Expected     int            `json:"expected"`
-	Matched      int            `json:"matched"`
+	Version                 int                                  `json:"version"`
+	ManifestName            string                               `json:"manifest_name"`
+	ManifestHash            string                               `json:"manifest_hash"`
+	Observed                int                                  `json:"observed"`
+	Total                   int                                  `json:"total"`
+	Complete                bool                                 `json:"complete"`
+	Reproducible            int                                  `json:"reproducible"`
+	ByOutcome               map[string]int                       `json:"by_outcome"`
+	ByDifficulty            map[string]int                       `json:"by_difficulty"`
+	BySource                map[string]GroupReport               `json:"by_source"`
+	BySplit                 map[string]GroupReport               `json:"by_split"`
+	MetricsByDifficulty     map[string]MetricReport              `json:"metrics_by_difficulty"`
+	NeighboringScoreOverlap map[string]OverlapReport             `json:"neighboring_score_overlap"`
+	ExternalAgreement       map[string]map[string]map[string]int `json:"external_agreement"`
+	GenerationMismatch      map[string]map[string]int            `json:"generation_mismatch"`
+	GenerationHitRate       map[string]RateReport                `json:"generation_hit_rate"`
+	GenerationLatencyMS     map[string]NumericReport             `json:"generation_latency_ms"`
+	GenerationRounds        map[string]NumericReport             `json:"generation_rounds"`
+	Expected                int                                  `json:"expected"`
+	Matched                 int                                  `json:"matched"`
+}
+
+// GroupReport summarizes outcomes for a source category or corpus split.
+type GroupReport struct {
+	Observed             int        `json:"observed"`
+	Solved               int        `json:"solved"`
+	StrategyUnsolved     int        `json:"strategy_unsolved"`
+	StrategyUnsolvedRate RateReport `json:"strategy_unsolved_rate"`
+}
+
+// MetricReport keeps distributions separate for each assigned tier.
+type MetricReport struct {
+	Observed int           `json:"observed"`
+	Score    NumericReport `json:"score"`
+	Moves    NumericReport `json:"moves"`
+	Clues    NumericReport `json:"clues"`
+}
+
+// NumericReport uses deterministic nearest-rank percentiles.
+type NumericReport struct {
+	Count  int `json:"count"`
+	Min    int `json:"min"`
+	Median int `json:"median"`
+	P95    int `json:"p95"`
+	Max    int `json:"max"`
+}
+
+// OverlapReport describes intersection between observed neighboring-tier score ranges.
+type OverlapReport struct {
+	LowerTier string `json:"lower_tier"`
+	UpperTier string `json:"upper_tier"`
+	Overlaps  bool   `json:"overlaps"`
+	Lower     int    `json:"lower,omitempty"`
+	Upper     int    `json:"upper,omitempty"`
+}
+
+// RateReport includes a Wilson 95% confidence interval. A zero denominator
+// produces all-zero values and remains explicit in the denominator field.
+type RateReport struct {
+	Numerator   int     `json:"numerator"`
+	Denominator int     `json:"denominator"`
+	Rate        float64 `json:"rate"`
+	Lower95     float64 `json:"lower_95"`
+	Upper95     float64 `json:"upper_95"`
 }
 
 // Result describes the durable files produced by Run.
@@ -427,10 +482,69 @@ func traceHash(moves []solver.Move) string {
 }
 
 func deriveReport(manifest Manifest, manifestHash string, observations []Observation) Report {
-	report := Report{Version: Version, ManifestName: manifest.Name, ManifestHash: manifestHash, Observed: len(observations), Total: len(manifest.Puzzles), Complete: len(observations) == len(manifest.Puzzles), ByOutcome: map[string]int{}, ByDifficulty: map[string]int{}}
+	report := Report{
+		Version: Version, ManifestName: manifest.Name, ManifestHash: manifestHash,
+		Observed: len(observations), Total: len(manifest.Puzzles), Complete: len(observations) == len(manifest.Puzzles),
+		ByOutcome: map[string]int{}, ByDifficulty: map[string]int{},
+		BySource: map[string]GroupReport{}, BySplit: map[string]GroupReport{}, MetricsByDifficulty: map[string]MetricReport{}, NeighboringScoreOverlap: map[string]OverlapReport{},
+		ExternalAgreement: map[string]map[string]map[string]int{}, GenerationMismatch: map[string]map[string]int{},
+		GenerationHitRate: map[string]RateReport{}, GenerationLatencyMS: map[string]NumericReport{}, GenerationRounds: map[string]NumericReport{},
+	}
+	type metricValues struct{ scores, moves, clues []int }
+	metrics := map[string]*metricValues{}
+	generationHits := map[string][2]int{}
+	generationLatency := map[string][]int{}
+	generationRounds := map[string][]int{}
+
 	for _, observation := range observations {
+		if observation.RepeatCount >= 2 {
+			report.Reproducible++
+		}
+		puzzle := manifest.Puzzles[observation.Index]
+		difficulty := observation.Difficulty
+		if difficulty == "" {
+			difficulty = "unassigned"
+		}
 		report.ByOutcome[string(observation.Outcome)]++
-		report.ByDifficulty[observation.Difficulty]++
+		report.ByDifficulty[difficulty]++
+		report.BySource[puzzle.SourceCategory] = addGroup(report.BySource[puzzle.SourceCategory], observation.Outcome)
+		report.BySplit[puzzle.Split] = addGroup(report.BySplit[puzzle.Split], observation.Outcome)
+
+		values := metrics[difficulty]
+		if values == nil {
+			values = &metricValues{}
+			metrics[difficulty] = values
+		}
+		values.scores = append(values.scores, observation.Score)
+		values.moves = append(values.moves, observation.MoveCount)
+		values.clues = append(values.clues, strings.Count(puzzle.Puzzle, "1")+strings.Count(puzzle.Puzzle, "2")+strings.Count(puzzle.Puzzle, "3")+strings.Count(puzzle.Puzzle, "4")+strings.Count(puzzle.Puzzle, "5")+strings.Count(puzzle.Puzzle, "6")+strings.Count(puzzle.Puzzle, "7")+strings.Count(puzzle.Puzzle, "8")+strings.Count(puzzle.Puzzle, "9"))
+
+		if puzzle.SourceCategory == "external" && puzzle.OriginalRating != nil {
+			system := puzzle.OriginalRating.System
+			label := puzzle.OriginalRating.Label
+			if report.ExternalAgreement[system] == nil {
+				report.ExternalAgreement[system] = map[string]map[string]int{}
+			}
+			if report.ExternalAgreement[system][label] == nil {
+				report.ExternalAgreement[system][label] = map[string]int{}
+			}
+			report.ExternalAgreement[system][label][difficulty]++
+		}
+		if puzzle.SourceCategory == "generated" && puzzle.Generator != nil {
+			target := puzzle.Generator.RequestedDifficulty
+			if report.GenerationMismatch[target] == nil {
+				report.GenerationMismatch[target] = map[string]int{}
+			}
+			report.GenerationMismatch[target][difficulty]++
+			hit := generationHits[target]
+			hit[1]++
+			if difficulty == target && observation.Outcome == solver.ClassificationSolved {
+				hit[0]++
+			}
+			generationHits[target] = hit
+			generationLatency[target] = append(generationLatency[target], int(puzzle.Generator.ElapsedMilliseconds))
+			generationRounds[target] = append(generationRounds[target], puzzle.Generator.Attempt)
+		}
 		if observation.MatchesExpected != nil {
 			report.Expected++
 			if *observation.MatchesExpected {
@@ -438,30 +552,157 @@ func deriveReport(manifest Manifest, manifestHash string, observations []Observa
 			}
 		}
 	}
+	for key, group := range report.BySource {
+		group.StrategyUnsolvedRate = rateReport(group.StrategyUnsolved, group.Observed)
+		report.BySource[key] = group
+	}
+	for key, group := range report.BySplit {
+		group.StrategyUnsolvedRate = rateReport(group.StrategyUnsolved, group.Observed)
+		report.BySplit[key] = group
+	}
+	for difficulty, values := range metrics {
+		report.MetricsByDifficulty[difficulty] = MetricReport{Observed: len(values.scores), Score: numericReport(values.scores), Moves: numericReport(values.moves), Clues: numericReport(values.clues)}
+	}
+	tiers := []string{"easy", "medium", "hard", "expert", "evil"}
+	for i := 0; i < len(tiers)-1; i++ {
+		lower, lowerOK := report.MetricsByDifficulty[tiers[i]]
+		upper, upperOK := report.MetricsByDifficulty[tiers[i+1]]
+		if !lowerOK || !upperOK {
+			continue
+		}
+		overlap := OverlapReport{LowerTier: tiers[i], UpperTier: tiers[i+1]}
+		overlap.Lower = max(lower.Score.Min, upper.Score.Min)
+		overlap.Upper = min(lower.Score.Max, upper.Score.Max)
+		overlap.Overlaps = overlap.Lower <= overlap.Upper
+		if !overlap.Overlaps {
+			overlap.Lower, overlap.Upper = 0, 0
+		}
+		report.NeighboringScoreOverlap[tiers[i]+"-"+tiers[i+1]] = overlap
+	}
+	for target, hit := range generationHits {
+		report.GenerationHitRate[target] = rateReport(hit[0], hit[1])
+		report.GenerationLatencyMS[target] = numericReport(generationLatency[target])
+		report.GenerationRounds[target] = numericReport(generationRounds[target])
+	}
+	return report
+}
+
+func addGroup(group GroupReport, outcome solver.ClassificationOutcome) GroupReport {
+	group.Observed++
+	if outcome == solver.ClassificationSolved {
+		group.Solved++
+	} else if outcome == solver.ClassificationStrategyUnsolved {
+		group.StrategyUnsolved++
+	}
+	return group
+}
+
+func numericReport(values []int) NumericReport {
+	if len(values) == 0 {
+		return NumericReport{}
+	}
+	ordered := append([]int(nil), values...)
+	sort.Ints(ordered)
+	at := func(p float64) int {
+		index := int(math.Ceil(p*float64(len(ordered)))) - 1
+		if index < 0 {
+			index = 0
+		}
+		return ordered[index]
+	}
+	return NumericReport{Count: len(ordered), Min: ordered[0], Median: at(0.5), P95: at(0.95), Max: ordered[len(ordered)-1]}
+}
+
+func rateReport(numerator, denominator int) RateReport {
+	report := RateReport{Numerator: numerator, Denominator: denominator}
+	if denominator == 0 {
+		return report
+	}
+	const z = 1.959963984540054
+	n := float64(denominator)
+	p := float64(numerator) / n
+	denom := 1 + z*z/n
+	center := (p + z*z/(2*n)) / denom
+	delta := z * math.Sqrt((p*(1-p)+z*z/(4*n))/n) / denom
+	report.Rate, report.Lower95, report.Upper95 = p, math.Max(0, center-delta), math.Min(1, center+delta)
 	return report
 }
 
 func markdownReport(report Report) string {
 	var builder strings.Builder
-	fmt.Fprintf(&builder, "# Difficulty Measurement Report\n\n- Manifest: `%s`\n- Hash: `%s`\n- Progress: %d/%d\n- Complete: %t\n", report.ManifestName, report.ManifestHash, report.Observed, report.Total, report.Complete)
+	fmt.Fprintf(&builder, "# Difficulty Measurement Report\n\n- Manifest: `%s`\n- Hash: `%s`\n- Progress: %d/%d\n- Complete: %t\n- Reproducible classifications: %d/%d\n", report.ManifestName, report.ManifestHash, report.Observed, report.Total, report.Complete, report.Reproducible, report.Observed)
 	if report.Expected > 0 {
 		fmt.Fprintf(&builder, "- Expected matches: %d/%d\n", report.Matched, report.Expected)
 	}
-	for _, section := range []struct {
-		name   string
-		values map[string]int
-	}{{"Outcomes", report.ByOutcome}, {"Difficulties", report.ByDifficulty}} {
-		fmt.Fprintf(&builder, "\n## %s\n\n", section.name)
-		keys := make([]string, 0, len(section.values))
-		for key := range section.values {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		for _, key := range keys {
-			fmt.Fprintf(&builder, "- %s: %d\n", key, section.values[key])
+	writeCountSection(&builder, "Outcomes", report.ByOutcome)
+	writeCountSection(&builder, "Difficulties", report.ByDifficulty)
+
+	fmt.Fprint(&builder, "\n## Source Groups\n\n")
+	for _, key := range sortedKeys(report.BySource) {
+		group := report.BySource[key]
+		fmt.Fprintf(&builder, "- %s: %d observed, %d solved, %d strategy-unsolved (%.1f%%, 95%% CI %.1f–%.1f%%)\n", key, group.Observed, group.Solved, group.StrategyUnsolved, 100*group.StrategyUnsolvedRate.Rate, 100*group.StrategyUnsolvedRate.Lower95, 100*group.StrategyUnsolvedRate.Upper95)
+	}
+	fmt.Fprint(&builder, "\n## Split Groups\n\n")
+	for _, key := range sortedKeys(report.BySplit) {
+		group := report.BySplit[key]
+		fmt.Fprintf(&builder, "- %s: %d observed, %d solved, %d strategy-unsolved (%.1f%%, 95%% CI %.1f–%.1f%%)\n", key, group.Observed, group.Solved, group.StrategyUnsolved, 100*group.StrategyUnsolvedRate.Rate, 100*group.StrategyUnsolvedRate.Lower95, 100*group.StrategyUnsolvedRate.Upper95)
+	}
+	fmt.Fprint(&builder, "\n## Tier Distributions\n\n| Tier | n | Score min/median/p95/max | Moves min/median/p95/max | Clues min/median/p95/max |\n|---|---:|---|---|---|\n")
+	for _, key := range sortedKeys(report.MetricsByDifficulty) {
+		metric := report.MetricsByDifficulty[key]
+		fmt.Fprintf(&builder, "| %s | %d | %s | %s | %s |\n", key, metric.Observed, formatNumeric(metric.Score), formatNumeric(metric.Moves), formatNumeric(metric.Clues))
+	}
+	fmt.Fprint(&builder, "\n## Neighboring-Tier Score-Range Overlap\n\n")
+	for _, key := range sortedKeys(report.NeighboringScoreOverlap) {
+		overlap := report.NeighboringScoreOverlap[key]
+		if overlap.Overlaps {
+			fmt.Fprintf(&builder, "- %s / %s: overlap %d–%d\n", overlap.LowerTier, overlap.UpperTier, overlap.Lower, overlap.Upper)
+		} else {
+			fmt.Fprintf(&builder, "- %s / %s: no observed range overlap\n", overlap.LowerTier, overlap.UpperTier)
 		}
 	}
+	fmt.Fprint(&builder, "\n## External Rating Agreement\n")
+	for _, system := range sortedKeys(report.ExternalAgreement) {
+		fmt.Fprintf(&builder, "\n### %s\n\n", system)
+		for _, label := range sortedKeys(report.ExternalAgreement[system]) {
+			fmt.Fprintf(&builder, "- %s: %s\n", label, formatCounts(report.ExternalAgreement[system][label]))
+		}
+	}
+	fmt.Fprint(&builder, "\n## Generation Measurements\n\n")
+	for _, target := range sortedKeys(report.GenerationMismatch) {
+		hit := report.GenerationHitRate[target]
+		fmt.Fprintf(&builder, "- %s: hits %d/%d (%.1f%%, 95%% CI %.1f–%.1f%%); observed {%s}; latency ms %s; rounds %s\n", target, hit.Numerator, hit.Denominator, 100*hit.Rate, 100*hit.Lower95, 100*hit.Upper95, formatCounts(report.GenerationMismatch[target]), formatNumeric(report.GenerationLatencyMS[target]), formatNumeric(report.GenerationRounds[target]))
+	}
+	fmt.Fprint(&builder, "\n## Method and Limits\n\n- Every puzzle was classified twice; only exact outcome, score, maximum-technique, move-count, and trace agreement was recorded.\n- Numeric summaries use deterministic nearest-rank percentiles. Rate intervals are Wilson 95% confidence intervals.\n- External source scales remain separate and are not treated as equivalent human-difficulty labels.\n- Generated samples test generator behavior, not external validity. Random seeds are absent because the public generator boundary does not expose them.\n- Pilot strata are deliberately small. The report identifies expansion targets and does not justify policy changes by itself.\n")
 	return builder.String()
+}
+
+func writeCountSection(builder *strings.Builder, name string, values map[string]int) {
+	fmt.Fprintf(builder, "\n## %s\n\n", name)
+	for _, key := range sortedKeys(values) {
+		fmt.Fprintf(builder, "- %s: %d\n", key, values[key])
+	}
+}
+
+func sortedKeys[V any](values map[string]V) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func formatNumeric(value NumericReport) string {
+	return fmt.Sprintf("%d/%d/%d/%d", value.Min, value.Median, value.P95, value.Max)
+}
+
+func formatCounts(values map[string]int) string {
+	parts := make([]string, 0, len(values))
+	for _, key := range sortedKeys(values) {
+		parts = append(parts, fmt.Sprintf("%s=%d", key, values[key]))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func writeJSONAtomic(path string, value any) error {

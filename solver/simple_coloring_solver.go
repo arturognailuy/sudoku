@@ -93,7 +93,7 @@ func (s *SimpleColoringSolver) colorDigit(board *core.Board, digit int) *Move {
 	// Color connected components using BFS with alternating colors (0 and 1).
 	colored := make(map[core.Position]int) // position → color (0 or 1)
 
-	for startPos := range adj {
+	for _, startPos := range sortedPositions(adj) {
 		if _, ok := colored[startPos]; ok {
 			continue
 		}
