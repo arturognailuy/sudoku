@@ -118,8 +118,16 @@ def main():
         observations = observations_path.read_text(encoding="utf-8").splitlines()
         report = json.loads((calibration_run / "report.json").read_text(encoding="utf-8"))
         checkpoint = json.loads((calibration_run / "checkpoint.json").read_text(encoding="utf-8"))
-        if len(observations) != 1 or not report.get("complete") or checkpoint.get("next_index") != 1:
-            raise AssertionError("calibration run did not preserve resumable artifacts")
+        if (
+            len(observations) != 1
+            or not report.get("complete")
+            or report.get("reproducible") != 1
+            or report.get("by_source", {}).get("pathological", {}).get("observed") != 1
+            or report.get("by_split", {}).get("exploratory", {}).get("observed") != 1
+            or not report.get("metrics_by_difficulty")
+            or checkpoint.get("next_index") != 1
+        ):
+            raise AssertionError("calibration run did not preserve resumable stratified artifacts")
         manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
         manifest_data["name"] = "changed-pilot"
         manifest.write_text(json.dumps(manifest_data, indent=2) + "\n", encoding="utf-8")

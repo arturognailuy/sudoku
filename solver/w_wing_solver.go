@@ -2,6 +2,7 @@ package solver
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/gnailuy/sudoku/core"
 )
@@ -92,7 +93,18 @@ func (s *WWingSolver) Apply(board *core.Board) *Move {
 
 	// Step 3: For each pair of bi-value cells with the same candidates {X,Y},
 	// check if they are connected by a strong link on X or Y.
-	for pair, cells := range groups {
+	groupKeys := make([]pairKey, 0, len(groups))
+	for pair := range groups {
+		groupKeys = append(groupKeys, pair)
+	}
+	sort.Slice(groupKeys, func(i, j int) bool {
+		if groupKeys[i].a != groupKeys[j].a {
+			return groupKeys[i].a < groupKeys[j].a
+		}
+		return groupKeys[i].b < groupKeys[j].b
+	})
+	for _, pair := range groupKeys {
+		cells := groups[pair]
 		if len(cells) < 2 {
 			continue
 		}

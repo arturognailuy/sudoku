@@ -104,10 +104,7 @@ func (s *XCyclesSolver) findXCycles(board *core.Board, digit int) *Move {
 	}
 
 	// Collect all nodes (cells with the digit as candidate).
-	var nodes []core.Position
-	for pos := range adj {
-		nodes = append(nodes, pos)
-	}
+	nodes := sortedPositions(adj)
 
 	// Search for useful alternating chains using DFS.
 	// We look for chains that start with a strong link and end at the
