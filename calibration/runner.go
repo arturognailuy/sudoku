@@ -13,12 +13,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/solver"
 )
 
-const Version = 1
+const Version = 2
 
 // Manifest is an immutable, ordered corpus definition.
 type Manifest struct {
@@ -29,10 +30,34 @@ type Manifest struct {
 
 // Puzzle is one stable corpus member.
 type Puzzle struct {
-	ID                 string `json:"id"`
-	Puzzle             string `json:"puzzle"`
-	Source             string `json:"source,omitempty"`
-	ExpectedDifficulty string `json:"expected_difficulty,omitempty"`
+	ID                 string             `json:"id"`
+	Puzzle             string             `json:"puzzle"`
+	PuzzleHash         string             `json:"puzzle_hash"`
+	SourceCategory     string             `json:"source_category"`
+	SourceID           string             `json:"source_id"`
+	License            string             `json:"license"`
+	Redistribution     string             `json:"redistribution"`
+	CollectionMethod   string             `json:"collection_method"`
+	Split              string             `json:"split"`
+	ExpectedDifficulty string             `json:"expected_difficulty,omitempty"`
+	OriginalRating     *OriginalRating    `json:"original_rating,omitempty"`
+	Generator          *GeneratorMetadata `json:"generator,omitempty"`
+}
+
+// OriginalRating preserves a source's own scale without silently normalizing it.
+type OriginalRating struct {
+	System string `json:"system"`
+	Label  string `json:"label"`
+}
+
+// GeneratorMetadata records how a generated corpus member was collected.
+type GeneratorMetadata struct {
+	RequestedDifficulty   string `json:"requested_difficulty"`
+	Configuration         string `json:"configuration"`
+	Attempt               int    `json:"attempt"`
+	ElapsedMilliseconds   int64  `json:"elapsed_milliseconds"`
+	ClueCount             int    `json:"clue_count"`
+	ClassificationOutcome string `json:"classification_outcome"`
 }
 
 // Observation is one append-only classification result.
@@ -42,7 +67,9 @@ type Observation struct {
 	ManifestHash       string                       `json:"manifest_hash"`
 	ID                 string                       `json:"id"`
 	PuzzleHash         string                       `json:"puzzle_hash"`
-	Source             string                       `json:"source,omitempty"`
+	SourceCategory     string                       `json:"source_category"`
+	SourceID           string                       `json:"source_id"`
+	Split              string                       `json:"split"`
 	ExpectedDifficulty string                       `json:"expected_difficulty,omitempty"`
 	Outcome            solver.ClassificationOutcome `json:"outcome"`
 	Difficulty         string                       `json:"difficulty"`
@@ -145,54 +172,150 @@ func Run(manifestPath, outputDir string, store solver.Store) (Result, error) {
 	return Result{ManifestHash: manifestHash, Appended: appended, Report: report}, nil
 }
 
+// PrepareManifest normalizes candidate records, adds content hashes, validates
+// provenance, and writes the canonical immutable manifest consumed by Run.
+func PrepareManifest(inputPath, outputPath string) (Manifest, error) {
+	manifest, err := decodeManifest(inputPath)
+	if err != nil {
+		return Manifest{}, err
+	}
+	for i := range manifest.Puzzles {
+		manifest.Puzzles[i].Puzzle = normalizePuzzle(manifest.Puzzles[i].Puzzle)
+		manifest.Puzzles[i].PuzzleHash = hash([]byte(manifest.Puzzles[i].Puzzle))
+	}
+	if err := validateManifest(manifest); err != nil {
+		return Manifest{}, err
+	}
+	if _, err := os.Stat(outputPath); err == nil {
+		return Manifest{}, fmt.Errorf("output manifest already exists: %s", outputPath)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return Manifest{}, fmt.Errorf("inspect output manifest: %w", err)
+	}
+	if err := writeJSONAtomic(outputPath, manifest); err != nil {
+		return Manifest{}, err
+	}
+	return manifest, nil
+}
+
 func loadManifest(path string) (Manifest, string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Manifest{}, "", fmt.Errorf("read manifest: %w", err)
 	}
+	manifest, err := decodeManifestBytes(data)
+	if err != nil {
+		return Manifest{}, "", err
+	}
+	if err := validateManifest(manifest); err != nil {
+		return Manifest{}, "", err
+	}
+	return manifest, hash(data), nil
+}
+
+func decodeManifest(path string) (Manifest, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Manifest{}, fmt.Errorf("read manifest: %w", err)
+	}
+	return decodeManifestBytes(data)
+}
+
+func decodeManifestBytes(data []byte) (Manifest, error) {
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
 	decoder.DisallowUnknownFields()
 	var manifest Manifest
 	if err := decoder.Decode(&manifest); err != nil {
-		return Manifest{}, "", fmt.Errorf("decode manifest: %w", err)
+		return Manifest{}, fmt.Errorf("decode manifest: %w", err)
 	}
 	if err := ensureEOF(decoder); err != nil {
-		return Manifest{}, "", err
+		return Manifest{}, err
 	}
+	return manifest, nil
+}
+
+func validateManifest(manifest Manifest) error {
 	if manifest.Version != Version {
-		return Manifest{}, "", fmt.Errorf("unsupported manifest version %d", manifest.Version)
+		return fmt.Errorf("unsupported manifest version %d", manifest.Version)
 	}
 	if strings.TrimSpace(manifest.Name) == "" {
-		return Manifest{}, "", errors.New("manifest name is required")
+		return errors.New("manifest name is required")
 	}
-	seen := make(map[string]struct{}, len(manifest.Puzzles))
-	seenPuzzles := make(map[string]struct{}, len(manifest.Puzzles))
+	if len(manifest.Puzzles) == 0 {
+		return errors.New("manifest must contain at least one puzzle")
+	}
+	seenIDs := make(map[string]struct{}, len(manifest.Puzzles))
+	seenHashes := make(map[string]struct{}, len(manifest.Puzzles))
 	validDifficulties := map[string]bool{"": true, "easy": true, "medium": true, "hard": true, "expert": true, "evil": true}
+	validCategories := map[string]bool{"external": true, "generated": true, "imported": true, "pathological": true}
+	validRedistribution := map[string]bool{"permitted": true, "restricted": true}
+	validSplits := map[string]bool{"exploratory": true, "held-out": true}
 	for i, puzzle := range manifest.Puzzles {
 		if strings.TrimSpace(puzzle.ID) == "" {
-			return Manifest{}, "", fmt.Errorf("puzzle %d: id is required", i)
+			return fmt.Errorf("puzzle %d: id is required", i)
 		}
-		if _, duplicate := seen[puzzle.ID]; duplicate {
-			return Manifest{}, "", fmt.Errorf("puzzle %d: duplicate id %q", i, puzzle.ID)
+		if _, duplicate := seenIDs[puzzle.ID]; duplicate {
+			return fmt.Errorf("puzzle %d: duplicate id %q", i, puzzle.ID)
 		}
-		seen[puzzle.ID] = struct{}{}
+		seenIDs[puzzle.ID] = struct{}{}
 		if !core.IsValidSudokuString(puzzle.Puzzle) {
-			return Manifest{}, "", fmt.Errorf("puzzle %d (%s): invalid Sudoku string", i, puzzle.ID)
+			return fmt.Errorf("puzzle %d (%s): invalid Sudoku string", i, puzzle.ID)
 		}
-		board := core.NewEmptyBoard()
-		board.FromString(puzzle.Puzzle)
-		if board.ToString() != puzzle.Puzzle {
-			return Manifest{}, "", fmt.Errorf("puzzle %d (%s): puzzle must use canonical dot notation", i, puzzle.ID)
+		if normalizePuzzle(puzzle.Puzzle) != puzzle.Puzzle {
+			return fmt.Errorf("puzzle %d (%s): puzzle must use canonical dot notation", i, puzzle.ID)
 		}
-		if _, duplicate := seenPuzzles[puzzle.Puzzle]; duplicate {
-			return Manifest{}, "", fmt.Errorf("puzzle %d (%s): duplicate puzzle", i, puzzle.ID)
+		expectedHash := hash([]byte(puzzle.Puzzle))
+		if puzzle.PuzzleHash != expectedHash {
+			return fmt.Errorf("puzzle %d (%s): puzzle_hash does not match normalized puzzle", i, puzzle.ID)
 		}
-		seenPuzzles[puzzle.Puzzle] = struct{}{}
+		if _, duplicate := seenHashes[puzzle.PuzzleHash]; duplicate {
+			return fmt.Errorf("puzzle %d (%s): duplicate puzzle hash %s", i, puzzle.ID, puzzle.PuzzleHash)
+		}
+		seenHashes[puzzle.PuzzleHash] = struct{}{}
+		if !validCategories[puzzle.SourceCategory] {
+			return fmt.Errorf("puzzle %d (%s): invalid source_category %q", i, puzzle.ID, puzzle.SourceCategory)
+		}
+		for field, value := range map[string]string{"source_id": puzzle.SourceID, "license": puzzle.License, "collection_method": puzzle.CollectionMethod} {
+			if strings.TrimSpace(value) == "" {
+				return fmt.Errorf("puzzle %d (%s): %s is required", i, puzzle.ID, field)
+			}
+		}
+		if !validRedistribution[puzzle.Redistribution] {
+			return fmt.Errorf("puzzle %d (%s): invalid redistribution %q", i, puzzle.ID, puzzle.Redistribution)
+		}
+		if !validSplits[puzzle.Split] {
+			return fmt.Errorf("puzzle %d (%s): invalid split %q", i, puzzle.ID, puzzle.Split)
+		}
 		if !validDifficulties[puzzle.ExpectedDifficulty] {
-			return Manifest{}, "", fmt.Errorf("puzzle %d (%s): invalid expected difficulty %q", i, puzzle.ID, puzzle.ExpectedDifficulty)
+			return fmt.Errorf("puzzle %d (%s): invalid expected difficulty %q", i, puzzle.ID, puzzle.ExpectedDifficulty)
+		}
+		if puzzle.OriginalRating != nil && (strings.TrimSpace(puzzle.OriginalRating.System) == "" || strings.TrimSpace(puzzle.OriginalRating.Label) == "") {
+			return fmt.Errorf("puzzle %d (%s): original_rating requires system and label", i, puzzle.ID)
+		}
+		if puzzle.SourceCategory == "generated" {
+			generator := puzzle.Generator
+			if generator == nil {
+				return fmt.Errorf("puzzle %d (%s): generated source requires generator metadata", i, puzzle.ID)
+			}
+			if !validDifficulties[generator.RequestedDifficulty] || generator.RequestedDifficulty == "" || strings.TrimSpace(generator.Configuration) == "" || generator.Attempt < 1 || generator.ElapsedMilliseconds < 0 || generator.ClueCount < 0 || generator.ClueCount > 81 || (generator.ClassificationOutcome != string(solver.ClassificationSolved) && generator.ClassificationOutcome != string(solver.ClassificationStrategyUnsolved)) {
+				return fmt.Errorf("puzzle %d (%s): invalid generator metadata", i, puzzle.ID)
+			}
+		} else if puzzle.Generator != nil {
+			return fmt.Errorf("puzzle %d (%s): generator metadata requires generated source_category", i, puzzle.ID)
 		}
 	}
-	return manifest, hash(data), nil
+	return nil
+}
+
+func normalizePuzzle(value string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		if r == '0' {
+			return '.'
+		}
+		return r
+	}, value)
 }
 
 func ensureEOF(decoder *json.Decoder) error {
@@ -268,7 +391,8 @@ func measure(index int, manifestHash string, puzzle Puzzle, store solver.Store) 
 	}
 	observation := Observation{
 		Version: Version, Index: index, ManifestHash: manifestHash, ID: puzzle.ID,
-		PuzzleHash: hash([]byte(puzzle.Puzzle)), Source: puzzle.Source,
+		PuzzleHash: puzzle.PuzzleHash, SourceCategory: puzzle.SourceCategory,
+		SourceID: puzzle.SourceID, Split: puzzle.Split,
 		ExpectedDifficulty: puzzle.ExpectedDifficulty, Outcome: classification.Outcome,
 		Difficulty: classification.Difficulty, Score: classification.Score,
 		MaxTechnique: classification.MaxTechnique, MoveCount: len(classification.Moves),

@@ -45,7 +45,9 @@ Each record carries a normalized 81-cell puzzle, a content hash, source category
 
 Generated samples record the requested tier, generator configuration, attempt or round number, elapsed duration, resulting clue count, and classification outcome. Generator-only evidence cannot validate the assumptions that created the generator, so conclusions must be shown separately for generated, external, imported, and pathological groups.
 
-Corpus versions are immutable manifests. Exploratory data informs candidate policy; a held-out validation subset measures the final candidate once and prevents thresholds from being tuned to every observed puzzle.
+Corpus versions are immutable manifests. Version 2 requires every member to declare its normalized content hash, source category (`external`, `generated`, `imported`, or `pathological`), source identifier, license, redistribution constraint, collection method, and split (`exploratory` or `held-out`). Original ratings preserve both their source system and source label. Generated records additionally require requested difficulty, a generator-configuration description, attempt number, elapsed time, clue count, and classification outcome.
+
+`sudoku calibrate prepare --input <candidate.json> --output <manifest.json>` is the ingestion boundary. It removes whitespace, converts zero notation to canonical dots, computes SHA-256 over the normalized 81 cells, rejects duplicate hashes and incomplete provenance, and refuses to overwrite an existing manifest. Candidate order is preserved so sampling decisions remain reviewable. Exploratory data informs candidate policy; a held-out validation subset measures the final candidate once and prevents thresholds from being tuned to every observed puzzle.
 
 ## Metrics and Methods
 
@@ -66,7 +68,7 @@ Confidence intervals accompany rates and percentiles where sample size permits. 
 
 Every run records the corpus manifest hash, repository commit, Go version, operating system and architecture, solver configuration digest, generator options, random seed where the public boundary supports one, start time, and command invocation. No user telemetry or network service is required to reproduce local analysis.
 
-The local `sudoku calibrate` boundary accepts an immutable, ordered version 1 JSON manifest and an output directory. `calibration.Run` binds checkpoints and observations to the exact manifest SHA-256, rejects changed manifests and non-prefix logs, classifies every puzzle twice for exact reproducibility, appends one JSON Lines observation only after agreement, and resumes from the durable log when a checkpoint is missing or lagging.
+The local `sudoku calibrate` boundary accepts an immutable, ordered version 2 JSON manifest and an output directory. Direct measurement accepts only canonical dot notation and verifies every declared content hash, preventing the preparation and measurement boundaries from disagreeing. `calibration.Run` binds checkpoints and observations to the exact manifest SHA-256, rejects changed manifests and non-prefix logs, classifies every puzzle twice for exact reproducibility, appends one JSON Lines observation only after agreement, and resumes from the durable log when a checkpoint is missing or lagging.
 
 The runner emits `observations.jsonl`, `checkpoint.json`, `report.json`, and `report.md`. Raw observations are append-only run artifacts; checkpoints and deterministic reports are derived state that can be rebuilt without changing observations. The initial report intentionally covers progress, outcomes, assigned tiers, and expected-label agreement; richer distributions and generation measurements remain later measurement increments rather than hidden policy changes.
 

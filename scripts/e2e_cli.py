@@ -75,18 +75,24 @@ def main():
 
         # Difficulty measurement is deterministic and resumes without
         # duplicating append-only observations.
+        candidate_manifest = root / "calibration-candidate.json"
         manifest = root / "calibration-manifest.json"
         calibration_run = root / "calibration-run"
-        manifest.write_text(
+        candidate_manifest.write_text(
             json.dumps(
                 {
-                    "version": 1,
+                    "version": 2,
                     "name": "e2e-pilot",
                     "puzzles": [
                         {
                             "id": "known-1",
-                            "puzzle": PUZZLE_DOTS,
-                            "source": "e2e-fixture",
+                            "puzzle": PUZZLE_ZEROS,
+                            "source_category": "pathological",
+                            "source_id": "e2e-fixture:known-1",
+                            "license": "repository-license",
+                            "redistribution": "permitted",
+                            "collection_method": "checked-in E2E fixture",
+                            "split": "exploratory",
                         }
                     ],
                 },
@@ -94,6 +100,15 @@ def main():
             )
             + "\n",
             encoding="utf-8",
+        )
+        output = run(binary, ["calibrate", "prepare", "--input", str(candidate_manifest), "--output", str(manifest)], root)
+        contains(output, "Prepared 1 normalized puzzles")
+        prepared = json.loads(manifest.read_text(encoding="utf-8"))
+        if prepared["puzzles"][0]["puzzle"] != PUZZLE_DOTS or not prepared["puzzles"][0]["puzzle_hash"]:
+            raise AssertionError("calibration preparation did not normalize and hash the candidate")
+        contains(
+            run(binary, ["calibrate", "prepare", "--input", str(candidate_manifest), "--output", str(manifest)], root, expected=1),
+            "already exists",
         )
         output = run(binary, ["calibrate", "--manifest", str(manifest), "--output", str(calibration_run)], root)
         contains(output, "Measured 1/1 puzzles (1 new).", "Manifest SHA-256")
