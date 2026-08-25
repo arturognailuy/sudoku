@@ -30,5 +30,32 @@ Re-running with the same manifest and output directory resumes safely.`,
 	command.Flags().String("output", "", "Directory for observations, checkpoint, and reports")
 	_ = command.MarkFlagRequired("manifest")
 	_ = command.MarkFlagRequired("output")
+	command.AddCommand(newPrepareCorpusCommand())
+	return command
+}
+
+func newPrepareCorpusCommand() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "prepare",
+		Short: "Normalize and validate a candidate corpus manifest",
+		Long: `Normalize zero and whitespace notation, add SHA-256 content hashes,
+reject duplicate content, validate provenance and split metadata, and write a
+canonical immutable manifest for the calibration runner.`,
+		Args: cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			input, _ := command.Flags().GetString("input")
+			output, _ := command.Flags().GetString("output")
+			manifest, err := calibration.PrepareManifest(input, output)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(command.OutOrStdout(), "Prepared %d normalized puzzles: %s\n", len(manifest.Puzzles), output)
+			return nil
+		},
+	}
+	command.Flags().String("input", "", "Path to candidate version 2 JSON corpus")
+	command.Flags().String("output", "", "Path for the canonical immutable manifest")
+	_ = command.MarkFlagRequired("input")
+	_ = command.MarkFlagRequired("output")
 	return command
 }

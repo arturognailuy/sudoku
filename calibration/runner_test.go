@@ -14,6 +14,28 @@ const knownPuzzle = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.
 
 func writeManifest(t *testing.T, path string, manifest Manifest) {
 	t.Helper()
+	for i := range manifest.Puzzles {
+		puzzle := &manifest.Puzzles[i]
+		puzzle.PuzzleHash = hash([]byte(puzzle.Puzzle))
+		if puzzle.SourceCategory == "" {
+			puzzle.SourceCategory = "external"
+		}
+		if puzzle.SourceID == "" {
+			puzzle.SourceID = "repository-test-fixture"
+		}
+		if puzzle.License == "" {
+			puzzle.License = "project-license"
+		}
+		if puzzle.Redistribution == "" {
+			puzzle.Redistribution = "permitted"
+		}
+		if puzzle.CollectionMethod == "" {
+			puzzle.CollectionMethod = "test fixture"
+		}
+		if puzzle.Split == "" {
+			puzzle.Split = "exploratory"
+		}
+	}
 	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +49,7 @@ func TestRunAppendsOnceAndResumes(t *testing.T) {
 	directory := t.TempDir()
 	manifestPath := filepath.Join(directory, "manifest.json")
 	output := filepath.Join(directory, "run")
-	writeManifest(t, manifestPath, Manifest{Version: Version, Name: "pilot", Puzzles: []Puzzle{{ID: "known-1", Puzzle: knownPuzzle, Source: "fixture"}}})
+	writeManifest(t, manifestPath, Manifest{Version: Version, Name: "pilot", Puzzles: []Puzzle{{ID: "known-1", Puzzle: knownPuzzle}}})
 
 	first, err := Run(manifestPath, output, solver.NewStore())
 	if err != nil {
@@ -110,10 +132,89 @@ func TestLoadManifestRejectsDuplicateIDsAndUnknownFields(t *testing.T) {
 	if _, _, err := loadManifest(path); err == nil || !strings.Contains(err.Error(), "duplicate id") {
 		t.Fatalf("duplicate error = %v", err)
 	}
-	if err := os.WriteFile(path, []byte(`{"version":1,"name":"bad","extra":true,"puzzles":[]}`), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"version":2,"name":"bad","extra":true,"puzzles":[]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := loadManifest(path); err == nil || !strings.Contains(err.Error(), "unknown field") {
 		t.Fatalf("unknown field error = %v", err)
+	}
+}
+
+func TestPrepareManifestNormalizesAndHashes(t *testing.T) {
+	directory := t.TempDir()
+	input := filepath.Join(directory, "candidate.json")
+	output := filepath.Join(directory, "manifest.json")
+	candidate := Manifest{Version: Version, Name: "candidate", Puzzles: []Puzzle{{
+		ID: "known-1", Puzzle: strings.ReplaceAll(knownPuzzle, ".", "0"),
+		SourceCategory: "external", SourceID: "fixture-1", License: "CC0-1.0",
+		Redistribution: "permitted", CollectionMethod: "checked-in test fixture", Split: "held-out",
+	}}}
+	data, err := json.Marshal(candidate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(input, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := PrepareManifest(input, output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.Puzzles[0].Puzzle != knownPuzzle || manifest.Puzzles[0].PuzzleHash != hash([]byte(knownPuzzle)) {
+		t.Fatalf("manifest was not normalized and hashed: %+v", manifest.Puzzles[0])
+	}
+	if _, _, err := loadManifest(output); err != nil {
+		t.Fatalf("prepared manifest is not runnable: %v", err)
+	}
+}
+
+func TestPrepareManifestRejectsDuplicateNormalizedContent(t *testing.T) {
+	directory := t.TempDir()
+	input := filepath.Join(directory, "candidate.json")
+	candidate := Manifest{Version: Version, Name: "duplicates", Puzzles: []Puzzle{
+		{ID: "dots", Puzzle: knownPuzzle, SourceCategory: "external", SourceID: "dots", License: "CC0", Redistribution: "permitted", CollectionMethod: "fixture", Split: "exploratory"},
+		{ID: "zeros", Puzzle: strings.ReplaceAll(knownPuzzle, ".", "0"), SourceCategory: "external", SourceID: "zeros", License: "CC0", Redistribution: "permitted", CollectionMethod: "fixture", Split: "held-out"},
+	}}
+	data, _ := json.Marshal(candidate)
+	if err := os.WriteFile(input, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PrepareManifest(input, filepath.Join(directory, "manifest.json")); err == nil || !strings.Contains(err.Error(), "duplicate puzzle hash") {
+		t.Fatalf("error = %v, want duplicate puzzle hash", err)
+	}
+}
+
+func TestLoadManifestRequiresProvenance(t *testing.T) {
+	directory := t.TempDir()
+	path := filepath.Join(directory, "manifest.json")
+	manifest := Manifest{Version: Version, Name: "missing", Puzzles: []Puzzle{{ID: "known", Puzzle: knownPuzzle}}}
+	data, _ := json.Marshal(manifest)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := loadManifest(path); err == nil || !strings.Contains(err.Error(), "puzzle_hash") {
+		t.Fatalf("error = %v, want strict corpus metadata rejection", err)
+	}
+}
+
+func TestLoadManifestValidatesGeneratedMetadata(t *testing.T) {
+	directory := t.TempDir()
+	path := filepath.Join(directory, "manifest.json")
+	manifest := Manifest{Version: Version, Name: "generated", Puzzles: []Puzzle{{
+		ID: "generated-1", Puzzle: knownPuzzle, SourceCategory: "generated",
+	}}}
+	writeManifest(t, path, manifest)
+	if _, _, err := loadManifest(path); err == nil || !strings.Contains(err.Error(), "requires generator metadata") {
+		t.Fatalf("error = %v, want generated metadata rejection", err)
+	}
+
+	manifest.Puzzles[0].Generator = &GeneratorMetadata{
+		RequestedDifficulty: "hard", Configuration: "rounds=10 timeout=1s",
+		Attempt: 2, ElapsedMilliseconds: 125, ClueCount: 30,
+		ClassificationOutcome: string(solver.ClassificationSolved),
+	}
+	writeManifest(t, path, manifest)
+	if _, _, err := loadManifest(path); err != nil {
+		t.Fatalf("valid generated metadata rejected: %v", err)
 	}
 }

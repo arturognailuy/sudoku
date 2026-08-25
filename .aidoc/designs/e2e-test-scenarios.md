@@ -185,8 +185,13 @@ For these scenarios, start a game with a known puzzle:
 
 ## 3. Difficulty Measurement CLI
 
+### 3.0 Prepare a Canonical Corpus
+Create a candidate version 2 manifest with a name and ordered `puzzles` array. Include unique IDs, puzzle strings, source category and identifier, license and redistribution status, collection method, and exploratory/held-out split; generated records also carry generator metadata. Run `sudoku calibrate prepare --input <candidate> --output <manifest>`.
+
+**Expected:** Zero notation and whitespace are normalized to 81-cell dot notation, each record receives a matching SHA-256 content hash, order is preserved, and an existing output is never overwritten. Duplicate normalized puzzle content or incomplete provenance exits non-zero.
+
 ### 3.1 Start and Resume an Immutable Corpus
-Create a version 1 JSON manifest with a name and an ordered `puzzles` array whose records contain unique IDs and valid 81-cell puzzle strings. Run `sudoku calibrate --manifest <path> --output <directory>` twice with the same paths.
+Use the prepared version 2 manifest. Run `sudoku calibrate --manifest <path> --output <directory>` twice with the same paths.
 
 **Expected:** The first run appends one observation per puzzle and writes a manifest-bound checkpoint plus JSON and Markdown reports. The second run reports zero new observations, leaves `observations.jsonl` unchanged, and keeps `report.json` deterministic. The built-binary harness also verifies the completed checkpoint index.
 
