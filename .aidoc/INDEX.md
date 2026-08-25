@@ -31,15 +31,17 @@ This index provides reading chains for common starting points and a complete doc
 ### Understanding Puzzle Generation
 1. `.aidoc/designs/difficulty-model.md` — current model, tier invariants, and configuration boundary
 2. `.aidoc/designs/difficulty-calibration.md` — measurement contract, evidence, reports, and decision gates
-3. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
-4. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
-5. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
-6. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
-7. `db/db.go` — SQLite database open/close/migrate
-8. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
-9. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
-10. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
-11. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
+3. `calibration/runner.go` — immutable manifests, reproducibility checks, observations, checkpoints, and reports
+4. `cmd/calibrate.go` — resumable local measurement command
+5. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
+6. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
+7. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
+8. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
+9. `db/db.go` — SQLite database open/close/migrate
+10. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
+11. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
+12. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
+13. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — stabilization priorities, sequencing, and exit criteria
@@ -93,9 +95,11 @@ This index provides reading chains for common starting points and a complete doc
 | `tui/render.go` | Deterministic color-independent board rendering |
 | `recovery/recovery.go` | Private XDG recovery records, discovery, validation, retention, and deletion |
 | `sessionfile/session_file.go` | Bounded reads and atomic mode-0600 session writes |
+| `calibration/runner.go` | Immutable corpus manifests, append-only observations, resumable checkpoints, and derived reports |
+| `cmd/calibrate.go` | Local difficulty measurement CLI boundary |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |
-| `scripts/e2e_cli.py` | Built-binary line CLI, session, import, generation, and SQLite E2E harness |
+| `scripts/e2e_cli.py` | Built-binary line CLI, session, calibration, import, generation, and SQLite E2E harness |
 | `scripts/e2e_api.py` | Built-binary HTTP lifecycle E2E harness |
 | `scripts/e2e_tui.py` | Built-binary PTY TUI and recovery E2E harness |
 | `scripts/coverage_report.py` | Package-level Go coverage summary for risk-based CI review |

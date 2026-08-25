@@ -35,6 +35,7 @@ func init() {
 	rootCmd.MarkFlagsMutuallyExclusive("resume", "level")
 	rootCmd.AddCommand(newTUICommand())
 	rootCmd.AddCommand(newAPICommand())
+	rootCmd.AddCommand(newCalibrateCommand())
 }
 
 // Execute runs the root command.

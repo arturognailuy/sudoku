@@ -65,11 +65,56 @@ def main():
 
         # Startup, parsing, help, and backward-compatible root flags.
         output = run(binary, ["--help"], root)
-        contains(output, "generate", "import", "tui", "--input", "--level")
+        contains(output, "calibrate", "generate", "import", "tui", "--input", "--level")
         output = run(binary, ["generate", "--help"], root)
         contains(output, "--count", "--difficulty", "--workers", "--timeout", "--rounds", "--db")
         output = run(binary, ["import", "--help"], root)
         contains(output, "--file", "--source", "--db")
+        output = run(binary, ["calibrate", "--help"], root)
+        contains(output, "--manifest", "--output", "append-only", "resumable")
+
+        # Difficulty measurement is deterministic and resumes without
+        # duplicating append-only observations.
+        manifest = root / "calibration-manifest.json"
+        calibration_run = root / "calibration-run"
+        manifest.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "name": "e2e-pilot",
+                    "puzzles": [
+                        {
+                            "id": "known-1",
+                            "puzzle": PUZZLE_DOTS,
+                            "source": "e2e-fixture",
+                        }
+                    ],
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        output = run(binary, ["calibrate", "--manifest", str(manifest), "--output", str(calibration_run)], root)
+        contains(output, "Measured 1/1 puzzles (1 new).", "Manifest SHA-256")
+        output = run(binary, ["calibrate", "--manifest", str(manifest), "--output", str(calibration_run)], root)
+        contains(output, "Measured 1/1 puzzles (0 new).")
+        observations_path = calibration_run / "observations.jsonl"
+        observations = observations_path.read_text(encoding="utf-8").splitlines()
+        report = json.loads((calibration_run / "report.json").read_text(encoding="utf-8"))
+        checkpoint = json.loads((calibration_run / "checkpoint.json").read_text(encoding="utf-8"))
+        if len(observations) != 1 or not report.get("complete") or checkpoint.get("next_index") != 1:
+            raise AssertionError("calibration run did not preserve resumable artifacts")
+        manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
+        manifest_data["name"] = "changed-pilot"
+        manifest.write_text(json.dumps(manifest_data, indent=2) + "\n", encoding="utf-8")
+        contains(
+            run(binary, ["calibrate", "--manifest", str(manifest), "--output", str(calibration_run)], root, expected=1),
+            "immutable manifest",
+        )
+        if observations_path.read_text(encoding="utf-8").splitlines() != observations:
+            raise AssertionError("changed manifest modified append-only observations")
+
         contains(run(binary, ["--input", PUZZLE_DOTS], root, "q\n"), "Exiting the game.", PUZZLE_DOTS)
         contains(run(binary, ["--input", PUZZLE_ZEROS], root, "q\n"), "Exiting the game.", PUZZLE_DOTS)
         contains(run(binary, ["--input", "123"], root, expected=1), "not a valid Sudoku problem")
@@ -243,7 +288,7 @@ def main():
         if not auto_database.is_file() or not puzzle_rows(auto_database):
             raise AssertionError("root play did not auto-store the puzzle")
 
-    print("PASS: line CLI gameplay, sessions, import, generation, and SQLite composition")
+    print("PASS: line CLI gameplay, sessions, calibration, import, generation, and SQLite composition")
 
 
 if __name__ == "__main__":

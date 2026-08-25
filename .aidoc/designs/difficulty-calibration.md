@@ -2,6 +2,8 @@
 domain: Designs
 status: Active
 entry_points:
+  - calibration/runner.go
+  - cmd/calibrate.go
   - solver/classify.go
   - generator/generator.go
 dependencies:
@@ -64,7 +66,9 @@ Confidence intervals accompany rates and percentiles where sample size permits. 
 
 Every run records the corpus manifest hash, repository commit, Go version, operating system and architecture, solver configuration digest, generator options, random seed where the public boundary supports one, start time, and command invocation. No user telemetry or network service is required to reproduce local analysis.
 
-The runner emits machine-readable per-puzzle observations and aggregate tables, plus a concise Markdown report for review. The report contains methodology, corpus composition, data-quality exclusions, distributions, mismatch matrices, anomalies, limitations, and explicit decision questions. Raw observations are append-only run artifacts; derived reports can be regenerated from them.
+The local `sudoku calibrate` boundary accepts an immutable, ordered version 1 JSON manifest and an output directory. `calibration.Run` binds checkpoints and observations to the exact manifest SHA-256, rejects changed manifests and non-prefix logs, classifies every puzzle twice for exact reproducibility, appends one JSON Lines observation only after agreement, and resumes from the durable log when a checkpoint is missing or lagging.
+
+The runner emits `observations.jsonl`, `checkpoint.json`, `report.json`, and `report.md`. Raw observations are append-only run artifacts; checkpoints and deterministic reports are derived state that can be rebuilt without changing observations. The initial report intentionally covers progress, outcomes, assigned tiers, and expected-label agreement; richer distributions and generation measurements remain later measurement increments rather than hidden policy changes.
 
 ## Decision Gates
 
@@ -87,6 +91,4 @@ No threshold is fixed in this design because the baseline exists to supply the e
 4. Review policy choices and propose calibration with before-and-after comparisons.
 5. Apply approved policy with unit coverage and applicable built-binary E2E scenarios.
 
-Primary code boundaries are `solver.ClassifyPuzzle`, `solver.StrategyTierForTechnique`, `solver.ScorePuzzle`, `generator.Difficulty`, `generator.GenerateBestEffort`, and `solver/config.go`.
-
-<!-- TODO: (calibration) implement immutable corpus manifests, append-only observations, resumable checkpoints, and derived reports -->
+Primary code boundaries are `calibration.Run`, `cmd.newCalibrateCommand`, `solver.ClassifyPuzzle`, `solver.StrategyTierForTechnique`, `solver.ScorePuzzle`, `generator.Difficulty`, `generator.GenerateBestEffort`, and `solver/config.go`.
