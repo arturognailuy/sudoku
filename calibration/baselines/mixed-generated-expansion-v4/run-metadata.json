@@ -1,0 +1,12 @@
+{
+  "manifest": "calibration/testdata/mixed-generated-expansion-v4.json",
+  "manifest_sha256": "d4642c0a92271bee7e1614f083392bbfdef0b18c1a5f1fe4a1b046f4cb967b70",
+  "source_commit": "9338c3937209524dc18b269232a3f91d64ed1780",
+  "started_at": "2026-08-25T23:09:46Z",
+  "command": "sudoku calibrate --manifest calibration/testdata/mixed-generated-expansion-v4.json --output calibration/baselines/mixed-generated-expansion-v4",
+  "go_version": "go version go1.25.7 linux/amd64",
+  "os_arch": "Linux 6.17.0-1010-azure x86_64",
+  "external_source_commit": "norvig/pytudes@0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5",
+  "generator_configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+  "selection": "v3 records plus three sequential GenerateBestEffort calls per requested tier, preserving call order without outcome-based rejection or replacement"
+}
