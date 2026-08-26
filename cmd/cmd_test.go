@@ -96,6 +96,26 @@ func TestBatchGenerateUsesInjectedGenerator(t *testing.T) {
 	}
 }
 
+func TestBatchGenerateReportsTimeoutWithoutStoringEmptyPuzzle(t *testing.T) {
+	puzzleDB, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer puzzleDB.Close()
+
+	report := batchGenerateWith(puzzleDB, 1, "expert", time.Millisecond, 1, 1,
+		func(string, time.Duration, int) generator.GenerationResult {
+			return generator.GenerationResult{TimedOut: true}
+		})
+	if report.attempted != 1 || report.generated != 0 || report.stored != 0 || report.timedOut != 1 {
+		t.Fatalf("unexpected timeout report: %+v", report)
+	}
+	stats, err := puzzleDB.GetStats()
+	if err != nil || stats.Total != 0 {
+		t.Fatalf("database stats = %+v, err = %v; want empty", stats, err)
+	}
+}
+
 func TestBatchGenerateParallelUsesInjectedGenerator(t *testing.T) {
 	puzzleDB, err := db.Open(":memory:")
 	if err != nil {

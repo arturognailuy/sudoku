@@ -53,7 +53,10 @@ func createSession(request sessionRequest, output, errorOutput io.Writer) (game.
 			return game.Game{}, "", err
 		}
 		fmt.Fprintf(output, "Generating a random %s Sudoku problem...\n", capitalize(request.level))
-		problem, keys = generateWithFallbackTo(output, solverStore, difficulty, request.level)
+		problem, keys, err = generateWithFallbackTo(output, solverStore, difficulty, request.level)
+		if err != nil {
+			return game.Game{}, "", err
+		}
 	}
 	options.StrategySolverKeys = keys
 	return game.NewGame(problem, options), "", nil

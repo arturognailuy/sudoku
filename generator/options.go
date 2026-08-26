@@ -32,8 +32,8 @@ type BestEffortOptions struct {
 	// attempts before giving up. Zero means unlimited (original behavior).
 	MaxRounds int
 
-	// MaxDurationMs is the wall-clock time limit in milliseconds.
-	// Zero means unlimited (original behavior).
+	// MaxDurationMs is a hard wall-clock deadline in milliseconds. The result
+	// may time out before the first complete puzzle. Zero means unlimited.
 	MaxDurationMs int64
 }
 

@@ -2,6 +2,7 @@ package generator
 
 import (
 	"testing"
+	"time"
 
 	"github.com/gnailuy/sudoku/solver"
 )
@@ -38,18 +39,47 @@ func TestGenerateBestEffortEasy(t *testing.T) {
 	}
 }
 
-func TestGenerateBestEffortStopsAfterTimeBudgetBetweenRounds(t *testing.T) {
+func TestGenerateBestEffortEnforcesHardDeadline(t *testing.T) {
 	store := solver.NewStore()
 	opts := NewBestEffortOptions(store, NewEasyDifficulty())
 	opts.MaxRounds = 2
-	opts.MaxDurationMs = 1
+	opts.MaxDurationMs = 20
 
-	result := GenerateBestEffort(opts)
+	release := make(chan struct{})
+	defer close(release)
+	start := time.Now()
+	result := generateBestEffortWithRound(opts, func(BestEffortOptions, int) GenerationResult {
+		<-release
+		return GenerationResult{RoundsUsed: 1}
+	})
+	if !result.TimedOut || result.RoundsUsed != 0 {
+		t.Fatalf("result = %+v, want timeout before a completed round", result)
+	}
+	if elapsed := time.Since(start); elapsed > 200*time.Millisecond {
+		t.Fatalf("hard deadline returned after %s", elapsed)
+	}
+}
 
-	// Generation cannot interrupt a round already in progress. Once that
-	// round returns, the expired budget must prevent another randomized round.
-	if result.RoundsUsed != 1 {
-		t.Fatalf("Expected the expired budget to stop after one round, used %d", result.RoundsUsed)
+func TestGenerateBestEffortReturnsCompletedBestResultAtDeadline(t *testing.T) {
+	store := solver.NewStore()
+	opts := NewBestEffortOptions(store, NewHardDifficulty())
+	opts.MaxRounds = 2
+	opts.MaxDurationMs = 20
+
+	release := make(chan struct{})
+	defer close(release)
+	result := generateBestEffortWithRound(opts, func(_ BestEffortOptions, round int) GenerationResult {
+		if round == 1 {
+			return GenerationResult{
+				Classification: solver.Classification{Difficulty: "easy"},
+				RoundsUsed:     1,
+			}
+		}
+		<-release
+		return GenerationResult{RoundsUsed: 2}
+	})
+	if !result.TimedOut || result.RoundsUsed != 1 || result.Classification.Difficulty != "easy" {
+		t.Fatalf("result = %+v, want the completed first-round fallback at timeout", result)
 	}
 }
 
