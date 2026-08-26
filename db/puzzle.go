@@ -12,6 +12,45 @@ type Puzzle struct {
 	Score        int    // Total difficulty score.
 	MaxTechnique string // Highest-tier technique required.
 	Source       string // Origin: "generated", "imported", or source name.
+	PlayCount    int    // Number of times selected for play.
+	LastPlayedAt string // SQLite timestamp of the latest selection, or empty.
+}
+
+// AcquireForPlay atomically selects and marks an exact-difficulty puzzle.
+func (db *DB) AcquireForPlay(difficulty string) (*Puzzle, error) {
+	row := db.conn.QueryRow(`
+		UPDATE puzzles SET play_count = play_count + 1, last_played_at = CURRENT_TIMESTAMP
+		WHERE puzzle = (SELECT puzzle FROM puzzles WHERE difficulty = ?
+			ORDER BY play_count ASC, last_played_at ASC, RANDOM() LIMIT 1)
+		RETURNING puzzle, difficulty, score, max_technique, COALESCE(source, ''),
+			play_count, COALESCE(CAST(last_played_at AS TEXT), '')`, difficulty)
+	return scanPuzzle(row, "acquire puzzle")
+}
+
+// MarkForPlay atomically records selection of a specific stored puzzle.
+func (db *DB) MarkForPlay(puzzle string) (*Puzzle, error) {
+	row := db.conn.QueryRow(`
+		UPDATE puzzles SET play_count = play_count + 1, last_played_at = CURRENT_TIMESTAMP
+		WHERE puzzle = ?
+		RETURNING puzzle, difficulty, score, max_technique, COALESCE(source, ''),
+			play_count, COALESCE(CAST(last_played_at AS TEXT), '')`, puzzle)
+	return scanPuzzle(row, "mark puzzle played")
+}
+
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanPuzzle(row rowScanner, operation string) (*Puzzle, error) {
+	var p Puzzle
+	err := row.Scan(&p.Puzzle, &p.Difficulty, &p.Score, &p.MaxTechnique, &p.Source, &p.PlayCount, &p.LastPlayedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", operation, err)
+	}
+	return &p, nil
 }
 
 // InsertPuzzle stores a puzzle if it does not already exist.
@@ -60,8 +99,8 @@ func (db *DB) GetRandom(difficulty string) (*Puzzle, error) {
 
 // Stats holds per-difficulty puzzle counts.
 type Stats struct {
-	Total      int
-	ByLevel    map[string]int
+	Total   int
+	ByLevel map[string]int
 }
 
 // GetStats returns the total puzzle count and per-difficulty breakdown.

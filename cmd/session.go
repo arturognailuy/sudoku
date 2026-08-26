@@ -5,15 +5,19 @@ import (
 	"io"
 
 	"github.com/gnailuy/sudoku/core"
+	"github.com/gnailuy/sudoku/db"
 	"github.com/gnailuy/sudoku/game"
 	"github.com/gnailuy/sudoku/generator"
 	"github.com/gnailuy/sudoku/sessionfile"
+	"github.com/gnailuy/sudoku/solver"
 )
 
 type sessionRequest struct {
 	input  string
 	level  string
 	resume string
+	dbPath string
+	fromDB bool
 }
 
 func createSession(request sessionRequest, output, errorOutput io.Writer) (game.Game, string, error) {
@@ -46,20 +50,55 @@ func createSession(request sessionRequest, output, errorOutput io.Writer) (game.
 			fmt.Fprintf(errorOutput, "The input has %d solutions: %s\n", count, request.input)
 		}
 		problem = *parsed
-		autoStore(solverStore, problem, "input")
+		dbPath := request.dbPath
+		if dbPath == "" {
+			dbPath = defaultDBPath()
+		}
+		_, _ = autoStoreTo(solverStore, problem, "input", dbPath)
 	} else {
 		difficulty, err := difficultyForLevel(request.level)
 		if err != nil {
 			return game.Game{}, "", err
 		}
-		fmt.Fprintf(output, "Generating a random %s Sudoku problem...\n", capitalize(request.level))
-		problem, keys, err = generateWithFallbackTo(output, solverStore, difficulty, request.level)
+		dbPath := request.dbPath
+		if dbPath == "" {
+			dbPath = defaultDBPath()
+		}
+		if request.fromDB {
+			problem, keys, err = acquireFromDB(solverStore, difficulty, request.level, dbPath)
+		} else {
+			fmt.Fprintf(output, "Generating a random %s Sudoku problem...\n", capitalize(request.level))
+			problem, keys, err = generateWithFallbackTo(output, solverStore, difficulty, request.level, dbPath)
+		}
 		if err != nil {
 			return game.Game{}, "", err
 		}
 	}
 	options.StrategySolverKeys = keys
 	return game.NewGame(problem, options), "", nil
+}
+
+func acquireFromDB(store solver.Store, difficulty generator.Difficulty, levelName, dbPath string) (core.Board, []string, error) {
+	puzzleDB, err := db.Open(dbPath)
+	if err != nil {
+		return core.Board{}, nil, fmt.Errorf("open puzzle database: %w", err)
+	}
+	defer puzzleDB.Close()
+	record, err := puzzleDB.AcquireForPlay(levelName)
+	if err != nil {
+		return core.Board{}, nil, err
+	}
+	if record == nil {
+		return core.Board{}, nil, fmt.Errorf("no %s puzzle is available in the database", levelName)
+	}
+	board := core.NewEmptyBoard()
+	board.FromString(record.Puzzle)
+	board.Randomize()
+	keys := difficulty.AllowedSolverKeys()
+	if len(keys) == 0 {
+		keys = store.GetAllStrategySolverKeys()
+	}
+	return board, keys, nil
 }
 
 func difficultyForLevel(level string) (generator.Difficulty, error) {

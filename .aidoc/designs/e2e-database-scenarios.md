@@ -12,7 +12,7 @@ dependencies:
 
 # E2E Database Scenarios
 
-The database scenario catalog protects root-command database composition, probabilistic fallback behavior, Cobra discovery, and explicitly deferred database work.
+The database scenario catalog protects root-command database composition, played-state acquisition behavior, Cobra discovery, and explicitly deferred database work.
 
 ## Related Docs
 
@@ -23,7 +23,7 @@ The database scenario catalog protects root-command database composition, probab
 
 ## Why This Boundary
 
-Database behavior crosses generation, classification, persistence, and startup. Deterministic cases belong in automation; the public fallback branch remains manual until a stable forcing seam exists.
+Database behavior crosses generation, classification, persistence, and startup. Deterministic cases belong in automation through the public `--from-db` boundary; generation fallback accounting remains covered at the narrowest deterministic package seam.
 
 ## 6. Database and Fallback
 
@@ -55,9 +55,9 @@ Database behavior crosses generation, classification, persistence, and startup. 
 
 ---
 
-## 12. Planned Played-State Acquisition
+## 12. Played-State Acquisition
 
-These cases define built-binary acceptance for the next database implementation. Deterministic public cases belong in `scripts/e2e_cli.py` with an isolated database:
+These built-binary cases run in `scripts/e2e_cli.py` with an isolated database:
 
 ### 12.1 Never-Played Puzzles First
 **Setup:** Import two distinct puzzles with the same exact strategy grade.
