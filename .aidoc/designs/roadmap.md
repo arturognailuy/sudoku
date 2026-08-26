@@ -17,7 +17,7 @@ dependencies:
 
 # Stabilization Roadmap
 
-Sudoku's feature baseline and stabilization gates are complete: the Go repository owns the engine, CLI, TUI, persistence, recovery, client-neutral HTTP API, and independent CI lanes. Current work expands calibration evidence under the approved strategy-grade contract before database policy changes.
+Sudoku's feature baseline and stabilization gates are complete: the Go repository owns the engine, CLI, TUI, persistence, recovery, client-neutral HTTP API, and independent CI lanes. Expanded calibration evidence now supports a separately reviewed generator-policy proposal under the approved strategy-grade contract before database policy changes.
 
 ## Related Docs
 
@@ -69,7 +69,7 @@ The API, TUI, and line-CLI harnesses build and execute the real binary with isol
 
 Calibration runs from the stable CI baseline with deterministic classifier semantics and versioned mixed corpora. Easy through Evil are canonical strategy grades rather than predictions of player experience; score orders puzzles within a grade, clue count guides generation, and strategy-unsolved remains separate. `.aidoc/designs/difficulty-calibration.md` owns the current evidence, corpus contract, reproducibility metadata, measurements, and remaining decision gates.
 
-Calibration output remains local and telemetry-free. Expanded generator and strategy-coverage evidence informs separately reviewed decisions about technique tiers, score weights, clue guidance, tier-specific budgets, unsolved-state handling, and acceptance thresholds. Human data may support a separate empirical player-difficulty layer later, but it is not a prerequisite for strategy calibration.
+Calibration output remains local and telemetry-free. The current 101-record corpus separates target-alignment failures from strategy-inventory stalls and supports a generator proposal covering strict versus best-effort targets and soft versus hard time budgets. Technique-inventory changes remain separate; human data may support a later empirical player-difficulty layer but is not a prerequisite for strategy calibration.
 
 ### 4. Complete Deferred Database Behaviors
 

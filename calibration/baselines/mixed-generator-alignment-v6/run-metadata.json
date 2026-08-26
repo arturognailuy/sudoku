@@ -1,0 +1,12 @@
+{
+  "manifest": "calibration/testdata/mixed-generator-alignment-v6.json",
+  "manifest_sha256": "505b47c42428d0167c5f53f53ba82420674cd4885347059949b1193ee875fa9e",
+  "source_commit": "b2949b2db28c03918d55d02a13cebe00246f3bae",
+  "started_at": "2026-08-26T19:49:27Z",
+  "command": "sudoku calibrate --manifest calibration/testdata/mixed-generator-alignment-v6.json --output calibration/baselines/mixed-generator-alignment-v6",
+  "go_version": "go version go1.25.7 linux/amd64",
+  "os_arch": "Linux 6.17.0-1010-azure x86_64",
+  "external_source_commit": "norvig/pytudes@0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5",
+  "generator_configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+  "selection": "v5 records plus five sequential GenerateBestEffort calls per requested tier, preserving call order without outcome-based rejection or replacement"
+}
