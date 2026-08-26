@@ -36,18 +36,20 @@ func parseDifficulty(level string) generator.Difficulty {
 	return difficulty
 }
 
-func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficulty generator.Difficulty, levelName string) (core.Board, []string) {
+func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficulty generator.Difficulty, levelName string) (core.Board, []string, error) {
 	opts := generator.NewBestEffortOptions(solverStore, difficulty)
 	result := generator.GenerateBestEffort(opts)
 
-	autoStore(solverStore, result.Puzzle, "generated")
+	if result.RoundsUsed > 0 {
+		autoStore(solverStore, result.Puzzle, "generated")
+	}
 
 	if result.Matched {
 		keys := difficulty.AllowedSolverKeys()
 		if len(keys) == 0 {
 			keys = solverStore.GetAllStrategySolverKeys()
 		}
-		return result.Puzzle, keys
+		return result.Puzzle, keys, nil
 	}
 
 	dbPath := defaultDBPath()
@@ -63,8 +65,15 @@ func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficul
 			if len(keys) == 0 {
 				keys = solverStore.GetAllStrategySolverKeys()
 			}
-			return board, keys
+			return board, keys, nil
 		}
+	}
+
+	if result.RoundsUsed == 0 {
+		return core.Board{}, nil, fmt.Errorf(
+			"generation timed out before a puzzle completed and no %s puzzle is available in the database",
+			levelName,
+		)
 	}
 
 	actualLevel := result.Classification.Difficulty
@@ -77,7 +86,7 @@ func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficul
 	if len(keys) == 0 {
 		keys = solverStore.GetAllStrategySolverKeys()
 	}
-	return result.Puzzle, keys
+	return result.Puzzle, keys, nil
 }
 
 func autoStore(solverStore solver.Store, board core.Board, source string) {

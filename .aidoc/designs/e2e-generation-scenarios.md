@@ -11,7 +11,7 @@ dependencies:
 
 # E2E Generation Scenarios
 
-The generation scenario catalog verifies generation flags, worker composition, target reporting, database storage, validation, and deduplication through the built command.
+The generation scenario catalog verifies generation flags, worker composition, hard deadlines, actual-grade reporting, database storage, validation, and deduplication through the built command.
 
 ## Related Docs
 
@@ -22,7 +22,7 @@ The generation scenario catalog verifies generation flags, worker composition, t
 
 ## Why This Boundary
 
-Generation combines probabilistic puzzle construction with deterministic command and storage contracts. Assertions therefore protect composition and bounded outcomes rather than requiring a random run to hit an exact grade.
+Generation combines probabilistic puzzle construction with deterministic command and storage contracts. Assertions therefore protect composition and bounded outcomes rather than requiring a random run to hit an exact grade. Per-puzzle timeouts are hard caller deadlines; only completed puzzles are classified and stored, always under their actual strategy grade.
 
 ## 4. Puzzle Generation CLI
 
@@ -36,11 +36,11 @@ Generation combines probabilistic puzzle construction with deterministic command
 
 ### 4.3 Generate Hard Puzzles
 **Action:** Execute the matching case in `scripts/e2e_cli.py`, which owns the canonical command sequence and fixture.
-**Expected:** Generates 3 puzzles. Each is classified and stored. Duration reported.
+**Expected:** Attempts 3 puzzles. Every completed puzzle is classified and stored under its actual grade. The report separates completed generation, target matches, and hard-deadline timeouts.
 
 ### 4.4 Generate with Parallel Workers
 **Action:** Execute the matching case in `scripts/e2e_cli.py`, which owns the canonical command sequence and fixture.
-**Expected:** Uses 4 parallel goroutines. Completes generation. All puzzles stored.
+**Expected:** Uses up to 4 parallel workers. Every completed puzzle is stored under its actual grade; deadline expirations are reported separately.
 
 ### 4.5 Generate with Invalid Difficulty
 **Action:** Execute the matching case in `scripts/e2e_cli.py`, which owns the canonical command sequence and fixture.
@@ -57,5 +57,9 @@ Generation combines probabilistic puzzle construction with deterministic command
 ### 4.8 Generate Dedup
 **Action:** Execute the matching case in `scripts/e2e_cli.py`, which owns the canonical command sequence and fixture.
 **Expected:** Second run may report duplicates if the same normalized puzzles are generated.
+
+### 4.9 Generate with Hard Deadline
+**Action:** Execute the bounded generation case in `scripts/e2e_cli.py` with a one-millisecond per-puzzle timeout and an isolated database.
+**Expected:** The command returns within a bounded margin of the configured deadline, reports the timeout explicitly, and does not store an incomplete or unclassified puzzle.
 
 ---

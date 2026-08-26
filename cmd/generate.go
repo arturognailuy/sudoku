@@ -40,9 +40,12 @@ func init() {
 
 // generateReport holds the results of a batch generation run.
 type generateReport struct {
+	attempted  int
 	generated  int
 	stored     int
 	duplicates int
+	timedOut   int
+	matched    int
 	byLevel    map[string]int
 	duration   time.Duration
 }
@@ -111,10 +114,19 @@ func batchGenerateWith(puzzleDB *db.DB, count int, level string, timeout time.Du
 		// Single-threaded generation.
 		for i := 0; i < count; i++ {
 			result := generate(level, timeout, rounds)
-			stored := storePuzzle(puzzleDB, result)
-
+			report.attempted++
+			if result.TimedOut {
+				report.timedOut++
+			}
+			if result.RoundsUsed == 0 {
+				continue
+			}
 			report.generated++
+			if result.Matched {
+				report.matched++
+			}
 			report.byLevel[result.Classification.Difficulty]++
+			stored := storePuzzle(puzzleDB, result)
 			if stored {
 				report.stored++
 			} else {
@@ -123,8 +135,8 @@ func batchGenerateWith(puzzleDB *db.DB, count int, level string, timeout time.Du
 
 			// Progress indicator every 10 puzzles.
 			if (i+1)%10 == 0 || i+1 == count {
-				fmt.Printf("\r  Progress: %d/%d generated, %d stored, %d duplicates",
-					report.generated, count, report.stored, report.duplicates)
+				fmt.Printf("\r  Progress: %d/%d attempted, %d generated, %d stored, %d timed out",
+					report.attempted, count, report.generated, report.stored, report.timedOut)
 			}
 		}
 		fmt.Println() // newline after progress
@@ -135,6 +147,8 @@ func batchGenerateWith(puzzleDB *db.DB, count int, level string, timeout time.Du
 			generated  int64
 			stored     int64
 			duplicates int64
+			timedOut   int64
+			matched    int64
 			byLevel    = make(map[string]int)
 		)
 
@@ -150,9 +164,18 @@ func batchGenerateWith(puzzleDB *db.DB, count int, level string, timeout time.Du
 				defer func() { <-sem }() // release worker slot
 
 				result := generate(level, timeout, rounds)
+				if result.TimedOut {
+					atomic.AddInt64(&timedOut, 1)
+				}
+				if result.RoundsUsed == 0 {
+					return
+				}
 				wasStored := storePuzzle(puzzleDB, result)
 
 				atomic.AddInt64(&generated, 1)
+				if result.Matched {
+					atomic.AddInt64(&matched, 1)
+				}
 				if wasStored {
 					atomic.AddInt64(&stored, 1)
 				} else {
@@ -176,9 +199,12 @@ func batchGenerateWith(puzzleDB *db.DB, count int, level string, timeout time.Du
 		wg.Wait()
 		fmt.Println() // newline after progress
 
+		report.attempted = count
 		report.generated = int(generated)
 		report.stored = int(stored)
 		report.duplicates = int(duplicates)
+		report.timedOut = int(timedOut)
+		report.matched = int(matched)
 		report.byLevel = byLevel
 		return report
 	}
@@ -194,6 +220,9 @@ func generateOnePuzzle(level string, timeout time.Duration, rounds int) generato
 	opts := generator.NewBestEffortOptions(store, difficulty)
 	opts.MaxRounds = rounds
 	opts.MaxDurationMs = timeout.Milliseconds()
+	if timeout > 0 && opts.MaxDurationMs == 0 {
+		opts.MaxDurationMs = 1
+	}
 
 	return generator.GenerateBestEffort(opts)
 }
@@ -248,9 +277,12 @@ func storePuzzle(puzzleDB *db.DB, result generator.GenerationResult) bool {
 func printGenerateReport(report generateReport) {
 	fmt.Println()
 	fmt.Println("=== Generation Report ===")
+	fmt.Printf("Attempted: %d\n", report.attempted)
 	fmt.Printf("Generated: %d\n", report.generated)
 	fmt.Printf("Stored (new): %d\n", report.stored)
 	fmt.Printf("Duplicates: %d\n", report.duplicates)
+	fmt.Printf("Timed out: %d\n", report.timedOut)
+	fmt.Printf("Matched target: %d\n", report.matched)
 	fmt.Printf("Duration: %s\n", report.duration.Round(time.Millisecond))
 	fmt.Println()
 	fmt.Println("By difficulty:")

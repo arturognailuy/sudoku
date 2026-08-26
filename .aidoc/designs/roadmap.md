@@ -17,7 +17,7 @@ dependencies:
 
 # Stabilization Roadmap
 
-Sudoku's feature baseline and stabilization gates are complete: the Go repository owns the engine, CLI, TUI, persistence, recovery, client-neutral HTTP API, and independent CI lanes. Expanded calibration evidence now supports a separately reviewed generator-policy proposal under the approved strategy-grade contract before database policy changes.
+Sudoku's feature baseline, calibration, and stabilization gates are complete: the Go repository owns the engine, CLI, TUI, persistence, recovery, client-neutral HTTP API, bounded generation semantics, and independent CI lanes. Database enhancements remain separately reviewed follow-up work.
 
 ## Related Docs
 
@@ -65,13 +65,13 @@ The API, TUI, and line-CLI harnesses build and execute the real binary with isol
 - Review prioritizes meaningful branches by risk: `webapi`, `cmd`, `recovery`, and `sessionfile` failure/lifecycle paths; `game` state invariants; and generator/solver correctness. Low-risk wrappers and generated boundary code do not justify artificial tests solely to raise a percentage.
 - Require every fixed defect to gain a regression test at the narrowest layer that proves the behavior.
 
-### 3. Expand Calibration Evidence
+### 3. Preserve the Completed Calibration Contract
 
 Calibration runs from the stable CI baseline with deterministic classifier semantics and versioned mixed corpora. Easy through Evil are canonical strategy grades rather than predictions of player experience; score orders puzzles within a grade, clue count guides generation, and strategy-unsolved remains separate. `.aidoc/designs/difficulty-calibration.md` owns the current evidence, corpus contract, reproducibility metadata, measurements, and remaining decision gates.
 
-Calibration output remains local and telemetry-free. The current 101-record corpus separates target-alignment failures from strategy-inventory stalls and supports a generator proposal covering strict versus best-effort targets and soft versus hard time budgets. Technique-inventory changes remain separate; human data may support a later empirical player-difficulty layer but is not a prerequisite for strategy calibration.
+Calibration output remains local and telemetry-free. The 101-record corpus separates target-alignment failures from strategy-inventory stalls. Batch generation remains best-effort and stores each completed puzzle under its actual grade; per-puzzle wall-clock budgets are hard deadlines. Interactive play first uses an exact requested-grade result or database puzzle, then explicitly reports any actual-grade fallback. Technique-inventory changes remain separate; human data may support a later empirical player-difficulty layer but is not a prerequisite for strategy calibration.
 
-### 4. Complete Deferred Database Behaviors
+### 4. Keep Database Enhancements Deferred
 
 Database behavior changes follow calibration so selection policy is based on measured difficulty rather than unstable assumptions. Candidate work includes played-state filtering, large-import progress verification, minimum-clue handling, and concurrent SQLite stress coverage.
 

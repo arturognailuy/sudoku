@@ -2,6 +2,7 @@ package generator
 
 import (
 	"errors"
+	"runtime"
 	"time"
 
 	"github.com/gnailuy/sudoku/core"
@@ -199,7 +200,8 @@ type GenerationResult struct {
 	Puzzle         core.Board            // The generated puzzle.
 	Classification solver.Classification // Difficulty classification of the puzzle.
 	Matched        bool                  // Whether the puzzle matched the requested difficulty.
-	RoundsUsed     int                   // Number of generation rounds attempted.
+	TimedOut       bool                  // Whether the wall-clock deadline ended the search.
+	RoundsUsed     int                   // Number of completed generation rounds.
 	DurationMs     int64                 // Wall-clock time used in milliseconds.
 }
 
@@ -210,45 +212,68 @@ type GenerationResult struct {
 // The caller decides whether to use the result or fall back to the
 // database.
 func GenerateBestEffort(opts BestEffortOptions) GenerationResult {
+	return generateBestEffortWithRound(opts, generateRound)
+}
+
+type roundGenerator func(BestEffortOptions, int) GenerationResult
+
+var generationRoundSlots = make(chan struct{}, runtime.GOMAXPROCS(0))
+
+// generateBestEffortWithRound enforces the wall-clock budget around each
+// complete generation round. A round uses only local state, so a timed-out
+// round can finish independently without delaying the caller or mutating a
+// returned result.
+func generateBestEffortWithRound(opts BestEffortOptions, generate roundGenerator) GenerationResult {
 	startTime := time.Now()
 	maxRounds := opts.MaxRounds
 	if maxRounds <= 0 {
-		maxRounds = 10 // safety default
+		maxRounds = 10
+	}
+
+	var deadline <-chan time.Time
+	var timer *time.Timer
+	if opts.MaxDurationMs > 0 {
+		timer = time.NewTimer(time.Duration(opts.MaxDurationMs) * time.Millisecond)
+		defer timer.Stop()
+		deadline = timer.C
 	}
 
 	var bestResult *GenerationResult
+	timeoutResult := func() GenerationResult {
+		if bestResult == nil {
+			return GenerationResult{TimedOut: true, DurationMs: time.Since(startTime).Milliseconds()}
+		}
+		bestResult.TimedOut = true
+		bestResult.DurationMs = time.Since(startTime).Milliseconds()
+		return *bestResult
+	}
 
 	for round := 1; round <= maxRounds; round++ {
-		// Check time limit.
-		elapsed := time.Since(startTime).Milliseconds()
-		if opts.MaxDurationMs > 0 && elapsed >= opts.MaxDurationMs {
-			break
+		select {
+		case generationRoundSlots <- struct{}{}:
+		case <-deadline:
+			return timeoutResult()
 		}
 
-		solvedBoard := GenerateNormalizedSolvedBoard(opts.Options)
-		solvedBoard.Randomize()
+		resultCh := make(chan GenerationResult, 1)
+		go func(round int) {
+			defer func() { <-generationRoundSlots }()
+			resultCh <- generate(opts, round)
+		}(round)
 
-		problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, opts.Options)
-		classification := solver.ClassifyPuzzle(opts.solverStore, problem)
-
-		result := GenerationResult{
-			Puzzle:         problem,
-			Classification: classification,
-			RoundsUsed:     round,
-			DurationMs:     time.Since(startTime).Milliseconds(),
+		var result GenerationResult
+		select {
+		case result = <-resultCh:
+		case <-deadline:
+			return timeoutResult()
 		}
 
-		// Check if the puzzle matches the target difficulty.
-		targetLevel := difficultyLevelName(opts.Difficulty)
-		if classification.Solved && classification.Difficulty == targetLevel && requiresThisTierSolver(problem, opts.Options) {
-			result.Matched = true
+		result.DurationMs = time.Since(startTime).Milliseconds()
+		if result.Matched {
 			return result
 		}
-
-		// Keep the best result (closest to the target difficulty).
-		if bestResult == nil {
-			bestResult = &result
-		} else if isBetterMatch(classification.Difficulty, bestResult.Classification.Difficulty, targetLevel) {
+		targetLevel := difficultyLevelName(opts.Difficulty)
+		if bestResult == nil || isBetterMatch(result.Classification.Difficulty, bestResult.Classification.Difficulty, targetLevel) {
 			bestResult = &result
 		}
 	}
@@ -257,17 +282,20 @@ func GenerateBestEffort(opts BestEffortOptions) GenerationResult {
 		bestResult.DurationMs = time.Since(startTime).Milliseconds()
 		return *bestResult
 	}
+	return GenerationResult{DurationMs: time.Since(startTime).Milliseconds()}
+}
 
-	// Shouldn't happen, but generate a fallback.
-	problem := GenerateSudokuProblemFromSolvedBoard(
-		GenerateNormalizedSolvedBoard(opts.Options), opts.Options,
-	)
+func generateRound(opts BestEffortOptions, round int) GenerationResult {
+	solvedBoard := GenerateNormalizedSolvedBoard(opts.Options)
+	solvedBoard.Randomize()
+	problem := GenerateSudokuProblemFromSolvedBoard(solvedBoard, opts.Options)
 	classification := solver.ClassifyPuzzle(opts.solverStore, problem)
+	targetLevel := difficultyLevelName(opts.Difficulty)
 	return GenerationResult{
 		Puzzle:         problem,
 		Classification: classification,
-		RoundsUsed:     maxRounds,
-		DurationMs:     time.Since(startTime).Milliseconds(),
+		Matched:        classification.Solved && classification.Difficulty == targetLevel && requiresThisTierSolver(problem, opts.Options),
+		RoundsUsed:     round,
 	}
 }
 

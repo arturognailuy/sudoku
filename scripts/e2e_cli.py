@@ -9,6 +9,7 @@ import sqlite3
 import stat
 import subprocess
 import tempfile
+import time
 
 PUZZLE_DOTS = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 PUZZLE_ZEROS = PUZZLE_DOTS.replace(".", "0")
@@ -281,6 +282,7 @@ def main():
         contains(run(binary, ["generate", "--count", "0"], root, expected=1), "count must be positive")
         contains(run(binary, ["generate", "--difficulty", "invalid"], root, expected=1), "invalid difficulty level")
         generated = root / "generated.db"
+        started = time.monotonic()
         output = run(
             binary,
             [
@@ -299,11 +301,14 @@ def main():
                 str(generated),
             ],
             root,
-            timeout=60,
+            timeout=5,
         )
-        contains(output, "Generated: 1", "=== Generation Report ===")
-        if not generated.is_file() or len(puzzle_rows(generated)) != 1:
-            raise AssertionError("bounded generation did not create one SQLite puzzle")
+        elapsed = time.monotonic() - started
+        contains(output, "Attempted: 1", "Generated: 0", "Timed out: 1", "=== Generation Report ===")
+        if elapsed > 2:
+            raise AssertionError(f"hard generation deadline returned after {elapsed:.3f}s")
+        if not generated.is_file() or puzzle_rows(generated):
+            raise AssertionError("timed-out generation stored an incomplete puzzle")
 
         # Root play auto-stores through the default XDG data path.
         auto_database = root / "data" / "sudoku" / "puzzles.db"

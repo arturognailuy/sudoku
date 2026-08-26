@@ -84,7 +84,7 @@ Three newly generated high-tier puzzles become strategy-unsolved after reaching 
 
 The external expansion still confirms that score is not a cross-grade boundary: all four neighboring assigned grades have overlapping observed score ranges. The `easy50`, `top95`, and `hardest` groups remain separate because their labels do not define a shared rating scale. Fourteen of 15 imported fixtures solve; constrained integration-fixture labels are not automatically canonical classifier labels.
 
-The v6 evidence supports a separately reviewed generator-policy proposal, not direct tuning. A proposal must define strict versus best-effort target semantics and soft versus hard time budgets, then compare candidates on the preserved exploratory and held-out splits. Technique-inventory changes remain separate and require diagnosis and regression fixtures for representative stalls.
+The v6 evidence supports the adopted bounded generator policy without retuning grades, weights, clues, or strategies. Batch generation remains best-effort, classifies and stores only completed puzzles under their actual grade, and reports target matches separately. Wall-clock generation budgets are hard caller deadlines. Interactive play uses a matching generated or database puzzle when available and otherwise names the actual generated grade explicitly. Technique-inventory changes remain separate and require diagnosis and regression fixtures for representative stalls.
 
 ## Rating Contract and Remaining Decision Gates
 
@@ -96,7 +96,7 @@ The approved rating contract fixes these invariants:
 4. `strategy-unsolved` remains a separate outcome and is never relabeled Evil.
 5. Human observations, if collected later, belong to a separate empirical player-difficulty layer.
 
-Future calibration proposals still require review of technique-tier or weight changes, round and time budgets, storage and fallback treatment of strategy-unsolved puzzles, and target-hit, reproducibility, latency, and coverage acceptance thresholds. Every proposal must state rejected alternatives and compare current and candidate behavior on exploratory and held-out data.
+Future calibration proposals still require review of technique-tier or weight changes, budget defaults, storage treatment of strategy-unsolved puzzles, and target-hit, reproducibility, latency, and coverage acceptance thresholds. Every proposal must state rejected alternatives and compare current and candidate behavior on exploratory and held-out data.
 
 ## Delivery Sequence
 
@@ -104,6 +104,6 @@ Future calibration proposals still require review of technique-tier or weight ch
 2. Maintain immutable corpus manifests, append-only observations, and deterministic reports without tuning product policy.
 3. Expand only pilot strata whose target-hit, coverage, or rare-failure estimates remain unstable.
 4. Propose any policy change with before-and-after comparisons under the fixed strategy contract.
-5. Apply approved policy with unit coverage and applicable built-binary E2E scenarios.
+5. Preserve the approved best-effort, actual-grade, hard-deadline, and explicit-fallback policy with unit coverage and applicable built-binary E2E scenarios.
 
 Primary code boundaries are `calibration.Run`, `cmd.newCalibrateCommand`, `solver.ClassifyPuzzle`, `solver.StrategyTierForTechnique`, `solver.ScorePuzzle`, `generator.Difficulty`, `generator.GenerateBestEffort`, and `solver/config.go`.
