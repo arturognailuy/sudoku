@@ -1,46 +1,44 @@
-// Package solver — config.go is the single centralized file for all
-// tunable parameters in the Sudoku program. Update this file when
-// calibrating difficulty, adjusting scoring weights, or changing
-// clue-count ranges.
+// Package solver centralizes the tunable strategy-rating configuration.
+// Technique weights produce deterministic within-grade scores, while clue
+// ranges guide generation without assigning or overriding a strategy grade.
+// Policy changes require the evidence and review defined in
+// .aidoc/designs/difficulty-calibration.md.
 //
-// Solver Weights: based on HoDoKu's established values. Each weight
-// represents the difficulty cost per application of a technique.
+// Solver weights are based on HoDoKu's established values. Each weight
+// represents the relative cost of one technique application.
 //
-// Clue-Count Ranges: define the acceptable number of given clues for
-// each difficulty level. MinimumClues is inclusive, MaximumClues is
-// exclusive. These serve as secondary constraints alongside technique
-// requirements — a puzzle must fall within both the clue range and
-// the technique tier for its difficulty level.
+// Clue-count ranges bound the generator's search space. MinimumClues is
+// inclusive and MaximumClues is exclusive.
 package solver
 
-// Solver weights — difficulty cost per application.
+// Solver weights define relative cost per technique application.
 const (
-	WeightNakedSingle    = 4
-	WeightHiddenSingle   = 14
-	WeightPointingPair   = 50
-	WeightNakedPair      = 60
-	WeightNakedTriple    = 80
-	WeightNakedQuad      = 120
-	WeightHiddenPair     = 70
-	WeightHiddenTriple   = 100
-	WeightHiddenQuad     = 150
-	WeightXWing          = 140
-	WeightSwordfish      = 150
-	WeightJellyfish      = 300
-	WeightXYWing         = 160
-	WeightSimpleColoring = 150
-	WeightBUGPlusOne      = 250
-	WeightUniqueRectangle = 200
-	WeightWWing           = 150
-	WeightXYZWing         = 180
+	WeightNakedSingle      = 4
+	WeightHiddenSingle     = 14
+	WeightPointingPair     = 50
+	WeightNakedPair        = 60
+	WeightNakedTriple      = 80
+	WeightNakedQuad        = 120
+	WeightHiddenPair       = 70
+	WeightHiddenTriple     = 100
+	WeightHiddenQuad       = 150
+	WeightXWing            = 140
+	WeightSwordfish        = 150
+	WeightJellyfish        = 300
+	WeightXYWing           = 160
+	WeightSimpleColoring   = 150
+	WeightBUGPlusOne       = 250
+	WeightUniqueRectangle  = 200
+	WeightWWing            = 150
+	WeightXYZWing          = 180
 	WeightUniqueRectangle2 = 220
 	WeightUniqueRectangle3 = 240
 	WeightUniqueRectangle4 = 250
-	WeightXCycles         = 280
-	WeightXYChain         = 300
+	WeightXCycles          = 280
+	WeightXYChain          = 300
 )
 
-// Clue-count ranges per difficulty level.
+// Clue-count guidance per requested generation tier.
 // MinimumClues is inclusive; MaximumClues is exclusive.
 const (
 	EasyMinClues   = 45
