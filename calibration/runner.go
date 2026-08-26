@@ -661,7 +661,7 @@ func markdownReport(report Report) string {
 			fmt.Fprintf(&builder, "- %s / %s: no observed range overlap\n", overlap.LowerTier, overlap.UpperTier)
 		}
 	}
-	fmt.Fprint(&builder, "\n## External Rating Agreement\n")
+	fmt.Fprint(&builder, "\n## Optional External Source Comparison\n")
 	for _, system := range sortedKeys(report.ExternalAgreement) {
 		fmt.Fprintf(&builder, "\n### %s\n\n", system)
 		for _, label := range sortedKeys(report.ExternalAgreement[system]) {
@@ -673,7 +673,7 @@ func markdownReport(report Report) string {
 		hit := report.GenerationHitRate[target]
 		fmt.Fprintf(&builder, "- %s: hits %d/%d (%.1f%%, 95%% CI %.1f–%.1f%%); observed {%s}; latency ms %s; rounds %s\n", target, hit.Numerator, hit.Denominator, 100*hit.Rate, 100*hit.Lower95, 100*hit.Upper95, formatCounts(report.GenerationMismatch[target]), formatNumeric(report.GenerationLatencyMS[target]), formatNumeric(report.GenerationRounds[target]))
 	}
-	fmt.Fprint(&builder, "\n## Method and Limits\n\n- Every puzzle was classified twice; only exact outcome, score, maximum-technique, move-count, and trace agreement was recorded.\n- Numeric summaries use deterministic nearest-rank percentiles. Rate intervals are Wilson 95% confidence intervals.\n- External source scales remain separate and are not treated as equivalent human-difficulty labels.\n- Generated samples test generator behavior, not external validity. Random seeds are absent because the public generator boundary does not expose them.\n- Pilot strata are deliberately small. The report identifies expansion targets and does not justify policy changes by itself.\n")
+	fmt.Fprint(&builder, "\n## Method and Limits\n\n- Every puzzle was classified twice; only exact outcome, score, maximum-technique, move-count, and trace agreement was recorded.\n- Numeric summaries use deterministic nearest-rank percentiles. Rate intervals are Wilson 95% confidence intervals.\n- External source scales remain separate and do not validate or redefine canonical strategy grades.\n- Generated samples test generator behavior, not external source agreement. Random seeds are absent because the public generator boundary does not expose them.\n- Pilot strata are deliberately small. The report identifies expansion targets and does not justify policy changes by itself.\n")
 	return builder.String()
 }
 

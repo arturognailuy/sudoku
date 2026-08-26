@@ -4,10 +4,10 @@ status: Active
 entry_points:
   - cli/controller.go
   - cmd/play.go
-  - cli/session_file.go
+  - sessionfile/session_file.go
 dependencies:
   - .aidoc/designs/game-engine.md
-  - .aidoc/designs/e2e-test-scenarios.md
+  - .aidoc/designs/e2e-session-scenarios.md
   - .aidoc/architecture/guidelines.md
 ---
 
@@ -21,7 +21,7 @@ The CLI exposes manual notes and durable game sessions through the existing comm
 |----------|-------------|
 | `.aidoc/designs/roadmap.md` | Current stabilization priorities and sequencing |
 | `.aidoc/designs/game-engine.md` | Canonical note, history, snapshot, and serialization semantics |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box scenarios for notes and restored sessions |
+| `.aidoc/designs/e2e-session-scenarios.md` | Black-box scenarios for notes and restored sessions |
 | `.aidoc/architecture/guidelines.md` | Package boundaries that keep I/O out of the engine |
 
 ## Why CLI Sessions Exist

@@ -7,7 +7,7 @@ entry_points:
 dependencies:
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/cli-sessions.md
-  - .aidoc/designs/e2e-test-scenarios.md
+  - .aidoc/designs/e2e-tui-scenarios.md
 ---
 
 # TUI Frontend
@@ -21,7 +21,7 @@ The optional full-screen terminal interface is the smallest second frontend for 
 | `.aidoc/designs/roadmap.md` | Current stabilization priorities and sequencing |
 | `.aidoc/designs/game-engine.md` | Canonical actions, snapshots, hints, notes, and serialization |
 | `.aidoc/designs/cli-sessions.md` | Existing CLI behavior and explicit persistence policy |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box compatibility and TUI scenarios |
+| `.aidoc/designs/e2e-tui-scenarios.md` | Black-box compatibility and TUI scenarios |
 
 ## Why the TUI Is Next
 

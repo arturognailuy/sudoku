@@ -8,7 +8,7 @@ entry_points:
 dependencies:
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/tui-frontend.md
-  - .aidoc/designs/e2e-test-scenarios.md
+  - .aidoc/designs/e2e-tui-scenarios.md
 ---
 
 # Automatic Candidates
@@ -21,7 +21,7 @@ Automatic candidates provide opt-in legal-candidate assistance without changing 
 |----------|-------------|
 | `.aidoc/designs/game-engine.md` | Defines the detached snapshot and the distinction between engine state and derived queries |
 | `.aidoc/designs/tui-frontend.md` | Defines the keyboard, rendering, theme, and accessibility boundaries used by the first consumer |
-| `.aidoc/designs/e2e-test-scenarios.md` | Defines the black-box behaviors that protect candidate assistance |
+| `.aidoc/designs/e2e-tui-scenarios.md` | Defines the black-box behaviors that protect candidate assistance |
 | `.aidoc/designs/roadmap.md` | Defines current stabilization priorities |
 
 ## Why Automatic Candidates Are Derived

@@ -11,19 +11,19 @@ const (
 	ClassificationStrategyUnsolved ClassificationOutcome = "strategy-unsolved"
 )
 
-// Classification holds the result of classifying a puzzle's difficulty
-// by solving it with strategy solvers.
+// Classification holds the solver-relative strategy grade and trace metrics.
+// The legacy Difficulty field name carries the highest required strategy tier.
 type Classification struct {
 	Outcome      ClassificationOutcome // Whether the registered strategies completed the puzzle.
-	Difficulty   string                // Highest difficulty tier reached; empty if no technique applied.
-	Score        int                   // Total difficulty score.
+	Difficulty   string                // Highest strategy tier reached; empty if no technique applied.
+	Score        int                   // Deterministic score for ordering within a strategy grade.
 	MaxTechnique string                // Technique from the highest tier reached.
 	Moves        []Move                // All moves used during solving.
 	Solved       bool                  // Compatibility mirror of Outcome == ClassificationSolved.
 }
 
 // ClassifyPuzzle solves the puzzle using strategy solvers from the store,
-// determines the difficulty tier, score, and highest technique used. Strategy
+// determines its strategy grade, within-grade score, and highest technique. Strategy
 // order is the store's stable registration order. A stalled classification is
 // reported separately instead of being promoted to evil/backtracking.
 func ClassifyPuzzle(store Store, board core.Board) Classification {

@@ -11,23 +11,25 @@ dependencies:
   - .aidoc/designs/roadmap.md
 ---
 
-# Difficulty Calibration
+# Strategy Rating Calibration
 
-Difficulty calibration turns solver traces and generation attempts into reproducible evidence for product policy. The first calibrated contract is solver-relative strategy difficulty; external human ratings validate that approximation but do not redefine it without evidence.
+Calibration tests whether the canonical strategy grades are reproducible, internally coherent, and useful for generation. Human ratings are optional evidence for a separate player-difficulty model, not a prerequisite or validation gate for the strategy rating contract.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|--------------|
-| `.aidoc/designs/difficulty-model.md` | Current tiers, weights, clue constraints, and configuration boundary |
+| `.aidoc/designs/difficulty-model.md` | Strategy grades, weights, clue guidance, and configuration boundary |
 | `.aidoc/designs/roadmap.md` | Sequencing after baseline stabilization |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box behavior catalog for later policy changes |
+| `.aidoc/designs/e2e-calibration-scenarios.md` | Black-box behavior catalog for later policy changes |
 
 ## Why Calibration Exists
 
-The current model combines technique tiers, accumulated HoDoKu-derived weights, and clue bands, but those inputs have not been measured together on a controlled corpus. Calibration must distinguish actual tier separation from accidental effects of clue count, solver ordering, repeated moves, or generator search budgets.
+The current model combines technique tiers, accumulated HoDoKu-derived weights, and clue guidance. Calibration must distinguish canonical grade behavior from accidental effects of clue count, solver ordering, repeated moves, or generator search budgets.
 
-Calibration reports support policy decisions; calibration tooling does not silently make them. Weight changes, score bands, clue bands, generation budgets, and fallback semantics require a separate proposal with before-and-after evidence.
+Calibration reports support policy decisions; calibration tooling does not silently make them. Technique-tier changes, weight changes, clue guidance, generation budgets, and fallback semantics require a separate proposal with before-and-after evidence.
+
+The strategy rating contract is intentionally narrower than human difficulty. Completion time, mistakes, hints, subjective ratings, and player experience may later inform a separately named empirical layer, but absence of that data does not block or weaken a canonical strategy grade.
 
 ## Measurement Preconditions
 
@@ -39,7 +41,7 @@ Identical input, store configuration, and code version must produce identical ou
 
 ## Corpus Contract
 
-The corpus combines independently rated puzzles, puzzles generated for every requested tier, provenance-permitted database/import samples, and deliberately pathological inputs. Pathological groups include minimal-clue boards, boundary clue counts, unusually long traces, and uniquely solvable puzzles that the strategy inventory cannot finish.
+The corpus combines traceable external puzzles, puzzles generated for every requested tier, provenance-permitted database/import samples, and deliberately pathological inputs. External records may preserve published labels for comparison, but independently rated human data is optional. Pathological groups include minimal-clue boards, boundary clue counts, unusually long traces, and uniquely solvable puzzles that the strategy inventory cannot finish.
 
 Each record carries a normalized 81-cell puzzle, a content hash, source category, source identifier or citation, original rating when available, license or redistribution constraint, and collection method. Normalization and hash-based deduplication occur before sampling. Reports aggregate restricted sources without republishing their puzzle strings.
 
@@ -56,13 +58,13 @@ The baseline report answers distinct questions with distinct measurements:
 | Question | Evidence |
 |----------|----------|
 | Reproducibility | Repeated classifications with exact equality of outcome, score, maximum tier, move count, and trace digest |
-| Tier meaning | Technique usage, move-count, score, and clue distributions by assigned tier and source group |
-| Tier separation | Neighboring-tier overlap, monotonic trends, and representative inversions rather than averages alone |
-| External validity | Agreement matrix plus ordinal association against independently rated puzzles; disagreements remain inspectable cases |
+| Grade integrity | Technique usage and maximum required tier by assigned grade and source group |
+| Within-grade ordering | Score and move-count distributions within each assigned grade; cross-grade overlap is descriptive, not a boundary |
+| Optional external comparison | Source-specific agreement matrices for published labels; disagreements do not invalidate strategy grades |
 | Generation quality | Target-hit rate by round and elapsed budget, mismatch matrix, p50/p95 latency, rounds, clue count, and failure rate |
 | Strategy coverage | Strategy-unsolved rate by source group with representative trace-stall cases |
 
-Confidence intervals accompany rates and percentiles where sample size permits. Sample counts and missing-data rules appear beside every aggregate. External rating systems are analyzed separately before any justified normalization because equally named tiers need not mean the same thing.
+Confidence intervals accompany rates and percentiles where sample size permits. Sample counts and missing-data rules appear beside every aggregate. External rating systems are analyzed separately and never normalized into the canonical grade without an explicit new product decision, because equally named tiers need not mean the same thing.
 
 ## Reproducibility and Report Artifacts
 
@@ -76,33 +78,32 @@ The runner emits `observations.jsonl`, `checkpoint.json`, `report.json`, and `re
 
 `calibration/testdata/mixed-pilot-v2.json` preserves the immutable 30-record pilot across external, generated, imported, and pathological sources. `calibration/testdata/mixed-external-expansion-v3.json` adds source-order records from the same pinned MIT-licensed `norvig/pytudes` groups without outcome-based selection, increasing the external stratum from 9 to 31 puzzles. `calibration/testdata/mixed-generated-expansion-v4.json` then appends three sequential generation calls per requested tier without outcome-based rejection or replacement, increasing the generated stratum from 10 to 25 puzzles. `calibration/testdata/mixed-imported-expansion-v5.json` appends all nine remaining hash-unique named integration fixtures in source order, increasing the imported stratum from 6 to 15 puzzles. Each manifest has a matching directory under `calibration/baselines/` with append-only observations, deterministic reports, and exact run metadata.
 
-The external expansion makes the pilot's apparent score separation less credible: all four neighboring assigned tiers now have overlapping observed score ranges, and 10 of 31 external puzzles are strategy-unsolved. The `easy50`, `top95`, and `hardest` groups remain separate because their labels do not define a shared human-difficulty scale.
+The external expansion confirms that score is not a cross-grade boundary: all four neighboring assigned grades have overlapping observed score ranges, and 10 of 31 external puzzles are strategy-unsolved. The `easy50`, `top95`, and `hardest` groups remain separate because their labels do not define a shared rating scale.
 
 The generated expansion provides five observations per requested tier. Easy reached its target in 5/5 calls, Evil in 2/5, and Medium, Hard, and Expert in 0/5; the latter tiers often classified below their request, while Expert calls also exceeded the nominal duration because the budget is checked only between full generation rounds. These measurements expose generator behavior but remain too small to justify changing budgets or fallback semantics.
 
 The imported expansion classifies 76 total records reproducibly. Fourteen of 15 imported fixtures solve, one is strategy-unsolved, and two fixtures documented as Expert classify as Hard under the canonical full solver order. This shows that constrained integration-fixture labels are not automatically classifier labels.
 
-The published evidence remains a measurement baseline, not calibration policy. Pathological data remain small, the external corpus comes from one source family, and generated target-hit intervals remain wide. The next evidence priority is an independent human-rating source before any proposal changes weights, thresholds, clue bands, budgets, or fallback behavior.
+The published evidence remains a measurement baseline, not permission to tune policy. Pathological data remain small, the external corpus comes from one source family, and generated target-hit intervals remain wide. The next evidence priority is generator alignment and strategy-coverage analysis under the approved strategy contract; human-rating data is not required.
 
-## Decision Gates
+## Rating Contract and Remaining Decision Gates
 
-The baseline report must let a reviewer decide:
+The approved rating contract fixes these invariants:
 
-1. whether labels promise solver-relative difficulty only or also claim an externally validated human approximation;
-2. whether score orders puzzles only within a tier or contributes to cross-tier boundaries;
-3. whether clue bands remain constraints, become generation guidance, or change from measured evidence;
-4. whether round and time budgets differ by requested tier;
-5. how strategy-unsolved puzzles appear in classification, storage, and fallback behavior;
-6. which stability, separation, hit-rate, and latency thresholds define an acceptable calibrated model.
+1. Easy through Evil mean the highest strategy tier required by the canonical deterministic solver, not predicted player experience.
+2. Score orders completed puzzles within a grade and never overrides the explicit grade hierarchy.
+3. Clue ranges guide generation but do not assign a grade.
+4. `strategy-unsolved` remains a separate outcome and is never relabeled Evil.
+5. Human observations, if collected later, belong to a separate empirical player-difficulty layer.
 
-No threshold is fixed in this design because the baseline exists to supply the evidence. A calibration proposal must state rejected alternatives and compare current and candidate behavior on both exploratory and held-out data.
+Future calibration proposals still require review of technique-tier or weight changes, round and time budgets, storage and fallback treatment of strategy-unsolved puzzles, and target-hit, reproducibility, latency, and coverage acceptance thresholds. Every proposal must state rejected alternatives and compare current and candidate behavior on exploratory and held-out data.
 
 ## Delivery Sequence
 
 1. Preserve deterministic classification semantics with regression tests.
 2. Maintain immutable corpus manifests, append-only observations, and deterministic reports without tuning product policy.
-3. Expand only pilot strata whose intervals, overlap, or rare-failure estimates remain unstable.
-4. Review policy choices and propose calibration with before-and-after comparisons.
+3. Expand only pilot strata whose target-hit, coverage, or rare-failure estimates remain unstable.
+4. Propose any policy change with before-and-after comparisons under the fixed strategy contract.
 5. Apply approved policy with unit coverage and applicable built-binary E2E scenarios.
 
 Primary code boundaries are `calibration.Run`, `cmd.newCalibrateCommand`, `solver.ClassifyPuzzle`, `solver.StrategyTierForTechnique`, `solver.ScorePuzzle`, `generator.Difficulty`, `generator.GenerateBestEffort`, and `solver/config.go`.

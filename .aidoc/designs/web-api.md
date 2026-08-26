@@ -10,7 +10,7 @@ entry_points:
 dependencies:
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/background-autosave.md
-  - .aidoc/designs/e2e-test-scenarios.md
+  - .aidoc/designs/e2e-api-scenarios.md
 ---
 
 # HTTP API Backend
@@ -23,7 +23,7 @@ The versioned, general-purpose HTTP backend exposes the existing game engine wit
 |----------|-------------|
 | `.aidoc/designs/game-engine.md` | Canonical state, action, hint, and serialization contract |
 | `.aidoc/designs/background-autosave.md` | Private recovery storage available to API sessions |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box HTTP acceptance coverage |
+| `.aidoc/designs/e2e-api-scenarios.md` | Black-box HTTP acceptance coverage |
 | `.aidoc/architecture/guidelines.md` | Package dependency boundaries |
 
 ## Why the API Is Client-Neutral

@@ -8,7 +8,7 @@ entry_points:
 dependencies:
   - .aidoc/architecture/guidelines.md
   - .aidoc/designs/roadmap.md
-  - .aidoc/designs/e2e-test-scenarios.md
+  - .aidoc/designs/e2e-play-scenarios.md
 ---
 
 # Game Engine
@@ -21,7 +21,7 @@ dependencies:
 |----------|-------------|
 | `.aidoc/architecture/guidelines.md` | Current package boundaries that the engine must preserve |
 | `.aidoc/designs/roadmap.md` | Current frontend delivery order |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box CLI behavior that must remain compatible |
+| `.aidoc/designs/e2e-play-scenarios.md` | Black-box CLI behavior that must remain compatible |
 
 ## Why the Engine Boundary Exists
 
@@ -103,4 +103,4 @@ Serialization failures, invalid actions, unavailable undo/redo, and attempts to 
 
 Engine tests cover every action, typed error, atomic rollback, note cleanup, mixed value/note undo-redo sequences, redo truncation, immutable snapshots, and serialization round trips. Restoration tests include malformed and unsupported versions.
 
-The CLI boundary is verified against `.aidoc/designs/e2e-test-scenarios.md` by building the binary and exercising it as a black box. Package tests cover repair, solve, applied-hint metadata, typed errors, and snapshot isolation; package tests, `go vet`, golangci-lint, and CI must remain green.
+The CLI boundary is verified against `.aidoc/designs/e2e-play-scenarios.md` by building the binary and exercising it as a black box. Package tests cover repair, solve, applied-hint metadata, typed errors, and snapshot isolation; package tests, `go vet`, golangci-lint, and CI must remain green.
