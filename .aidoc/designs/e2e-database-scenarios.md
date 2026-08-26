@@ -7,6 +7,7 @@ entry_points:
 dependencies:
   - .aidoc/designs/e2e-test-scenarios.md
   - .aidoc/designs/game-engine.md
+  - .aidoc/designs/database-puzzle-selection.md
 ---
 
 # E2E Database Scenarios
@@ -54,11 +55,35 @@ Database behavior crosses generation, classification, persistence, and startup. 
 
 ---
 
-## 12. Deferred Database Scenarios
+## 12. Planned Played-State Acquisition
 
-The deferred database scenarios begin only after stabilization and difficulty calibration, as sequenced in `.aidoc/designs/roadmap.md`:
+These cases define built-binary acceptance for the next database implementation. Deterministic public cases belong in `scripts/e2e_cli.py` with an isolated database:
+
+### 12.1 Never-Played Puzzles First
+**Setup:** Import two distinct puzzles with the same exact strategy grade.
+**Action:** Run `sudoku --from-db --level <grade> --db <path>` twice and quit each game.
+**Expected:** Each stored puzzle is selected once before either repeats; both rows record one acquisition.
+
+### 12.2 Balanced Reuse After Exhaustion
+**Action:** Acquire a third puzzle from the two-puzzle fixture.
+**Expected:** One least-played puzzle is returned and only its acquisition count increments. Repeated acquisitions keep counts within one of each other.
+
+### 12.3 In-Place Migration
+**Setup:** Create a pre-change database containing exact-grade puzzle rows, then open it with the new binary.
+**Expected:** Migration preserves every puzzle and classification, initializes each row as unplayed, and the first acquisition succeeds.
+
+### 12.4 Source and Failure Boundaries
+**Action:** Exercise `--from-db` with an empty requested grade, a custom database path, and conflicting `--input`/`--resume` flags.
+**Expected:** The command reports stable errors, does not generate a substitute, and does not mutate another database. Explicit input and resumed sessions leave acquisition history unchanged.
+
+### 12.5 Generated Fallback Accounting
+**Action:** Use the narrowest deterministic package seam to cover matched generation, generated mismatch with exact-grade DB fallback, and mismatch without a DB fallback.
+**Expected:** Only the puzzle ultimately selected for play is marked played; a stored but unused generated mismatch remains unplayed.
+
+## 13. Other Deferred Database Scenarios
+
+Keep these independently reviewed after played-state selection:
 
 - **Large import progress indicator:** Import 150+ puzzles → progress indicator fires every 100 puzzles.
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).
-- **Played tracking:** Mark puzzles as played → DB query skips played puzzles.
 - **Concurrent DB access:** Multiple generate workers writing to the same DB → no corruption (WAL mode).

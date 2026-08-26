@@ -13,6 +13,7 @@ dependencies:
   - .aidoc/designs/difficulty-model.md
   - .aidoc/designs/difficulty-calibration.md
   - .aidoc/designs/future-directions.md
+  - .aidoc/designs/database-puzzle-selection.md
 ---
 
 # Stabilization Roadmap
@@ -28,6 +29,7 @@ Sudoku's feature baseline, calibration, and stabilization gates are complete: th
 | `.aidoc/designs/difficulty-calibration.md` | Strategy measurement methodology, report artifacts, and review decisions |
 | `.aidoc/designs/future-directions.md` | Deliberately non-priority product and production directions |
 | `.aidoc/designs/web-api.md` | Current HTTP contract, security boundary, and deployment defaults |
+| `.aidoc/designs/database-puzzle-selection.md` | Proposed next database behavior and migration boundary |
 
 ## Why Stabilization Remains the Gate
 
@@ -71,11 +73,11 @@ Calibration runs from the stable CI baseline with deterministic classifier seman
 
 Calibration output remains local and telemetry-free. The 101-record corpus separates target-alignment failures from strategy-inventory stalls. Batch generation remains best-effort and stores each completed puzzle under its actual grade; per-puzzle wall-clock budgets are hard deadlines. Interactive play first uses an exact requested-grade result or database puzzle, then explicitly reports any actual-grade fallback. Technique-inventory changes remain separate; human data may support a later empirical player-difficulty layer but is not a prerequisite for strategy calibration.
 
-### 4. Keep Database Enhancements Deferred
+### 4. Implement Played-State Selection Next
 
-Database behavior changes follow calibration so selection policy is based on measured difficulty rather than unstable assumptions. Candidate work includes played-state filtering, large-import progress verification, minimum-clue handling, and concurrent SQLite stress coverage.
+Calibration and stabilization now provide the stable strategy-grade boundary required for database selection. `.aidoc/designs/database-puzzle-selection.md` defines the next bounded increment: exact-grade acquisition, never-played-first selection, balanced reuse, in-place additive migration, and a deterministic public `--from-db` boundary.
 
-Each database behavior requires explicit semantics, migration impact analysis, black-box scenarios, and regression tests before implementation.
+Implementation must add the black-box scenarios in `.aidoc/designs/e2e-database-scenarios.md` and focused transaction/migration regression tests. Minimum-clue policy, large-import behavior, played-statistics/reset commands, and broad concurrent SQLite stress remain separate follow-ups.
 
 ## Maintained Stabilization Gates
 
