@@ -18,7 +18,7 @@ dependencies:
 
 # Stabilization Roadmap
 
-Sudoku's feature baseline, calibration, and stabilization gates are complete: the Go repository owns the engine, CLI, TUI, persistence, recovery, client-neutral HTTP API, bounded generation semantics, and independent CI lanes. Database enhancements remain separately reviewed follow-up work.
+Sudoku's feature baseline, calibration, and stabilization gates are complete: the Go repository owns the engine, CLI, TUI, persistence, recovery, client-neutral HTTP API, bounded generation semantics, and independent CI lanes. Played-state database selection is implemented; remaining database enhancements require separate review.
 
 ## Related Docs
 
@@ -29,7 +29,7 @@ Sudoku's feature baseline, calibration, and stabilization gates are complete: th
 | `.aidoc/designs/difficulty-calibration.md` | Strategy measurement methodology, report artifacts, and review decisions |
 | `.aidoc/designs/future-directions.md` | Deliberately non-priority product and production directions |
 | `.aidoc/designs/web-api.md` | Current HTTP contract, security boundary, and deployment defaults |
-| `.aidoc/designs/database-puzzle-selection.md` | Proposed next database behavior and migration boundary |
+| `.aidoc/designs/database-puzzle-selection.md` | Current played-state selection and migration boundary |
 
 ## Why Stabilization Remains the Gate
 
@@ -57,7 +57,7 @@ Pull-request CI separates unit tests, race detection, vet, lint, API contract ch
 
 Storage and command-wiring tests use fixed classified puzzles through the `cmd.batchGenerateWith` generation seam. Real randomized generation remains covered in `generator`, while `cmd` tests prove reporting and SQLite composition without waiting for a target difficulty. Solver fallback fixtures use `solver.Backtracker.SolveDeterministic`; randomized `solver.Backtracker.Solve` remains available for diverse full-board generation without making race-test duration depend on a lucky search path. These boundaries keep `go test -race -count=1 ./...` viable as a mandatory gate without weakening generation or fallback coverage.
 
-The API, TUI, and line-CLI harnesses build and execute the real binary with isolated temporary state. The line-CLI lane covers parsing, gameplay/history, durable sessions, import normalization and deduplication, bounded generation, and SQLite-visible composition. Probabilistic database fallback remains excluded until it has a deterministic public behavior or a package-level seam.
+The API, TUI, and line-CLI harnesses build and execute the real binary with isolated temporary state. The line-CLI lane covers parsing, gameplay/history, durable sessions, import normalization and deduplication, bounded generation, and SQLite-visible composition. The public `--from-db` boundary deterministically covers exact-grade acquisition, migration, and balanced reuse; generated-fallback accounting uses focused package coverage.
 
 ### 2. Maintain Boundary Unit and Integration Coverage
 
@@ -73,11 +73,11 @@ Calibration runs from the stable CI baseline with deterministic classifier seman
 
 Calibration output remains local and telemetry-free. The 101-record corpus separates target-alignment failures from strategy-inventory stalls. Batch generation remains best-effort and stores each completed puzzle under its actual grade; per-puzzle wall-clock budgets are hard deadlines. Interactive play first uses an exact requested-grade result or database puzzle, then explicitly reports any actual-grade fallback. Technique-inventory changes remain separate; human data may support a later empirical player-difficulty layer but is not a prerequisite for strategy calibration.
 
-### 4. Implement Played-State Selection Next
+### 4. Maintain Played-State Selection
 
-Calibration and stabilization now provide the stable strategy-grade boundary required for database selection. `.aidoc/designs/database-puzzle-selection.md` defines the next bounded increment: exact-grade acquisition, never-played-first selection, balanced reuse, in-place additive migration, and a deterministic public `--from-db` boundary.
+Calibration and stabilization now provide the stable strategy-grade boundary required for database selection. `.aidoc/designs/database-puzzle-selection.md` defines the current exact-grade acquisition, never-played-first selection, balanced reuse, in-place additive migration, and deterministic public `--from-db` boundary.
 
-Implementation must add the black-box scenarios in `.aidoc/designs/e2e-database-scenarios.md` and focused transaction/migration regression tests. Minimum-clue policy, large-import behavior, played-statistics/reset commands, and broad concurrent SQLite stress remain separate follow-ups.
+The black-box scenarios in `.aidoc/designs/e2e-database-scenarios.md` and focused transaction/migration regression tests protect this boundary. Minimum-clue policy, large-import behavior, played-statistics/reset commands, and broad concurrent SQLite stress remain separate follow-ups.
 
 ## Maintained Stabilization Gates
 

@@ -55,6 +55,13 @@ def puzzle_rows(database):
         ).fetchall()
 
 
+def acquisition_rows(database):
+    with sqlite3.connect(database) as connection:
+        return connection.execute(
+            "SELECT puzzle, play_count, last_played_at FROM puzzles ORDER BY puzzle"
+        ).fetchall()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("binary", nargs="?", default="./sudoku")
@@ -276,6 +283,56 @@ def main():
         contains(
             run(binary, ["import", "--file", str(root / "missing.txt")], root, expected=1),
             "open file",
+        )
+
+        # A legacy database migrates in place and starts with unplayed rows.
+        legacy_database = root / "legacy.db"
+        with sqlite3.connect(legacy_database) as connection:
+            connection.execute("CREATE TABLE puzzles (puzzle TEXT PRIMARY KEY, difficulty TEXT NOT NULL, score INTEGER NOT NULL, max_technique TEXT NOT NULL, source TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            connection.execute(
+                "INSERT INTO puzzles (puzzle, difficulty, score, max_technique, source) VALUES (?, 'easy', 1, 'naked-single', 'legacy')",
+                (PUZZLE_DOTS,),
+            )
+        contains(
+            run(binary, ["--from-db", "--level", "easy", "--db", str(legacy_database)], root, "q\n"),
+            "Exiting the game.",
+        )
+        legacy_rows = acquisition_rows(legacy_database)
+        if len(legacy_rows) != 1 or legacy_rows[0][1] != 1 or not legacy_rows[0][2]:
+            raise AssertionError(f"legacy migration did not preserve and acquire its row: {legacy_rows}")
+
+        # Public database acquisition exhausts never-played rows before reuse.
+        acquisition_database = root / "acquisition.db"
+        acquisition_source = root / "acquisition.txt"
+        acquisition_source.write_text(PUZZLE_DOTS + "\n", encoding="utf-8")
+        run(binary, ["import", "--file", str(acquisition_source), "--db", str(acquisition_database)], root)
+        with sqlite3.connect(acquisition_database) as connection:
+            difficulty, score, technique = connection.execute(
+                "SELECT difficulty, score, max_technique FROM puzzles"
+            ).fetchone()
+            connection.execute(
+                "INSERT INTO puzzles (puzzle, difficulty, score, max_technique, source) VALUES (?, ?, ?, ?, ?)",
+                ("53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79", difficulty, score, technique, "e2e-second"),
+            )
+        for _ in range(2):
+            contains(
+                run(binary, ["--from-db", "--level", difficulty, "--db", str(acquisition_database)], root, "q\n"),
+                "Exiting the game.",
+            )
+        rows = acquisition_rows(acquisition_database)
+        if sorted(row[1] for row in rows) != [1, 1] or any(not row[2] for row in rows):
+            raise AssertionError(f"database did not exhaust never-played rows: {rows}")
+        run(binary, ["--from-db", "--level", difficulty, "--db", str(acquisition_database)], root, "q\n")
+        rows = acquisition_rows(acquisition_database)
+        if sorted(row[1] for row in rows) != [1, 2]:
+            raise AssertionError(f"database reuse is not balanced: {rows}")
+        contains(
+            run(binary, ["--from-db", "--level", "evil", "--db", str(acquisition_database)], root, expected=1),
+            "no evil puzzle is available in the database",
+        )
+        contains(
+            run(binary, ["--from-db", "--input", PUZZLE_DOTS, "--db", str(acquisition_database)], root, expected=1),
+            "none of the others can be",
         )
 
         # Generation validation and a tightly bounded real-worker smoke run.

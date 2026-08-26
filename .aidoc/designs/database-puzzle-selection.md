@@ -1,6 +1,6 @@
 ---
 domain: Designs
-status: Draft
+status: Active
 entry_points:
   - cmd/play.go
   - db/db.go
@@ -12,7 +12,7 @@ dependencies:
 
 # Database Puzzle Selection
 
-Puzzle acquisition should prefer an exact strategy grade, avoid immediate repeats, and remain useful after every stored puzzle has been played. A database acquisition atomically selects and marks one puzzle; never-played puzzles come first, then the least-played and least-recently-played puzzle. Existing databases migrate in place with all rows initially unplayed.
+Puzzle acquisition prefers an exact strategy grade, avoids immediate repeats, and remains useful after every stored puzzle has been played. A database acquisition atomically selects and marks one puzzle; never-played puzzles come first, then the least-played and least-recently-played puzzle. Existing databases migrate in place with all rows initially unplayed.
 
 ## Related Docs
 
@@ -33,7 +33,7 @@ The database is a local puzzle pool, not a game-session ledger. It records that 
 - Selection never crosses strategy grades. Only the requested `difficulty` is eligible.
 - Rows with `play_count = 0` are selected before any previously played row.
 - After every exact-grade row has been used, the lowest `play_count` wins; the oldest `last_played_at` breaks unequal recency, and randomness breaks remaining ties.
-- Selection and the increment of `play_count`/`last_played_at` happen in one transaction. A row is returned only after its played state is durable.
+- Selection and the increment of `play_count`/`last_played_at` happen in one atomic SQLite statement. A row is returned only after its played state is durable.
 - Imports and batch generation insert unplayed rows. Deduplication never clears existing play history.
 - Explicit `--input` games and `--resume` sessions do not read or mutate puzzle acquisition history.
 
@@ -49,11 +49,11 @@ Default play keeps the current source order:
 4. If no exact-grade row exists or the database is unavailable, use the generated mismatch and mark it played when storage is available. Preserve the existing explicit actual-grade warning.
 5. If generation completes no puzzle and no database puzzle is available, preserve the current error.
 
-`cmd.generateWithFallbackTo` should replace its read-only lookup with an operation such as `db.DB.AcquireForPlay`. Keeping acquisition and mutation in `db` prevents callers from accidentally selecting without marking.
+`cmd.generateWithFallbackTo` uses `db.DB.AcquireForPlay` for fallback selection. Keeping acquisition and mutation in `db` prevents callers from accidentally selecting without marking.
 
 ## Deterministic User and Test Boundary
 
-Root play adds `--db <path>` and `--from-db`:
+Root play provides `--db <path>` and `--from-db`:
 
 - `--db` selects the play database and defaults to the existing XDG path.
 - `--from-db` skips generation and atomically acquires an exact-grade puzzle.
@@ -64,13 +64,13 @@ The explicit database source is useful to players who want an offline stored puz
 
 ## Migration and Indexing
 
-`db.DB.migrate` adds a non-null `play_count` column with a zero default, a nullable `last_played_at` timestamp, and an acquisition index ordered by difficulty, count, and timestamp. Migration inspects the existing table before each additive change because SQLite lacks a portable conditional column-addition form.
+`db.DB.migrate` maintains a non-null `play_count` column with a zero default, a nullable `last_played_at` timestamp, and an acquisition index ordered by difficulty, count, and timestamp. Migration inspects the existing table before each additive change because SQLite lacks a portable conditional column-addition form.
 
 Existing rows receive a zero count and no timestamp, so the first post-upgrade cycle uses every existing exact-grade puzzle before reuse. No schema-version table, destructive rebuild, backfill timestamp, or normalization change is required for this increment.
 
 ## Failure and Concurrency Boundaries
 
-- Use a write transaction so concurrent acquisitions cannot both return the same previously unplayed row.
+- The atomic write statement serializes concurrent acquisitions so two callers cannot both return the same previously unplayed row.
 - Configure a bounded SQLite busy timeout; do not wait indefinitely for a writer.
 - If acquisition or played-state persistence fails, default play follows its existing generated fallback. `--from-db` reports the database error because it has no permitted alternate source.
 - Statistics continue to report stored puzzle counts. Played/unplayed statistics and reset commands are outside this increment.

@@ -18,7 +18,9 @@ func runPlay(cmd *cobra.Command) error {
 	input, _ := cmd.Flags().GetString("input")
 	level, _ := cmd.Flags().GetString("level")
 	resume, _ := cmd.Flags().GetString("resume")
-	newGame, _, err := createSession(sessionRequest{input: input, level: level, resume: resume}, os.Stdout, os.Stderr)
+	dbPath, _ := cmd.Flags().GetString("db")
+	fromDB, _ := cmd.Flags().GetBool("from-db")
+	newGame, _, err := createSession(sessionRequest{input: input, level: level, resume: resume, dbPath: dbPath, fromDB: fromDB}, os.Stdout, os.Stderr)
 	if err != nil {
 		return err
 	}
@@ -36,15 +38,17 @@ func parseDifficulty(level string) generator.Difficulty {
 	return difficulty
 }
 
-func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficulty generator.Difficulty, levelName string) (core.Board, []string, error) {
+func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficulty generator.Difficulty, levelName, dbPath string) (core.Board, []string, error) {
 	opts := generator.NewBestEffortOptions(solverStore, difficulty)
 	result := generator.GenerateBestEffort(opts)
 
+	var storedPuzzle string
 	if result.RoundsUsed > 0 {
-		autoStore(solverStore, result.Puzzle, "generated")
+		storedPuzzle, _ = autoStoreTo(solverStore, result.Puzzle, "generated", dbPath)
 	}
 
 	if result.Matched {
+		markStoredPuzzlePlayed(dbPath, storedPuzzle)
 		keys := difficulty.AllowedSolverKeys()
 		if len(keys) == 0 {
 			keys = solverStore.GetAllStrategySolverKeys()
@@ -52,12 +56,11 @@ func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficul
 		return result.Puzzle, keys, nil
 	}
 
-	dbPath := defaultDBPath()
 	puzzleDB, err := db.Open(dbPath)
 	if err == nil {
 		defer puzzleDB.Close()
 
-		if dbPuzzle, err := puzzleDB.GetRandom(levelName); err == nil && dbPuzzle != nil {
+		if dbPuzzle, err := puzzleDB.AcquireForPlay(levelName); err == nil && dbPuzzle != nil {
 			board := core.NewEmptyBoard()
 			board.FromString(dbPuzzle.Puzzle)
 			board.Randomize()
@@ -76,6 +79,7 @@ func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficul
 		)
 	}
 
+	markStoredPuzzlePlayed(dbPath, storedPuzzle)
 	actualLevel := result.Classification.Difficulty
 	if actualLevel != levelName {
 		fmt.Fprintf(output, "Requested difficulty: %s. Generated puzzle difficulty: %s. Enjoy!\n",
@@ -89,11 +93,11 @@ func generateWithFallbackTo(output io.Writer, solverStore solver.Store, difficul
 	return result.Puzzle, keys, nil
 }
 
-func autoStore(solverStore solver.Store, board core.Board, source string) {
+func autoStoreTo(solverStore solver.Store, board core.Board, source, dbPath string) (string, error) {
 	solvedBoard := board.Copy()
 	solverStore.GetDefaultSolver().Solve(&solvedBoard)
 	if !solvedBoard.IsSolved() {
-		return
+		return "", fmt.Errorf("puzzle is not solvable")
 	}
 
 	normalizedSolved := solvedBoard.Copy()
@@ -120,8 +124,27 @@ func autoStore(solverStore solver.Store, board core.Board, source string) {
 	puzzleStr := normalizedPuzzle.ToString()
 	classification := solver.ClassifyPuzzle(solverStore, board)
 
-	dbPath := defaultDBPath()
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+		return "", err
+	}
+	puzzleDB, err := db.Open(dbPath)
+	if err != nil {
+		return "", err
+	}
+	defer puzzleDB.Close()
+
+	_, err = puzzleDB.InsertPuzzle(db.Puzzle{
+		Puzzle:       puzzleStr,
+		Difficulty:   classification.Difficulty,
+		Score:        classification.Score,
+		MaxTechnique: classification.MaxTechnique,
+		Source:       source,
+	})
+	return puzzleStr, err
+}
+
+func markStoredPuzzlePlayed(dbPath, puzzle string) {
+	if puzzle == "" {
 		return
 	}
 	puzzleDB, err := db.Open(dbPath)
@@ -129,14 +152,7 @@ func autoStore(solverStore solver.Store, board core.Board, source string) {
 		return
 	}
 	defer puzzleDB.Close()
-
-	_, _ = puzzleDB.InsertPuzzle(db.Puzzle{
-		Puzzle:       puzzleStr,
-		Difficulty:   classification.Difficulty,
-		Score:        classification.Score,
-		MaxTechnique: classification.MaxTechnique,
-		Source:       source,
-	})
+	_, _ = puzzleDB.MarkForPlay(puzzle)
 }
 
 func defaultDBPath() string {

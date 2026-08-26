@@ -8,7 +8,7 @@ Features:
 - 23 strategy solvers across 5 strategy grades (Easy → Evil)
 - Canonical strategy classification with within-grade HoDoKu-weighted scoring
 - Best-effort puzzle generator with time/round limits
-- SQLite puzzle database with automatic storage, dedup, and fallback lookup
+- SQLite puzzle database with automatic storage, exact-grade acquisition, balanced reuse, and fallback
 - Batch generation CLI for offline puzzle creation
 - Import CLI for loading puzzles from files
 - Interactive play with manual notes, undo/redo, and technique-aware hints
@@ -38,6 +38,10 @@ go build
 
 # Custom board (use . for empty cells)
 ./sudoku -i .56.4.7...1.5....6.......19...9.....3.58..2...4...6...1.....93....4....22.3.1....
+
+# Select an exact-grade stored puzzle without generation
+./sudoku --from-db --level hard
+./sudoku --from-db --level hard --db ./puzzles.db
 
 # Resume a session saved from the interactive prompt
 ./sudoku --resume game.json
