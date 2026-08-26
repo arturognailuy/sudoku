@@ -32,19 +32,20 @@ This index provides reading chains for common starting points and a complete doc
 1. `.aidoc/designs/difficulty-model.md` — current model, tier invariants, and configuration boundary
 2. `.aidoc/designs/difficulty-calibration.md` — measurement contract, evidence, reports, and decision gates
 3. `calibration/runner.go` — immutable manifests, reproducibility checks, observations, checkpoints, and reports
-4. `calibration/baselines/mixed-generated-expansion-v4/report.md` — current generated-stratum expansion results and limitations
-5. `calibration/baselines/mixed-external-expansion-v3/report.md` — preserved expanded external baseline
-6. `calibration/baselines/mixed-pilot-v2/report.md` — preserved initial pilot baseline
-7. `cmd/calibrate.go` — resumable local measurement command
-8. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
-9. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
-10. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
-11. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
-12. `db/db.go` — SQLite database open/close/migrate
-13. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
-14. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
-15. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
-16. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
+4. `calibration/baselines/mixed-imported-expansion-v5/report.md` — current imported-stratum expansion results and limitations
+5. `calibration/baselines/mixed-generated-expansion-v4/report.md` — preserved generated-stratum expansion results
+6. `calibration/baselines/mixed-external-expansion-v3/report.md` — preserved expanded external baseline
+7. `calibration/baselines/mixed-pilot-v2/report.md` — preserved initial pilot baseline
+8. `cmd/calibrate.go` — resumable local measurement command
+9. `generator/difficulty.go` — difficulty levels and `StrategySolverKeys`
+10. `generator/generator.go` — board generation, cell removal, best-effort generation with limits
+11. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
+12. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
+13. `db/db.go` — SQLite database open/close/migrate
+14. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
+15. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
+16. `cmd/generate.go` — batch generation CLI (parallel workers, progress, report)
+17. `cmd/import.go` — import CLI (file parsing, normalization, dedup, report)
 
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — stabilization priorities, sequencing, and exit criteria
@@ -104,7 +105,9 @@ This index provides reading chains for common starting points and a complete doc
 | `calibration/testdata/mixed-external-expansion-v3.json` | Immutable source-order external-stratum expansion manifest |
 | `calibration/baselines/mixed-external-expansion-v3/report.md` | Preserved external expansion evidence and limitations |
 | `calibration/testdata/mixed-generated-expansion-v4.json` | Immutable sequential generated-stratum expansion manifest |
-| `calibration/baselines/mixed-generated-expansion-v4/report.md` | Current generated expansion evidence and remaining limitations |
+| `calibration/baselines/mixed-generated-expansion-v4/report.md` | Preserved generated expansion evidence and limitations |
+| `calibration/testdata/mixed-imported-expansion-v5.json` | Immutable source-order imported-stratum expansion manifest |
+| `calibration/baselines/mixed-imported-expansion-v5/report.md` | Current imported expansion evidence and remaining limitations |
 | `cmd/calibrate.go` | Local difficulty measurement CLI boundary |
 | `cmd/generate.go` | Batch generation CLI (parallel workers, progress, report) |
 | `cmd/import.go` | Import CLI (file parsing, normalization, dedup, report) |

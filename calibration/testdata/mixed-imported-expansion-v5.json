@@ -1,0 +1,1183 @@
+{
+  "version": 2,
+  "name": "mixed-imported-expansion-v5",
+  "puzzles": [
+    {
+      "id": "external-easy50-1",
+      "puzzle": "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..",
+      "puzzle_hash": "e3194052147244e451ef08088b02dd077f615aaa2172a816076047ddb945e957",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-1",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-easy50.txt, source order preserved",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-2",
+      "puzzle": "2...8.3...6..7..84.3.5..2.9...1.54.8.........4.27.6...3.1..7.4.72..4..6...4.1...3",
+      "puzzle_hash": "377178d246c689526ec1a268164aed83c28875217ce8fa92683ae74d2fd7e02b",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-2",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-easy50.txt, source order preserved",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-3",
+      "puzzle": "......9.7...42.18....7.5.261..9.4....5.....4....5.7..992.1.8....34.59...5.7......",
+      "puzzle_hash": "e1c20ad5459acc9ef900360ddddae14de874a6b2395607b67c6eda2bc499c4d6",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-3",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-easy50.txt, source order preserved",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-top95-1",
+      "puzzle": "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......",
+      "puzzle_hash": "170e5876b68220329fed6b8c16526d941324dbcd4d5503b651a84a311ec8dc82",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-1",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-top95.txt, source order preserved",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-2",
+      "puzzle": "52...6.........7.13...........4..8..6......5...........418.........3..2...87.....",
+      "puzzle_hash": "874e06ab3a4372f66d37668102c1fe0840097df6b18d7cdb423d207722a58150",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-2",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-top95.txt, source order preserved",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-3",
+      "puzzle": "6.....8.3.4.7.................5.4.7.3..2.....1.6.......2.....5.....8.6......1....",
+      "puzzle_hash": "b923758a1ef4131ae314014483dd703acc1dd77bf711b3e86ab20e13f22b571d",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-3",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-top95.txt, source order preserved",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-hardest-1",
+      "puzzle": "85...24..72......9..4.........1.7..23.5...9...4...........8..7..17..........36.4.",
+      "puzzle_hash": "d4e88e9ef1d18745d6a7f9dc8f7886fcb79a767f0366d74abf079efca9f6779e",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-1",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-hardest.txt, source order preserved",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-2",
+      "puzzle": "..53.....8......2..7..1.5..4....53...1..7...6..32...8..6.5....9..4....3......97..",
+      "puzzle_hash": "a5e2d29d02c461f2bacd99c36cccce4f5a6f7d7e05b2a694d94f43896fe57f19",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-2",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-hardest.txt, source order preserved",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-3",
+      "puzzle": "12..4......5.69.1...9...5.........7.7...52.9..3......2.9.6...5.4..9..8.1..3...9.4",
+      "puzzle_hash": "68b065509369e521ee2714a376b0ada9648c25e385fb997bfcd14a40bbc375b4",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-3",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "first three hash-unique records in py/sudoku-hardest.txt, source order preserved",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "generated-easy-1",
+      "puzzle": "67...8..22187.569.3.5.968.1..4..3.67.3.6.9248.62..43.......1..68264.79..79.3.24.5",
+      "puzzle_hash": "d0487784f71495d7593d995c1caa6804cd28a548794f7490b7464c1c89d8f114",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:easy:1",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "easy",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 1,
+        "clue_count": 45,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-easy-2",
+      "puzzle": "..9.37...5..491.7..7..569.1.4568..3239.712.8.2.854376..24975316951..82......24.95",
+      "puzzle_hash": "d60e4bba1707f9b30971da1b9660c7b1cc6e8546695a305be54f031f95aa2675",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:easy:2",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "easy",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 1,
+        "clue_count": 49,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-medium-1",
+      "puzzle": "...42.36....5.....4.638....9.2.....7.18..2543.......912348.....8.5.3.7..6..2.4.3.",
+      "puzzle_hash": "d495b041a64d75f2e07ca3d64b288ecb1ba383f2f03aa2df7df4439558530068",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:medium:1",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "medium",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 22,
+        "clue_count": 32,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-medium-2",
+      "puzzle": "..9.2..6771.58934..43.61..9...17..95.6...87..19735.4...856.2..367293...4....4.2..",
+      "puzzle_hash": "1e6009904c1bcc75c906f2bcd831b638f86f7bcb32c982b9a95a53dba3bdebe0",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:medium:2",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "medium",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 9,
+        "clue_count": 42,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-hard-1",
+      "puzzle": ".73....9.4.1.....5..2.5.....4.9..8.1..5..13.67..2.....8...2.....6......9..718....",
+      "puzzle_hash": "15699028918fb4771c12f7c1d4f3d8effe27c6158b8e8443befa74fbcca6a8d4",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:hard:1",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "hard",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 868,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-hard-2",
+      "puzzle": "....1.....9..........76..29.1.....95...47...3....8.46.8.16..5...45...68.7..5.....",
+      "puzzle_hash": "87a2a578919c373f0e33694668f16a84bd13803ba23d18f85d41ec8ce0b6babf",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:hard:2",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "hard",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 1584,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-expert-1",
+      "puzzle": ".......1....3.2..4..57.4.3..2...5..85...2.....83.9..7...2.....37......6.9..5.34..",
+      "puzzle_hash": "0a60456c0452a8fd3072a5010270a88d10aeeb9f1121fe8e53f120d62591f352",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:expert:1",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "expert",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 4156,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-expert-2",
+      "puzzle": "3..6......9...8.7...8..9..564..5..2...3......2.....648...2...57...7....2.1.....9.",
+      "puzzle_hash": "1117c56db7f53a8b2808d54eb6dfa73306f6f4f27ac844faf457e50ea2bdbd10",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:expert:2",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "expert",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 5250,
+        "clue_count": 24,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-evil-1",
+      "puzzle": "517...9..........39...2..6..247........89..1.1......3.2.5....4....47.6....6.53..8",
+      "puzzle_hash": "887620e40c11775a5b908de18c5a40654d145daeb3bdee5b6e7ea0a5b031d488",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:evil:1",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "evil",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 3,
+        "elapsed_milliseconds": 2107,
+        "clue_count": 26,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-evil-2",
+      "puzzle": "61..5......4....6.5...8.........58..7...2..1.....1...9...6.12..26..4.9..4..3...76",
+      "puzzle_hash": "dd8053250774d903110641fa57350db038f49dd61242fdd96ef5d8d69973ceb5",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@7cbb177:GenerateBestEffort:evil:2",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "evil",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 20289,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "imported-easyPuzzle",
+      "puzzle": "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79",
+      "puzzle_hash": "8176897ed0375c3ade1ae9a35e2705465d8e45122b285737a84bef093ab1c0ca",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@7cbb177:solver/integration_test.go:easyPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "copied from named repository integration fixture with its asserted tier label",
+      "split": "exploratory",
+      "expected_difficulty": "easy"
+    },
+    {
+      "id": "imported-nakedSubsetPuzzle",
+      "puzzle": ".5..4....4.1.....3.8753.1.48............8..7..7...1.497.39....5..84.2937945....2.",
+      "puzzle_hash": "ecf96f0a078ed6801f79abd3b03dc876fc25cf91b059d64fec2088f469374065",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@7cbb177:solver/integration_test.go:nakedSubsetPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "copied from named repository integration fixture with its asserted tier label",
+      "split": "exploratory",
+      "expected_difficulty": "medium"
+    },
+    {
+      "id": "imported-pointingPairPuzzle",
+      "puzzle": "9.574....62..5..4.7...6...5....136.9..9....5.562...83.85.13..96...6....33.....2..",
+      "puzzle_hash": "03c979eda71bb0684c3badef7dd15c97c566d9a16cf4d3519d11a719dc3fda03",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@7cbb177:solver/integration_test.go:pointingPairPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "copied from named repository integration fixture with its asserted tier label",
+      "split": "held-out",
+      "expected_difficulty": "medium"
+    },
+    {
+      "id": "imported-xWingPuzzle",
+      "puzzle": "...8.......5214.......5768.6...4.1...83...5.....5.1.2.2.1.....7....9....97...3...",
+      "puzzle_hash": "c5a9ff7f99cab533016a73cef0647482c197e87f5bdda96355ee00187571e698",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@7cbb177:solver/integration_test.go:xWingPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "copied from named repository integration fixture with its asserted tier label",
+      "split": "exploratory",
+      "expected_difficulty": "hard"
+    },
+    {
+      "id": "imported-swordfishPuzzle",
+      "puzzle": "3...4.........7.48......9.7.1...3.8.4...5..2..5...8.7.5..3............9.6.9.253..",
+      "puzzle_hash": "31ba53665dc0b080347b2d805846d168e82bac6adb34fc46bd8df3271b3b18ac",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@7cbb177:solver/integration_test.go:swordfishPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "copied from named repository integration fixture with its asserted tier label",
+      "split": "exploratory",
+      "expected_difficulty": "expert"
+    },
+    {
+      "id": "imported-evilJellyfishPuzzle",
+      "puzzle": "..........17.2.8.3..3...2.4.84.537.6..........72.1...5.48.715.2.35.4.6.1.........",
+      "puzzle_hash": "51cc609df8c3d155cb546b5b2abaf5316514039759ecf39402579f73841feafb",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@7cbb177:solver/integration_test.go:evilJellyfishPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "copied from named repository integration fixture with its asserted tier label",
+      "split": "held-out",
+      "expected_difficulty": "evil"
+    },
+    {
+      "id": "pathological-completed-grid",
+      "puzzle": "534678912672195348198342567859761423426853791713924856961537284287419635345286179",
+      "puzzle_hash": "4c5e72057519c48e1a2430cbedb7cff3a4a1d244eb28b8d865f85141f643017d",
+      "source_category": "pathological",
+      "source_id": "gnailuy/sudoku@7cbb177:pathological:completed-grid",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "selected repository-owned edge fixture to exercise completed, sparse, or strategy-stall behavior",
+      "split": "exploratory",
+      "expected_difficulty": "easy"
+    },
+    {
+      "id": "pathological-one-blank-grid",
+      "puzzle": "123456789456789123789123456214365897365897214897214365531642978642978531.78531642",
+      "puzzle_hash": "d59d2503e95a3a087bff4ddb725b22b7ce7f990ffa297fa129d25f391dbe692f",
+      "source_category": "pathological",
+      "source_id": "gnailuy/sudoku@7cbb177:pathological:one-blank-grid",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "selected repository-owned edge fixture to exercise completed, sparse, or strategy-stall behavior",
+      "split": "exploratory",
+      "expected_difficulty": "easy"
+    },
+    {
+      "id": "pathological-empty-grid",
+      "puzzle": ".................................................................................",
+      "puzzle_hash": "eb7b0297e5b6b33f6680cf9c6b471903832a5caceda3debf8e52cda0a40ab9c3",
+      "source_category": "pathological",
+      "source_id": "gnailuy/sudoku@7cbb177:pathological:empty-grid",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "selected repository-owned edge fixture to exercise completed, sparse, or strategy-stall behavior",
+      "split": "exploratory"
+    },
+    {
+      "id": "pathological-three-givens",
+      "puzzle": "1.......................................5.......................................9",
+      "puzzle_hash": "3f28b28e1b60d2e2352fada21969324d4971fd170794776fa335eca050645042",
+      "source_category": "pathological",
+      "source_id": "gnailuy/sudoku@7cbb177:pathological:three-givens",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "selected repository-owned edge fixture to exercise completed, sparse, or strategy-stall behavior",
+      "split": "exploratory"
+    },
+    {
+      "id": "pathological-strategy-stall",
+      "puzzle": "..7..95.....2..7...91...8.2...5.3..9..3...1..5..8.4...2.4...17...8..3.....19..4..",
+      "puzzle_hash": "bf5d7fae858cf6553a3729cbad0890d072b1e425423463da4df3969f9c1aae75",
+      "source_category": "pathological",
+      "source_id": "gnailuy/sudoku@7cbb177:pathological:strategy-stall",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "selected repository-owned edge fixture to exercise completed, sparse, or strategy-stall behavior",
+      "split": "held-out"
+    },
+    {
+      "id": "external-easy50-4",
+      "puzzle": ".3..5..4...8.1.5..46.....12.7.5.2.8....6.3....4.1.9.3.25.....98..1.2.6...8..6..2.",
+      "puzzle_hash": "e9f2fa77787fd98f01c8953dc4e38a96e744829f18f922109370cbaa3c99d3d4",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-4",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-5",
+      "puzzle": ".2.81.74.7....31...9...28.5..9.4..874..2.8..316..3.2..3.27...6...56....8.76.51.9.",
+      "puzzle_hash": "bd3d8b392d769cbc79d43c008a86e5500d26ba338c7dfd335eae7283b8650fe4",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-5",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-6",
+      "puzzle": "1..92....524.1...........7..5...81.2.........4.27...9..6...........3.945....71..6",
+      "puzzle_hash": "6368077a4c5fcc2d92254516292e4499f5724bd3dd9a9af363800f9f9be1e84f",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-6",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-7",
+      "puzzle": ".43.8.25.6.............1.949....4.7....6.8....1.2....382.5.............5.34.9.71.",
+      "puzzle_hash": "e02a660f6b059f7132b33595e9928357c00cdaa60a26f5640bb70acc9c184e74",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-7",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-8",
+      "puzzle": "48...69.2..2..8..19..37..6.84..1.2....37.41....1.6..49.2..85..77..9..6..6.92...18",
+      "puzzle_hash": "cc06abdb8002eb50a591c8cabf1ab360d53b6ac926ae631557ebfd857c3c99c8",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-8",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-9",
+      "puzzle": "...9....2.5.1234...3....16.9.8.......7.....9.......2.5.91....5...7439.2.4....7...",
+      "puzzle_hash": "b513873b416e6a805bf999b613bc2880112731e0f170ed991e5f4ba861081969",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-9",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-easy50-10",
+      "puzzle": "..19....39..7..16..3...5..7.5......9..43.26..2......7.6..1...3..42..7..65....68..",
+      "puzzle_hash": "6591d0bd7a5c2807ece23a46363da7c5c7d1a970a075ddb2d6209ace45fd266b",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-easy50.txt#line-10",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "easy50"
+      }
+    },
+    {
+      "id": "external-top95-4",
+      "puzzle": "48.3............71.2.......7.5....6....2..8.............1.76...3.....4......5....",
+      "puzzle_hash": "f11f6c6a320a2c5b29463ef7cea51d71a858d6cb594367da12804784aed2d619",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-4",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-5",
+      "puzzle": "....14....3....2...7..........9...3.6.1.............8.2.....1.4....5.6.....7.8...",
+      "puzzle_hash": "a1069971d18f9c0f6f53828ea7b24d7a2a8cc2b1e788018500e080fee7777417",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-5",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-6",
+      "puzzle": "......52..8.4......3...9...5.1...6..2..7........3.....6...1..........7.4.......3.",
+      "puzzle_hash": "cfca8e4784d94d3422fea46196101899fa8ad426358676a6d7e0f53b5ccc2310",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-6",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-7",
+      "puzzle": "6.2.5.........3.4..........43...8....1....2........7..5..27...........81...6.....",
+      "puzzle_hash": "0facb0930fa7c02ca83aa0e41ca23ae8ebc26dab06ae2029caa154185d120f60",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-7",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-8",
+      "puzzle": ".524.........7.1..............8.2...3.....6...9.5.....1.6.3...........897........",
+      "puzzle_hash": "b76cda7591e9d2ffd29b7a9748d09891d2ae09a0c4a0f83c72ea9e6f79ffe330",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-8",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-9",
+      "puzzle": "6.2.5.........4.3..........43...8....1....2........7..5..27...........81...6.....",
+      "puzzle_hash": "d1f9e4e0bb36c787c88432315655e3333673f52c2b3fee25e7b464f37958c314",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-9",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-top95-10",
+      "puzzle": ".923.........8.1...........1.7.4...........658.........6.5.2...4.....7.....9.....",
+      "puzzle_hash": "c3f789de17fdb0a65a7866be5c0877cb2509ac2d3ed7d318cd4c10a4b0b26254",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-top95.txt#line-10",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-10 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "top95"
+      }
+    },
+    {
+      "id": "external-hardest-4",
+      "puzzle": "...57..3.1......2.7...234......8...4..7..4...49....6.5.42...3.....7..9....18.....",
+      "puzzle_hash": "54426719749525eacf0dd498b14543337ff975909d9d35b43efc313ceddaaf46",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-4",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-5",
+      "puzzle": "7..1523........92....3.....1....47.8.......6............9...5.6.4.9.7...8....6.1.",
+      "puzzle_hash": "bf849d7172cd52cd9f58d2e8cbf0d51c2ab619a8056b89ebfa6d6a10673c6f09",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-5",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-6",
+      "puzzle": "1....7.9..3..2...8..96..5....53..9...1..8...26....4...3......1..4......7..7...3..",
+      "puzzle_hash": "edca57d2e0bf551bb7c98a233fee6ceac1cf93b795eb71edeb6c4af9e2ba2190",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-6",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-7",
+      "puzzle": "1...34.8....8..5....4.6..21.18......3..1.2..6......81.52..7.9....6..9....9.64...2",
+      "puzzle_hash": "e4e61ae0671f58f9ec1c1e5f9252e4a7c74eb90ab1fce282423171a29acb60d1",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-7",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-8",
+      "puzzle": "...92......68.3...19..7...623..4.1....1...7....8.3..297...8..91...5.72......64...",
+      "puzzle_hash": "6b5e4a5abf5610cff3163484cc7d1c2d0fca89900452d009c938b982b5aa31fe",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-8",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-9",
+      "puzzle": ".6.5.4.3.1...9...8.........9...5...6.4.6.2.7.7...4...5.........4...8...1.5.2.3.4.",
+      "puzzle_hash": "94d014cfee62156480b92ceb8f58f8bf5fbdc061fafe6ab65b5e88520f178144",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-9",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "held-out",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-10",
+      "puzzle": "7.....4...2..7..8...3..8.799..5..3...6..2..9...1.97..6...3..9...3..4..6...9..1.35",
+      "puzzle_hash": "1a4fa0095dd672a6d9b670e9727a9205c8808ab52491163814b224c69af290fe",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-10",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "external-hardest-11",
+      "puzzle": "....7..2.8.......6.1.2.5...9.54....8.........3....85.1...3.2.8.4.......9.7..6....",
+      "puzzle_hash": "b6ce18bc2f0b325b28121390aad58331b20e226ab26a59cca1341544e8243349",
+      "source_category": "external",
+      "source_id": "https://github.com/norvig/pytudes/blob/0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5/py/sudoku-hardest.txt#line-11",
+      "license": "MIT (norvig/pytudes)",
+      "redistribution": "permitted",
+      "collection_method": "lines 4-11 added in source order to expand the pilot stratum; no outcome-based selection",
+      "split": "exploratory",
+      "original_rating": {
+        "system": "norvig-file-group",
+        "label": "hardest"
+      }
+    },
+    {
+      "id": "generated-easy-3",
+      "puzzle": "49573.612.326..4.88162..93795..623..1835972462671..58.5..48..6.34.9..125.71325894",
+      "puzzle_hash": "045922ad53871da12b5df14db658b8f2f2935f78f7c977bbf5076c56aaf03459",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:easy:3",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "easy",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 1,
+        "clue_count": 58,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-easy-4",
+      "puzzle": ".36..9128.58.327..1926783.55.49.62.1819...56.6237159.4.4.3.1.7226.8974..3.72.4.19",
+      "puzzle_hash": "19a7a6af56b36e00b0ffd052e18738a2585cd5165fd4c8ff5b96d1987c14f6bb",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:easy:4",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "easy",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 0,
+        "clue_count": 55,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-easy-5",
+      "puzzle": "94.635..22638..4.985792.6.3.1.349.76496.5....73826159412..7396.6.5..23473.9.8.1.5",
+      "puzzle_hash": "d46a8b8534656baeec2ac8d9a6fc1043f23c73e14bb62b91068d24977a7b65c9",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:easy:5",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "easy",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 0,
+        "clue_count": 55,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-medium-3",
+      "puzzle": "786.9...1..2.718.4.91.58276.73.14..2.492....8..89.7.5.9.45863.78...29..5...74...9",
+      "puzzle_hash": "24944d8e72a9cb662855077e11a2f3877ed80510cbd0e9bc99f6b24e18cacccb",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:medium:3",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "medium",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 41,
+        "clue_count": 44,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-medium-4",
+      "puzzle": "..7..29.4463.9...79..37..61..18..6..6..7....38.94....5.14.8.3...7...1...3986.71.2",
+      "puzzle_hash": "ca1b5d6dd419899bbbd082957d8a928d74cc8eb14b0adbc04879c071b24f22f4",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:medium:4",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "medium",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 6,
+        "clue_count": 37,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-medium-5",
+      "puzzle": "..7.5......84.3.5...9671.2.38...9..2175.46.9...2...5.12.67..4.5.531..27.74.9.5.8.",
+      "puzzle_hash": "73b81a8361fb171049b14dc6fd68043ca574bc4ab927b9c4c8441d167013eac5",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:medium:5",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "medium",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 115,
+        "clue_count": 39,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-hard-3",
+      "puzzle": ".7.9.5.2.1.8...3.4.2........1.5...3...347....4...8.....5......38.2......9..86.5..",
+      "puzzle_hash": "1f607d1b4c1b05b73b0a4017c538487035b406e588397cf711063ef5d724f88a",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:hard:3",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "hard",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 156,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-hard-4",
+      "puzzle": ".8.23..75..5.....9.19...438.98..25....7...9..5...1.2...43....51....75......1..8.6",
+      "puzzle_hash": "4b8242906cec9f9e25335660384904b57a20243384000fe90d005b14ecd45a1e",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:hard:4",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "hard",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 32,
+        "clue_count": 30,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-hard-5",
+      "puzzle": ".....4....24.7361.......3.9.1..487.6....9..........4..5.96....3.86..5.....3...2..",
+      "puzzle_hash": "39e5009d331f96dd12e3099542629010026338061471508d39621dd66ff2bd54",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:hard:5",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "hard",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 1964,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-expert-3",
+      "puzzle": ".42.7...997.4.3............2..........4.6.3.2...75..61...8...1..85...64.7....5.9.",
+      "puzzle_hash": "30801b777aba0d352995ab1720d6b2a21c2a5ebdd76762c9a88171911ce89182",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:expert:3",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "expert",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 7699,
+        "clue_count": 26,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-expert-4",
+      "puzzle": "9.........5.73.8.....6.2......3.....5...8.3.4.1....2.564......9...27...6.98.....3",
+      "puzzle_hash": "52fea04f2326f45016af29afd7d5f9f9d3f217f55425043bbffef1ae2439f9a8",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:expert:4",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "expert",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 3,
+        "elapsed_milliseconds": 7632,
+        "clue_count": 24,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-expert-5",
+      "puzzle": ".1.3..4...9...2..8.48...6...6...1.59..1.......3.2.......5.8...1.......7.9...65..4",
+      "puzzle_hash": "12b8f5c311e71ad775006505c1c49cd1015520080e4eddc709d8653f87337b88",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:expert:5",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "expert",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 2,
+        "elapsed_milliseconds": 15988,
+        "clue_count": 24,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-evil-3",
+      "puzzle": "9....51..5..1...7..8........4..3..5........6.1.36.98..87...1.........527.....2...",
+      "puzzle_hash": "bcb5a866e5468de3670e4ae3b67f42a37b39d28857599d8bb4ca6aabb73fd189",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:evil:3",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "evil",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 2,
+        "elapsed_milliseconds": 5925,
+        "clue_count": 23,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-evil-4",
+      "puzzle": "49.....5..71.2..93...4..6.........6...4.....8...3..972..5.....9.39..2...6....7.4.",
+      "puzzle_hash": "2b6e945220d624179be4b8ba0fa6eeac3502146957eb915ef0cc20743c697957",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:evil:4",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "exploratory",
+      "generator": {
+        "requested_difficulty": "evil",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 1,
+        "elapsed_milliseconds": 10152,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "generated-evil-5",
+      "puzzle": "....86..4.8....12...1...3...18..56...........6.2..4.515.9..3..2...6....3...5.7...",
+      "puzzle_hash": "31d6fe2fc016975a1d519bf40e885ea12c714485d7af1cc8621ed58e3297b202",
+      "source_category": "generated",
+      "source_id": "gnailuy/sudoku@9338c39:GenerateBestEffort:evil:5",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "one local GenerateBestEffort call per record; no rejection or replacement after observation",
+      "split": "held-out",
+      "generator": {
+        "requested_difficulty": "evil",
+        "configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+        "attempt": 2,
+        "elapsed_milliseconds": 2508,
+        "clue_count": 25,
+        "classification_outcome": "solved"
+      }
+    },
+    {
+      "id": "imported-hiddenSubsetPuzzle",
+      "puzzle": ".........231.9.....65..31....8924...1...5...6...1367....93..57.....1.843.........",
+      "puzzle_hash": "5941553231a79b351f63d4faeb328bb62d39604fee63071cbf99f72bed2ad4b0",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:hiddenSubsetPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "exploratory",
+      "expected_difficulty": "expert"
+    },
+    {
+      "id": "imported-xyWingPuzzle",
+      "puzzle": ".23.......4..9.63..7.8.2.1..581..9....2....5.4....93..9..6.5.....7.8...6.........",
+      "puzzle_hash": "ae8c688defc6b86bc63ff26953882c18d750df6d6d3e8dd82a66bee7997d2df5",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:xyWingPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "exploratory",
+      "expected_difficulty": "expert"
+    },
+    {
+      "id": "imported-simpleColoringPuzzle",
+      "puzzle": "12...6.8.7.8............3..2...8..3..8..2...5...9....7....93...31.57.....5...89..",
+      "puzzle_hash": "5ea0c3f4b295a3a2d71001b674f9e74f44ec6aa47f46db512fa51bbe6ef24947",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:simpleColoringPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "held-out",
+      "expected_difficulty": "expert"
+    },
+    {
+      "id": "imported-hardXYWingPuzzle",
+      "puzzle": ".......4..93.....8.4.7.....1.9.6..8..8.9....6465..8..3276391854918654237..48....9",
+      "puzzle_hash": "93150a947fef27d49d166bc1bb4125fc6b763c93c9ac7d753d1bcf55082cd4da",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:hardXYWingPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "exploratory",
+      "expected_difficulty": "hard"
+    },
+    {
+      "id": "imported-hardHiddenPairPuzzle",
+      "puzzle": ".5.......1...39.4...67.....6..1...9...39..8.1.19.8.....6.8.2..7...6.7.1..4.3.52..",
+      "puzzle_hash": "4b3c323e9e1e1aa6d7d30e5b82c5547328245b82d6d21f53f7b20aa9a46a8879",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:hardHiddenPairPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "exploratory",
+      "expected_difficulty": "hard"
+    },
+    {
+      "id": "imported-expertHiddenQuadColoringPuzzle",
+      "puzzle": ".6.58...99.124...8.8.9.7..4..9658432.58..2..62.6..9.......95..36938.4............",
+      "puzzle_hash": "2ce35d44e789c6b26309e35ce09dde4286982b26b6d07161f62fdcbb0d4f7d1a",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:expertHiddenQuadColoringPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "held-out",
+      "expected_difficulty": "expert"
+    },
+    {
+      "id": "imported-expertTripleRequirementPuzzle",
+      "puzzle": "...72.5.9.27....64.9.4.8271.7.845..6........736..72..5456293718738514692219687453",
+      "puzzle_hash": "f16164a1a419e7958f08b69b4b6b0de58c59312582c0e60beb718d68a380aee2",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:expertTripleRequirementPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "exploratory",
+      "expected_difficulty": "expert"
+    },
+    {
+      "id": "imported-evilBUGURPuzzle",
+      "puzzle": "...7...6..9..6.2..1..9537..51.......4.3.8.9.1.......53..9235..4..1.4..8..5...1...",
+      "puzzle_hash": "5d04b6d663fada963cbaf31b725deef65fe911e4835ca5fc1c0db55d06009da9",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:evilBUGURPuzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "exploratory",
+      "expected_difficulty": "evil"
+    },
+    {
+      "id": "imported-urType2Puzzle",
+      "puzzle": "...5...........5.697.....2...48.2...25.1...3..8..3.........4.7..13.5..9..2.....4.",
+      "puzzle_hash": "58e9cff5318dd24997918e686c0608425de9b00f0eba306b5597ad05a1d15401",
+      "source_category": "imported",
+      "source_id": "gnailuy/sudoku@9effd8a:solver/integration_test.go:urType2Puzzle",
+      "license": "MIT (gnailuy/sudoku)",
+      "redistribution": "permitted",
+      "collection_method": "all remaining hash-unique named integration fixtures in source order; fixtures duplicated by earlier corpus records omitted",
+      "split": "held-out",
+      "expected_difficulty": "evil"
+    }
+  ]
+}

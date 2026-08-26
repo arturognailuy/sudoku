@@ -1,0 +1,12 @@
+{
+  "manifest": "calibration/testdata/mixed-imported-expansion-v5.json",
+  "manifest_sha256": "3114979512be4590e77af9ab407530f590b58dbbe00c33146ce2dfb370e6b910",
+  "source_commit": "9effd8ab0d814da9ff7c7884c6ad821d8211c137",
+  "started_at": "2026-08-26T00:19:50Z",
+  "command": "sudoku calibrate --manifest calibration/testdata/mixed-imported-expansion-v5.json --output calibration/baselines/mixed-imported-expansion-v5",
+  "go_version": "go version go1.25.7 linux/amd64",
+  "os_arch": "Linux 6.17.0-1010-azure x86_64",
+  "external_source_commit": "norvig/pytudes@0cbb25136e3f3171c2a48cb4d9db2213cd39f2a5",
+  "generator_configuration": "MaxRounds=4; MaxDurationMs=2000; default generator options; public random seed unavailable",
+  "selection": "v4 records plus all remaining hash-unique named solver/integration_test.go puzzle fixtures in source order; records duplicating earlier corpus hashes omitted; no outcome-based selection or replacement"
+}

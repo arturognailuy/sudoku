@@ -1,0 +1,431 @@
+{
+  "version": 2,
+  "manifest_name": "mixed-imported-expansion-v5",
+  "manifest_hash": "3114979512be4590e77af9ab407530f590b58dbbe00c33146ce2dfb370e6b910",
+  "observed": 76,
+  "total": 76,
+  "complete": true,
+  "reproducible": 76,
+  "by_outcome": {
+    "solved": 62,
+    "strategy-unsolved": 14
+  },
+  "by_difficulty": {
+    "easy": 29,
+    "evil": 13,
+    "expert": 10,
+    "hard": 10,
+    "medium": 12,
+    "unassigned": 2
+  },
+  "by_source": {
+    "external": {
+      "observed": 31,
+      "solved": 21,
+      "strategy_unsolved": 10,
+      "strategy_unsolved_rate": {
+        "numerator": 10,
+        "denominator": 31,
+        "rate": 0.3225806451612903,
+        "lower_95": 0.18569426566359176,
+        "upper_95": 0.49858990691914357
+      }
+    },
+    "generated": {
+      "observed": 25,
+      "solved": 25,
+      "strategy_unsolved": 0,
+      "strategy_unsolved_rate": {
+        "numerator": 0,
+        "denominator": 25,
+        "rate": 0,
+        "lower_95": 0,
+        "upper_95": 0.13319225093904846
+      }
+    },
+    "imported": {
+      "observed": 15,
+      "solved": 14,
+      "strategy_unsolved": 1,
+      "strategy_unsolved_rate": {
+        "numerator": 1,
+        "denominator": 15,
+        "rate": 0.06666666666666667,
+        "lower_95": 0.011866895493268526,
+        "upper_95": 0.29816529873780023
+      }
+    },
+    "pathological": {
+      "observed": 5,
+      "solved": 2,
+      "strategy_unsolved": 3,
+      "strategy_unsolved_rate": {
+        "numerator": 3,
+        "denominator": 5,
+        "rate": 0.6,
+        "lower_95": 0.23072428127601297,
+        "upper_95": 0.8823792257673521
+      }
+    }
+  },
+  "by_split": {
+    "exploratory": {
+      "observed": 51,
+      "solved": 42,
+      "strategy_unsolved": 9,
+      "strategy_unsolved_rate": {
+        "numerator": 9,
+        "denominator": 51,
+        "rate": 0.17647058823529413,
+        "lower_95": 0.09572403469126317,
+        "upper_95": 0.3025414252430807
+      }
+    },
+    "held-out": {
+      "observed": 25,
+      "solved": 20,
+      "strategy_unsolved": 5,
+      "strategy_unsolved_rate": {
+        "numerator": 5,
+        "denominator": 25,
+        "rate": 0.2,
+        "lower_95": 0.08860584686802572,
+        "upper_95": 0.3913095036954033
+      }
+    }
+  },
+  "metrics_by_difficulty": {
+    "easy": {
+      "observed": 29,
+      "score": {
+        "count": 29,
+        "min": 0,
+        "median": 196,
+        "p95": 360,
+        "max": 412
+      },
+      "moves": {
+        "count": 29,
+        "min": 0,
+        "median": 48,
+        "p95": 57,
+        "max": 59
+      },
+      "clues": {
+        "count": 29,
+        "min": 22,
+        "median": 32,
+        "p95": 80,
+        "max": 81
+      }
+    },
+    "evil": {
+      "observed": 13,
+      "score": {
+        "count": 13,
+        "min": 378,
+        "median": 914,
+        "p95": 2518,
+        "max": 2518
+      },
+      "moves": {
+        "count": 13,
+        "min": 6,
+        "median": 25,
+        "p95": 67,
+        "max": 67
+      },
+      "clues": {
+        "count": 13,
+        "min": 17,
+        "median": 25,
+        "p95": 29,
+        "max": 29
+      }
+    },
+    "expert": {
+      "observed": 10,
+      "score": {
+        "count": 10,
+        "min": 248,
+        "median": 952,
+        "p95": 2530,
+        "max": 2530
+      },
+      "moves": {
+        "count": 10,
+        "min": 4,
+        "median": 50,
+        "p95": 78,
+        "max": 78
+      },
+      "clues": {
+        "count": 10,
+        "min": 17,
+        "median": 24,
+        "p95": 52,
+        "max": 52
+      }
+    },
+    "hard": {
+      "observed": 10,
+      "score": {
+        "count": 10,
+        "min": 466,
+        "median": 764,
+        "p95": 1784,
+        "max": 1784
+      },
+      "moves": {
+        "count": 10,
+        "min": 44,
+        "median": 59,
+        "p95": 74,
+        "max": 74
+      },
+      "clues": {
+        "count": 10,
+        "min": 17,
+        "median": 25,
+        "p95": 39,
+        "max": 39
+      }
+    },
+    "medium": {
+      "observed": 12,
+      "score": {
+        "count": 12,
+        "min": 318,
+        "median": 482,
+        "p95": 804,
+        "max": 804
+      },
+      "moves": {
+        "count": 12,
+        "min": 49,
+        "median": 57,
+        "p95": 67,
+        "max": 67
+      },
+      "clues": {
+        "count": 12,
+        "min": 17,
+        "median": 24,
+        "p95": 32,
+        "max": 32
+      }
+    },
+    "unassigned": {
+      "observed": 2,
+      "score": {
+        "count": 2,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "moves": {
+        "count": 2,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "clues": {
+        "count": 2,
+        "min": 0,
+        "median": 0,
+        "p95": 3,
+        "max": 3
+      }
+    }
+  },
+  "neighboring_score_overlap": {
+    "easy-medium": {
+      "lower_tier": "easy",
+      "upper_tier": "medium",
+      "overlaps": true,
+      "lower": 318,
+      "upper": 412
+    },
+    "expert-evil": {
+      "lower_tier": "expert",
+      "upper_tier": "evil",
+      "overlaps": true,
+      "lower": 378,
+      "upper": 2518
+    },
+    "hard-expert": {
+      "lower_tier": "hard",
+      "upper_tier": "expert",
+      "overlaps": true,
+      "lower": 466,
+      "upper": 1784
+    },
+    "medium-hard": {
+      "lower_tier": "medium",
+      "upper_tier": "hard",
+      "overlaps": true,
+      "lower": 466,
+      "upper": 804
+    }
+  },
+  "external_agreement": {
+    "norvig-file-group": {
+      "easy50": {
+        "easy": 7,
+        "hard": 2,
+        "medium": 1
+      },
+      "hardest": {
+        "easy": 2,
+        "evil": 4,
+        "expert": 2,
+        "hard": 1,
+        "medium": 2
+      },
+      "top95": {
+        "evil": 2,
+        "expert": 3,
+        "hard": 1,
+        "medium": 4
+      }
+    }
+  },
+  "generation_mismatch": {
+    "easy": {
+      "easy": 5
+    },
+    "evil": {
+      "easy": 1,
+      "evil": 2,
+      "expert": 1,
+      "hard": 1
+    },
+    "expert": {
+      "easy": 1,
+      "evil": 2,
+      "medium": 2
+    },
+    "hard": {
+      "easy": 4,
+      "medium": 1
+    },
+    "medium": {
+      "easy": 5
+    }
+  },
+  "generation_hit_rate": {
+    "easy": {
+      "numerator": 5,
+      "denominator": 5,
+      "rate": 1,
+      "lower_95": 0.5655175352168251,
+      "upper_95": 1
+    },
+    "evil": {
+      "numerator": 2,
+      "denominator": 5,
+      "rate": 0.4,
+      "lower_95": 0.11762077423264794,
+      "upper_95": 0.769275718723987
+    },
+    "expert": {
+      "numerator": 0,
+      "denominator": 5,
+      "rate": 0,
+      "lower_95": 0,
+      "upper_95": 0.43448246478317476
+    },
+    "hard": {
+      "numerator": 0,
+      "denominator": 5,
+      "rate": 0,
+      "lower_95": 0,
+      "upper_95": 0.43448246478317476
+    },
+    "medium": {
+      "numerator": 0,
+      "denominator": 5,
+      "rate": 0,
+      "lower_95": 0,
+      "upper_95": 0.43448246478317476
+    }
+  },
+  "generation_latency_ms": {
+    "easy": {
+      "count": 5,
+      "min": 0,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    "evil": {
+      "count": 5,
+      "min": 2107,
+      "median": 5925,
+      "p95": 20289,
+      "max": 20289
+    },
+    "expert": {
+      "count": 5,
+      "min": 4156,
+      "median": 7632,
+      "p95": 15988,
+      "max": 15988
+    },
+    "hard": {
+      "count": 5,
+      "min": 32,
+      "median": 868,
+      "p95": 1964,
+      "max": 1964
+    },
+    "medium": {
+      "count": 5,
+      "min": 6,
+      "median": 22,
+      "p95": 115,
+      "max": 115
+    }
+  },
+  "generation_rounds": {
+    "easy": {
+      "count": 5,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    "evil": {
+      "count": 5,
+      "min": 1,
+      "median": 2,
+      "p95": 3,
+      "max": 3
+    },
+    "expert": {
+      "count": 5,
+      "min": 1,
+      "median": 1,
+      "p95": 3,
+      "max": 3
+    },
+    "hard": {
+      "count": 5,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    "medium": {
+      "count": 5,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    }
+  },
+  "expected": 17,
+  "matched": 15
+}
