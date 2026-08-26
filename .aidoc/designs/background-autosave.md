@@ -9,7 +9,7 @@ dependencies:
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/tui-frontend.md
   - .aidoc/designs/cli-sessions.md
-  - .aidoc/designs/e2e-test-scenarios.md
+  - .aidoc/designs/e2e-tui-scenarios.md
 ---
 
 # Background Autosave and Crash Recovery
@@ -24,7 +24,7 @@ Background autosave protects active TUI games from process, terminal, and host f
 | `.aidoc/designs/game-engine.md` | Canonical serialized gameplay state restored from recovery data |
 | `.aidoc/designs/tui-frontend.md` | Event-loop, dirty-state, modal, and explicit-save behavior |
 | `.aidoc/designs/cli-sessions.md` | Existing atomic transport and player-owned save contract |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box recovery, cleanup, failure, and compatibility scenarios |
+| `.aidoc/designs/e2e-tui-scenarios.md` | Black-box recovery, cleanup, failure, and compatibility scenarios |
 
 ## Why Recovery Is Next
 

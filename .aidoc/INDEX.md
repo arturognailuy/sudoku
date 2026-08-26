@@ -7,7 +7,15 @@ dependencies: []
 
 # .aidoc/INDEX.md — Discovery Index
 
-This index provides reading chains for common starting points and a complete document map.
+The project index provides reading chains for common starting points and a complete document map.
+
+## Related Docs
+
+| Document | Relationship |
+|----------|-------------|
+| `AGENT.md` | Active repository rules and operator entry point |
+| `.aidoc/designs/roadmap.md` | Current priorities and maintained delivery gates |
+| `.aidoc/architecture/guidelines.md` | Package boundaries and cross-cutting design constraints |
 
 ## Reading Chains
 
@@ -60,6 +68,17 @@ This index provides reading chains for common starting points and a complete doc
 10. `.aidoc/designs/tui-frontend.md` — current full-screen interaction and rendering semantics
 11. `.aidoc/architecture/guidelines.md` — current architecture and solver contract
 
+### Running Black-Box E2E Scenarios
+1. `.aidoc/designs/e2e-test-scenarios.md` — discovery map, automation boundaries, and isolation rules
+2. `.aidoc/designs/e2e-play-scenarios.md` — root play and game commands
+3. `.aidoc/designs/e2e-calibration-scenarios.md` — immutable corpus measurement
+4. `.aidoc/designs/e2e-generation-scenarios.md` — generation flags, workers, and storage
+5. `.aidoc/designs/e2e-import-scenarios.md` — import parsing and deduplication
+6. `.aidoc/designs/e2e-database-scenarios.md` — database composition and fallback
+7. `.aidoc/designs/e2e-session-scenarios.md` — notes, explicit save, and restore
+8. `.aidoc/designs/e2e-tui-scenarios.md` — pseudo-terminal frontend and recovery
+9. `.aidoc/designs/e2e-api-scenarios.md` — HTTP lifecycle and security
+
 ### Adding a New Strategy Solver
 1. `.aidoc/architecture/guidelines.md` — constraints, interface contract, step-by-step
 2. `solver/solver.go` — implement `StrategySolver`
@@ -85,7 +104,15 @@ This index provides reading chains for common starting points and a complete doc
 | `.aidoc/designs/tui-frontend.md` | TUI interaction model, persistence policy, rendering, and dependency boundaries |
 | `.aidoc/designs/cli-sessions.md` | CLI manual notes, rendering, save, and resume design |
 | `.aidoc/designs/game-engine.md` | Engine API, notes, unified history, snapshots, and serialization design |
-| `.aidoc/designs/e2e-test-scenarios.md` | E2E test scenarios — black-box user scenarios for manual/script testing |
+| `.aidoc/designs/e2e-test-scenarios.md` | E2E discovery map, automation boundaries, and isolation rules |
+| `.aidoc/designs/e2e-play-scenarios.md` | Root play and game-command acceptance scenarios |
+| `.aidoc/designs/e2e-calibration-scenarios.md` | Calibration acceptance scenarios |
+| `.aidoc/designs/e2e-generation-scenarios.md` | Generation acceptance scenarios |
+| `.aidoc/designs/e2e-import-scenarios.md` | Import acceptance scenarios |
+| `.aidoc/designs/e2e-database-scenarios.md` | Database composition and fallback scenarios |
+| `.aidoc/designs/e2e-session-scenarios.md` | Manual-note and durable-session scenarios |
+| `.aidoc/designs/e2e-tui-scenarios.md` | Full-screen TUI and recovery scenarios |
+| `.aidoc/designs/e2e-api-scenarios.md` | HTTP lifecycle, security, and contract scenarios |
 | `api/openapi.yaml` | Canonical OpenAPI 3.1.1 HTTP wire contract |
 | `README.md` | Human-facing project summary |
 | `cmd/root.go` | Cobra root command and shared state |

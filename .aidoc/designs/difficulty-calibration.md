@@ -21,7 +21,7 @@ Calibration tests whether the canonical strategy grades are reproducible, intern
 |----------|--------------|
 | `.aidoc/designs/difficulty-model.md` | Strategy grades, weights, clue guidance, and configuration boundary |
 | `.aidoc/designs/roadmap.md` | Sequencing after baseline stabilization |
-| `.aidoc/designs/e2e-test-scenarios.md` | Black-box behavior catalog for later policy changes |
+| `.aidoc/designs/e2e-calibration-scenarios.md` | Black-box behavior catalog for later policy changes |
 
 ## Why Calibration Exists
 

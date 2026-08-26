@@ -11,7 +11,7 @@ dependencies:
 # Architecture Guidelines
 
 The Sudoku project follows a layered architecture where each package owns a single concern.
-This doc captures the design constraints, layer boundaries, and solver contract that code alone doesn't express.
+The architecture guide captures the design constraints, layer boundaries, and solver contract that code alone doesn't express.
 
 ## Related Docs
 
@@ -31,13 +31,7 @@ The generator already has plumbing for strategy-based validation — it calls `S
 
 ## Layer Boundaries
 
-```
-cmd/ (cobra commands) → cli/ (interactive controller) → Generator (create puzzle) → Game (pure state)
-       ↓                                                        ↓                          ↓
-   DB (SQLite)                                               DB (SQLite)           Solver Store → Solver implementations
-                                                                                        ↓
-                                                                                   Core (board, cell, position, validation)
-```
+Requests flow from `cmd` through frontend controllers into the pure game and generator boundaries. Persistent paths enter `db`, solving paths enter `solver`, and all domain paths terminate in `core`; package imports must follow the constraints below rather than bypassing an owner.
 
 **Dependency rules:**
 - `core` has zero dependencies on other packages (leaf layer).
@@ -64,53 +58,9 @@ Manual notes are engine state rather than solver candidates. Value actions clear
 
 ## Solver Interface Contract
 
-Defined in `solver/solver.go`. Three interfaces form the solver hierarchy:
+`solver.Solver` defines stable metadata, while `solver.StrategySolver` represents one human-style technique and `solver.CompleteSolver` represents a full solving boundary. Strategy solvers may report no progress without implying that a puzzle is invalid; complete solvers own full-solve, hint, and solution-count behavior. See `solver/solver.go` for the interfaces and `solver/move.go` for the detached move result.
 
-### `Solver` (base metadata)
-
-All solvers implement `Solver`:
-- **`GetKey()`** — unique string identifier used as the map key in `Store`.
-- **`GetDisplayName()`** — human-readable solver name.
-- **`GetDescription()`** — description of the solver's approach.
-
-`Base` (`solver/solver.go`) provides default implementations for these metadata methods.
-
-### `StrategySolver` (technique-based)
-
-Extends `Solver`. Used by solvers that apply a single technique (e.g., naked singles, hidden singles):
-- **`Apply(board)`** — finds the next move using this technique. Returns `*Move` with the cell to fill, the technique name, and a human-readable explanation. Returns `nil` if the technique cannot make progress.
-
-Strategy solvers are **not reliable** — they only handle puzzles within their technique scope.
-
-### `CompleteSolver` (full solve)
-
-Extends `Solver`. Used by solvers that can fully solve any valid board (e.g., backtracking):
-- **`Solve(board)`** — attempts to solve in-place. Returns `false` if the solver cannot fully solve.
-- **`Hint(board)`** — returns the next determinable move as `*Move` without modifying the board. Returns `nil` if stuck.
-- **`CountSolutions(board)`** — returns the number of solutions for the board.
-
-### `Move` struct
-
-`Move` (`solver/move.go`) is the return type for `StrategySolver.Apply()` and `CompleteSolver.Hint()`:
-- **`Cell`** — the cell to fill (position + value).
-- **`Technique`** — technique identifier (e.g., `"naked-single"`, `"backtracker"`).
-- **`Reason`** — human-readable explanation for display in hints.
-
-### `Store`
-
-`Store` (`solver/store.go`) holds both `CompleteSolver` and `StrategySolver` implementations:
-- **`GetDefaultSolver()`** — returns the default `CompleteSolver` (backtracker).
-- **`GetStrategySolverByKey(key)`** — returns a `StrategySolver` by key, or `nil`.
-- **`RegisterStrategy(s)`** — registers a `StrategySolver`.
-
-## Adding a New Strategy Solver
-
-1. Create `solver/<technique>_solver.go` embedding `Base`.
-2. Implement `StrategySolver`: write `Apply()` that returns `*Move` with the technique name and reason.
-3. Register in `solver.NewStore()` using `store.RegisterStrategy(s)`.
-4. Add the solver key to the appropriate difficulty level's `StrategySolverKeys` in `generator/difficulty.go`.
-5. Write tests in `solver/<technique>_solver_test.go`.
-6. If the solver needs to iterate over units, use `allUnits()` from `solver/units.go`.
+`solver.Store` is the registration and lookup boundary for both solver classes. New techniques register through `solver.Store.RegisterStrategy`, join the appropriate strategy grade in `solver/config.go`, and keep unit traversal within the shared helpers in `solver/units.go`. The implementation and package tests are the canonical source for method signatures and registration mechanics.
 
 ## Design Constraints
 
