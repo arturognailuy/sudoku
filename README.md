@@ -1,10 +1,12 @@
 # Sudoku
 
-A CLI Sudoku game in Go. Generate puzzles at various difficulty levels, solve them, and play interactively with undo/redo and hints.
+A CLI Sudoku game in Go. Generate puzzles at various strategy grades, solve them, and play interactively with undo/redo and hints.
+
+Easy through Evil are deterministic solver-relative strategy grades, not predictions of human solving experience. The highest technique tier required by the canonical solver assigns the grade; weighted score orders puzzles only within that grade. Puzzles the strategy inventory cannot finish remain `strategy-unsolved`, never Evil.
 
 Features:
-- 23 strategy solvers across 5 difficulty tiers (Easy → Evil)
-- Strategy-based difficulty classification with HoDoKu-weighted scoring
+- 23 strategy solvers across 5 strategy grades (Easy → Evil)
+- Canonical strategy classification with within-grade HoDoKu-weighted scoring
 - Best-effort puzzle generator with time/round limits
 - SQLite puzzle database with automatic storage, dedup, and fallback lookup
 - Batch generation CLI for offline puzzle creation
@@ -76,7 +78,7 @@ For non-loopback addresses, configure a bearer token. Browser origins remain den
 
 The OpenAPI 3.1 contract is [`api/openapi.yaml`](api/openapi.yaml). All game operations are under `/api/v1`; `GET /healthz` is payload-free. API sessions use opaque identifiers and monotonic revisions, persist accepted mutations to the private recovery store, and reject stale writes with `409 Conflict`.
 
-## Measure Difficulty Locally
+## Measure Strategy Ratings Locally
 
 Run deterministic classifications over an immutable JSON corpus and resume safely in the same output directory:
 

@@ -24,8 +24,8 @@ Sudoku's feature baseline is complete: the Go repository owns the engine, CLI, T
 | Document | Relationship |
 |----------|-------------|
 | `.aidoc/designs/e2e-test-scenarios.md` | Canonical black-box behavior catalog and current automation pointers |
-| `.aidoc/designs/difficulty-model.md` | Difficulty invariants and the calibration boundary |
-| `.aidoc/designs/difficulty-calibration.md` | Measurement methodology, report artifacts, and review decisions |
+| `.aidoc/designs/difficulty-model.md` | Strategy-grade invariants and the calibration boundary |
+| `.aidoc/designs/difficulty-calibration.md` | Strategy measurement methodology, report artifacts, and review decisions |
 | `.aidoc/designs/future-directions.md` | Deliberately non-priority product and production directions |
 | `.aidoc/designs/web-api.md` | Current HTTP contract, security boundary, and deployment defaults |
 
@@ -67,9 +67,9 @@ The API, TUI, and line-CLI harnesses build and execute the real binary with isol
 
 ### 3. Calibrate Difficulty with Data
 
-Calibration starts from the stable CI baseline with deterministic classifier semantics, then measures a versioned mixed corpus before changing `solver/config.go`. `.aidoc/designs/difficulty-calibration.md` defines the corpus groups, reproducibility metadata, score and tier distributions, external-rating validation, generation hit-rate and latency measurements, pathological inputs, and strategy-unsolved reporting.
+Calibration starts from the stable CI baseline with deterministic classifier semantics, then measures a versioned mixed corpus before changing `solver/config.go`. Easy through Evil are canonical strategy grades rather than predictions of player experience; score orders puzzles within a grade, clue count guides generation, and strategy-unsolved remains separate. `.aidoc/designs/difficulty-calibration.md` defines the corpus groups, reproducibility metadata, grade and within-grade score measurements, generation hit-rate and latency measurements, pathological inputs, and strategy-unsolved reporting.
 
-Calibration output remains local and telemetry-free. The baseline report informs separately reviewed decisions about label meaning, score use, clue bands, tier-specific budgets, unsolved states, and acceptance thresholds before any product-policy change.
+Calibration output remains local and telemetry-free. The baseline report informs separately reviewed decisions about technique tiers, score weights, clue guidance, tier-specific budgets, unsolved-state handling, and acceptance thresholds before any product-policy change. Human data may support a separate empirical player-difficulty layer later, but it is not a prerequisite for strategy calibration.
 
 ### 4. Complete Deferred Database Behaviors
 

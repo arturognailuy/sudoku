@@ -8,9 +8,9 @@ dependencies:
   - .aidoc/designs/difficulty-calibration.md
 ---
 
-# Difficulty Model
+# Strategy Rating Model
 
-Difficulty combines clue count with solving-technique requirements and weighted solving moves. This document defines the current invariants and the evidence required before calibration changes those parameters.
+Easy through Evil are strategy grades: each label names the highest technique tier required by the canonical deterministic solver. The labels do not predict a person's experience; weighted score orders puzzles within a grade, while clue count remains generation guidance.
 
 ## Related Docs
 
@@ -20,9 +20,15 @@ Difficulty combines clue count with solving-technique requirements and weighted 
 | `.aidoc/designs/difficulty-calibration.md` | Measurement contract and evidence required for policy changes |
 | `.aidoc/INDEX.md` | Discovery index |
 
-## Current Model (Clue-Count + Strategy Tiers)
+## Why Strategy Grades Exist
 
-Difficulty combines clue count with technique requirements in `generator/difficulty.go`:
+Human difficulty depends on experience, recognition speed, interface, and play conditions that the repository does not observe. A canonical strategy trace is objective, reproducible, explainable, and under the product's control, so it is the authoritative rating contract.
+
+The familiar Easy through Evil names remain the public tier names, but their meaning is strictly solver-relative. Human ratings or telemetry may support a separate player-difficulty model in the future; they are neither a prerequisite for strategy grades nor grounds for silently changing them.
+
+## Current Strategy Hierarchy
+
+Generation uses clue guidance and technique requirements in `generator/difficulty.go`:
 
 | Level | Clues (min–max) | Strategy Tier | Solver Keys |
 |-------|-----------------|---------------|-------------|
@@ -70,23 +76,11 @@ Jellyfish) and `NakedSubsetSolver` / `HiddenSubsetSolver` (pair/triple/quad).
 
 ### Tier Rationale
 
-Tiers are based on SudokuWiki's human-difficulty ordering (frequency × difficulty):
+The hierarchy groups the canonical solver's techniques into five stable capability tiers. Published Sudoku technique references informed the original grouping, but the product contract does not claim that the resulting order predicts human effort.
 
-- **Easy:** Trivial techniques — scan for cells/units with one candidate.
-- **Medium:** Basic pattern recognition — pairs, triples, pointing pairs. Hidden pairs
-  are easier than X-Wing for humans.
-- **Hard:** Requires systematic row/column scanning (X-Wing, XY-Wing) or identifying
-  three hidden digits in three cells (Hidden Triple). W-Wing uses bi-value cells
-  connected by a strong link.
-- **Expert:** Very hard to spot manually — 3-row/col fish patterns (Swordfish), four-cell
-  subsets (Naked/Hidden Quad), graph coloring (Simple Coloring). XYZ-Wing extends
-  XY-Wing with a three-candidate pivot.
-- **Evil:** Near-impossible to spot manually — 4-row/col fish patterns (Jellyfish),
-  bivalue universal grave detection (BUG+1), deadly-pattern elimination
-  (Unique Rectangle Types 1–4), single-digit alternating inference chains
-  (X-Cycles), and multi-cell bi-value chains (XY-Chain).
+Each grade means that the canonical deterministic solver completed the puzzle and required at least one technique from that grade while using no technique above it. Changing a technique's tier changes product semantics and therefore requires a separately reviewed policy proposal with reproducible before-and-after evidence.
 
-## Difficulty Mapping
+## Strategy Grade Mapping
 
 | Level | Required Tier | Meaning |
 |-------|---------------|--------|
@@ -96,15 +90,13 @@ Tiers are based on SudokuWiki's human-difficulty ordering (frequency × difficul
 | Expert | Up to Expert | Requires at least one Swordfish, Naked Quad, Simple Coloring, Hidden Quad, or XYZ-Wing step |
 | Evil | Up to Evil | Requires at least one Jellyfish, BUG+1, Unique Rectangle, X-Cycles, or XY-Chain step |
 
-### Clue Count as Secondary Constraint
+### Clue Count as Generation Guidance
 
-Clue-count ranges are preserved as a secondary constraint alongside technique requirements.
-The existing clue-count ranges define the acceptable band; technique requirements define
-the minimum solving complexity.
+Clue-count ranges guide generation and preserve the current search space, but clue count does not assign or override a strategy grade. A puzzle's grade comes only from its completed canonical strategy trace.
 
 ### Architecture Support
 
-The canonical hierarchy lives behind `solver.StrategyTierNames`, `solver.StrategySolverKeysForTier`, and `solver.StrategyTierForTechnique`. `generator/difficulty.go` uses a detached package-local view of that hierarchy so generation and classification cannot drift.
+The canonical hierarchy lives behind `solver.StrategyTierNames`, `solver.StrategySolverKeysForTier`, and `solver.StrategyTierForTechnique`. `generator/difficulty.go` uses a detached package-local view so generation and classification cannot drift. Existing Go and wire fields retain the name `Difficulty` for compatibility; their values carry strategy grades.
 
 The generation plumbing:
 - `Difficulty.SolverKeys` lists solver keys introduced at this tier.
@@ -133,27 +125,26 @@ The generation plumbing:
 
 `solver.Classification.Outcome` reports either `solved` or `strategy-unsolved`. Difficulty remains the highest explicit technique tier reached, but a stalled trace with no applicable technique has no tier and is never promoted to Evil or backtracking. Generator target matching accepts only completed strategy solves.
 
-## Scoring System
+## Within-Grade Scoring
 
-Each solver carries a `Weight` field representing its difficulty cost per application,
-based on HoDoKu's established weights. A puzzle's total difficulty score is the sum
-of all technique weights used during solving:
+Each solver carries a `Weight` field representing its relative cost per application,
+based on HoDoKu's established weights. A puzzle's total score is the sum of all
+technique weights used during solving:
 
 ```
 score = Σ(weight[technique] × times_used)
 ```
 
-The `ScorePuzzle(store, moves)` function in `solver/scoring.go` computes the score
-from a list of moves. Moves from unknown techniques (e.g., backtracker) contribute zero.
+The `ScorePuzzle(store, moves)` function in `solver/scoring.go` computes the score from a list of moves. Moves from unknown techniques (e.g., backtracker) contribute zero.
+
+Score ranks completed puzzles within the same strategy grade. Score must not demote or promote a puzzle across grades, because numeric weights are subordinate to the explicit tier hierarchy. Cross-grade score overlap is expected and is not evidence that the grade contract failed.
 
 ### Configuration
 
-All tunable parameters — solver weights and clue-count ranges — are centralized in
-`solver/config.go`. This is the single file to update when tuning parameters or
-calibrating the difficulty system.
+All tunable parameters — solver weights and clue-count ranges — are centralized in `solver/config.go` as one auditable strategy-rating configuration boundary.
 
 ## Calibration Boundary
 
-Score ranges, solver weights, clue bands, generation budgets, and success-rate policy must not change from intuition alone. `.aidoc/designs/difficulty-calibration.md` defines the corpus, deterministic classification semantics, measurements, report artifacts, and decision gates required before policy changes.
+Solver weights, technique tiers, clue guidance, generation budgets, and success-rate policy must not change from intuition alone. `.aidoc/designs/difficulty-calibration.md` defines the corpus, deterministic classification semantics, measurements, report artifacts, and decision gates required before policy changes.
 
 The current scoring infrastructure records calibration inputs, while `solver/config.go` remains the single configuration boundary. Any proposal to add score bands or alter classification requires baseline distributions, pathological-input analysis, and before-and-after validation.

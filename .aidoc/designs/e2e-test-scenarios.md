@@ -193,7 +193,7 @@ Create a candidate version 2 manifest with a name and ordered `puzzles` array. I
 ### 3.1 Start and Resume an Immutable Corpus
 Use the prepared version 2 manifest. Run `sudoku calibrate --manifest <path> --output <directory>` twice with the same paths.
 
-**Expected:** The first run appends one observation per puzzle and writes a manifest-bound checkpoint plus JSON and Markdown reports. The reports include reproducibility count, source/split outcome groups, tier distributions, neighboring score overlap where both tiers exist, external agreement, and generated-target measurements. The second run reports zero new observations, leaves `observations.jsonl` unchanged, and keeps `report.json` deterministic. The built-binary harness also verifies the completed checkpoint index and representative stratified fields.
+**Expected:** The first run appends one observation per puzzle and writes a manifest-bound checkpoint plus JSON and Markdown reports. The reports include reproducibility count, source/split outcome groups, strategy-grade distributions, descriptive cross-grade score overlap where both grades exist, optional external source comparison, and generated-target measurements. The second run reports zero new observations, leaves `observations.jsonl` unchanged, and keeps `report.json` deterministic. The built-binary harness also verifies the completed checkpoint index and representative stratified fields.
 
 ### 3.2 Reject a Changed Manifest
 Complete a measurement run, then change the manifest name, puzzle order, IDs, or puzzle text and reuse the existing output directory.

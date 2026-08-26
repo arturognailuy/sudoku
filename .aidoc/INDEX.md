@@ -29,8 +29,8 @@ This index provides reading chains for common starting points and a complete doc
 15. `recovery/recovery.go` — private XDG recovery records, validation, retention, and atomic transport
 
 ### Understanding Puzzle Generation
-1. `.aidoc/designs/difficulty-model.md` — current model, tier invariants, and configuration boundary
-2. `.aidoc/designs/difficulty-calibration.md` — measurement contract, evidence, reports, and decision gates
+1. `.aidoc/designs/difficulty-model.md` — strategy-grade contract, tier invariants, and configuration boundary
+2. `.aidoc/designs/difficulty-calibration.md` — strategy measurement contract, evidence, reports, and decision gates
 3. `calibration/runner.go` — immutable manifests, reproducibility checks, observations, checkpoints, and reports
 4. `calibration/baselines/mixed-imported-expansion-v5/report.md` — current imported-stratum expansion results and limitations
 5. `calibration/baselines/mixed-generated-expansion-v4/report.md` — preserved generated-stratum expansion results
@@ -50,8 +50,8 @@ This index provides reading chains for common starting points and a complete doc
 ### Understanding the Roadmap
 1. `.aidoc/designs/roadmap.md` — stabilization priorities, sequencing, and exit criteria
 2. `.aidoc/designs/e2e-test-scenarios.md` — compatibility and black-box acceptance scenarios
-3. `.aidoc/designs/difficulty-model.md` — calibration boundary and current difficulty invariants
-4. `.aidoc/designs/difficulty-calibration.md` — measurement methodology, report contract, and product decisions
+3. `.aidoc/designs/difficulty-model.md` — calibration boundary and strategy-grade invariants
+4. `.aidoc/designs/difficulty-calibration.md` — strategy measurement methodology, report contract, and product decisions
 5. `.aidoc/designs/future-directions.md` — deliberately non-priority product and production directions
 6. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
 7. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
@@ -75,8 +75,8 @@ This index provides reading chains for common starting points and a complete doc
 | `AGENT.md` | AI operator entry point — rules and repo layout |
 | `.aidoc/INDEX.md` | This file — discovery index and reading chains |
 | `.aidoc/architecture/guidelines.md` | Design constraints, layer boundaries, solver contract |
-| `.aidoc/designs/difficulty-model.md` | Difficulty invariants, scoring model, and calibration boundary |
-| `.aidoc/designs/difficulty-calibration.md` | Calibration methodology, corpus contract, evidence, reports, and decision gates |
+| `.aidoc/designs/difficulty-model.md` | Strategy-grade contract, within-grade scoring, clue guidance, and calibration boundary |
+| `.aidoc/designs/difficulty-calibration.md` | Strategy calibration methodology, corpus contract, evidence, reports, and decision gates |
 | `.aidoc/designs/roadmap.md` | Stabilization priorities, sequencing, and exit criteria |
 | `.aidoc/designs/future-directions.md` | Non-priority product and production directions with decision gates |
 | `.aidoc/designs/web-api.md` | Contract-first OpenAPI workflow, resources, revisions, recovery, client access, and network security boundary |

@@ -1,7 +1,7 @@
 package solver
 
-// ScorePuzzle calculates the total difficulty score for a solved puzzle
-// based on the techniques used and their weights.
+// ScorePuzzle calculates a deterministic within-grade ordering score
+// from the techniques used and their weights.
 //
 // Each move's technique is looked up in the Store to find its weight,
 // and the total score is the sum of all weights. Moves whose technique
