@@ -7,6 +7,7 @@ entry_points:
   - db/puzzle.go
 dependencies:
   - .aidoc/designs/difficulty-model.md
+  - .aidoc/designs/database-play-statistics.md
   - .aidoc/designs/e2e-database-scenarios.md
 ---
 
@@ -19,6 +20,7 @@ Puzzle acquisition prefers an exact strategy grade, avoids immediate repeats, an
 | Document | Relationship |
 |----------|-------------|
 | `.aidoc/designs/difficulty-model.md` | Defines the exact strategy-grade contract used by selection |
+| `.aidoc/designs/database-play-statistics.md` | Keeps completion counters and history reset separate from acquisition semantics |
 | `.aidoc/designs/e2e-database-scenarios.md` | Owns black-box acceptance scenarios for acquisition and migration |
 | `.aidoc/designs/roadmap.md` | Sequences this behavior before other database enhancements |
 
@@ -73,6 +75,6 @@ Existing rows receive a zero count and no timestamp, so the first post-upgrade c
 - The atomic write statement serializes concurrent acquisitions so two callers cannot both return the same previously unplayed row.
 - Configure a bounded SQLite busy timeout; do not wait indefinitely for a writer.
 - If acquisition or played-state persistence fails, default play follows its existing generated fallback. `--from-db` reports the database error because it has no permitted alternate source.
-- Statistics continue to report stored puzzle counts. Played/unplayed statistics and reset commands are outside this increment.
+- Statistics continue to report stored puzzle counts. `.aidoc/designs/database-play-statistics.md` defines the separately reviewed acquisition/completion statistics and reset increment.
 
 Minimum-clue policy, large-import progress behavior, and broader concurrent SQLite stress remain separate follow-ups.
