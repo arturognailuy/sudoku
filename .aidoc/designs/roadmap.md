@@ -15,6 +15,7 @@ dependencies:
   - .aidoc/designs/future-directions.md
   - .aidoc/designs/database-puzzle-selection.md
   - .aidoc/designs/database-play-statistics.md
+  - .aidoc/designs/database-concurrency.md
 ---
 
 # Stabilization Roadmap
@@ -32,6 +33,7 @@ Sudoku's feature baseline, calibration, and stabilization gates are complete: th
 | `.aidoc/designs/web-api.md` | Current HTTP contract, security boundary, and deployment defaults |
 | `.aidoc/designs/database-puzzle-selection.md` | Current played-state selection and migration boundary |
 | `.aidoc/designs/database-play-statistics.md` | Current completion counters, statistics, and explicit history reset |
+| `.aidoc/designs/database-concurrency.md` | Next bounded database increment: connection policy and deterministic mixed-workload stress |
 
 ## Why Stabilization Remains the Gate
 
@@ -79,7 +81,9 @@ Calibration output remains local and telemetry-free. The 101-record corpus separ
 
 Calibration and stabilization now provide the stable strategy-grade boundary required for database selection. `.aidoc/designs/database-puzzle-selection.md` defines the current exact-grade acquisition, never-played-first selection, balanced reuse, in-place additive migration, and deterministic public `--from-db` boundary.
 
-The black-box scenarios in `.aidoc/designs/e2e-database-scenarios.md` and focused transaction/migration regression tests protect this boundary. `.aidoc/designs/database-play-statistics.md` keeps acquisition metrics separate from completion count/latest-completion fields, exposes both through `sudoku db stats`, and resets only explicitly selected history. The database does not infer abandonment or elapsed duration. Minimum-clue policy, large-import behavior, and broad concurrent SQLite stress remain later follow-ups.
+The black-box scenarios in `.aidoc/designs/e2e-database-scenarios.md` and focused transaction/migration regression tests protect this boundary. `.aidoc/designs/database-play-statistics.md` keeps acquisition metrics separate from completion count/latest-completion fields, exposes both through `sudoku db stats`, and resets only explicitly selected history. The database does not infer abandonment or elapsed duration.
+
+The next bounded increment is `.aidoc/designs/database-concurrency.md`: make SQLite connection policy apply predictably across pooled connections and prove deterministic mixed access from goroutines, independent handles, and built-binary processes. It preserves the schema and commands. Minimum-clue policy and measured large-import behavior remain separate later decisions.
 
 ## Maintained Stabilization Gates
 

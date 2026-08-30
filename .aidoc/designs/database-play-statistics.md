@@ -13,6 +13,7 @@ dependencies:
   - .aidoc/designs/database-puzzle-selection.md
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/e2e-database-scenarios.md
+  - .aidoc/designs/database-concurrency.md
 ---
 
 # Database Play Statistics and History Reset
@@ -26,6 +27,7 @@ The database keeps completion counters beside acquisition counters, exposes both
 | `.aidoc/designs/database-puzzle-selection.md` | Defines acquisition counters and the selection policy that consumes them |
 | `.aidoc/designs/game-engine.md` | Defines solved status and typed actions used to detect completion |
 | `.aidoc/designs/e2e-database-scenarios.md` | Owns black-box acceptance scenarios for statistics and reset behavior |
+| `.aidoc/designs/database-concurrency.md` | Defines mixed-workload snapshot/reset contention and lock bounds |
 | `.aidoc/designs/roadmap.md` | Sequences this increment before broader database reliability work |
 
 ## Why Completion Is Separate From Acquisition
@@ -147,4 +149,4 @@ The implementation PR must update the executable scenario harnesses and run ever
 - Elapsed solving duration, pause/idle policy, and timing across restore.
 - Durable play-attempt identities or append-only event history.
 - Player/account attribution or telemetry.
-- Broader SQLite mixed-workload stress, large-import changes, minimum-clue policy, and full Sudoku-symmetry canonicalization.
+- Large-import changes, minimum-clue policy, and full Sudoku-symmetry canonicalization. Mixed-workload SQLite stress is designed separately in `.aidoc/designs/database-concurrency.md`.

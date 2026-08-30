@@ -9,6 +9,7 @@ dependencies:
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/database-puzzle-selection.md
   - .aidoc/designs/database-play-statistics.md
+  - .aidoc/designs/database-concurrency.md
 ---
 
 # E2E Database Scenarios
@@ -22,6 +23,7 @@ The database scenario catalog protects root-command database composition, played
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E discovery map, isolation rules, and automation entry points |
 | `.aidoc/designs/database-puzzle-selection.md` | Current exact-grade acquisition and recycling contract |
 | `.aidoc/designs/database-play-statistics.md` | Current completion, statistics, and history-reset contract |
+| `.aidoc/designs/database-concurrency.md` | Proposed mixed-workload, lock-bound, and multi-process reliability contract |
 | `AGENT.md` | Required black-box verification discipline |
 
 ## Why This Boundary
@@ -112,10 +114,25 @@ These scenarios are executable through the package suites and built-binary harne
 **Action:** Complete a puzzle through the line CLI, TUI, and HTTP API where each boundary applies; separately force completion persistence and reset failures.
 **Expected:** Every frontend applies the same completion rule. A completion-write failure leaves the game solved and surfaces a concise warning; a reset failure exits non-zero with no partial reset.
 
-## 14. Other Deferred Database Scenarios
+## 14. Concurrent SQLite Reliability
+
+These scenarios become mandatory with the implementation of `.aidoc/designs/database-concurrency.md`:
+
+### 14.1 Multi-Process Import And Read
+**Action:** Run several built `sudoku import` processes with overlapping fixed fixtures against one temporary database while bounded `sudoku db stats` readers execute.
+**Expected:** Every process exits successfully, imports produce exactly the unique normalized rows, snapshots are internally consistent, and no process hangs. Deliberate lock exhaustion is tested separately at the package boundary.
+
+### 14.2 Post-Contention Acquisition And Integrity
+**Action:** After the writers close, acquire fixed-grade rows through `--from-db`, inspect exact counters, close all clients, and run SQLite `PRAGMA quick_check`.
+**Expected:** Acquisition totals equal successful selections, balanced reuse still holds, committed counters survive reopen, and the integrity result is `ok`.
+
+### 14.3 Deterministic Lock Bound
+**Action:** In a focused package test, hold a write transaction and attempt a write from an independent handle before and after releasing the lock.
+**Expected:** The blocked operation returns within the configured five-second bound without partial mutation; a later operation succeeds.
+
+## 15. Other Deferred Database Scenarios
 
 Keep these independently reviewed after acquisition/completion statistics:
 
 - **Large import progress indicator:** Import 150+ puzzles → progress indicator fires every 100 puzzles.
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).
-- **Concurrent DB access:** Multiple generate workers writing to the same DB → no corruption (WAL mode).
