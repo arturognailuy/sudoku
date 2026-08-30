@@ -37,7 +37,7 @@ End-to-end tests treat the built Sudoku binary as a user would, outside Go packa
 | Calibration | `.aidoc/designs/e2e-calibration-scenarios.md` | `scripts/e2e_cli.py` |
 | Puzzle generation | `.aidoc/designs/e2e-generation-scenarios.md` | `scripts/e2e_cli.py` |
 | Puzzle import | `.aidoc/designs/e2e-import-scenarios.md` | `scripts/e2e_cli.py` |
-| Database composition and fallback | `.aidoc/designs/e2e-database-scenarios.md` | `scripts/e2e_cli.py` |
+| Database composition, acquisition, and play statistics | `.aidoc/designs/e2e-database-scenarios.md` | `scripts/e2e_cli.py`, `scripts/e2e_tui.py`, and `scripts/e2e_api.py` |
 | Notes and durable CLI sessions | `.aidoc/designs/e2e-session-scenarios.md` | `scripts/e2e_cli.py` |
 | Full-screen TUI and recovery | `.aidoc/designs/e2e-tui-scenarios.md` | `scripts/e2e_tui.py` |
 | HTTP API lifecycle | `.aidoc/designs/e2e-api-scenarios.md` | `scripts/e2e_api.py` and `scripts/check-api-contract.sh` |
@@ -46,7 +46,7 @@ End-to-end tests treat the built Sudoku binary as a user would, outside Go packa
 
 Every automated black-box entry point builds or receives the repository binary and owns isolated temporary XDG roots. `scripts/e2e_cli.py` covers root play, sessions, calibration, generation, import, and SQLite composition. `scripts/e2e_tui.py` owns pseudo-terminal behavior and recovery. `scripts/e2e_api.py` owns the running HTTP lifecycle, while `scripts/check-api-contract.sh` validates OpenAPI compatibility.
 
-The harnesses use fixed puzzle fixtures whenever deterministic assertions matter. Generation smoke tests bound real generation and verify command, worker, and database composition without asserting a random difficulty result. The public `--from-db` boundary provides deterministic exact-grade acquisition and migration coverage; focused package tests cover generated-fallback accounting.
+The harnesses use fixed puzzle fixtures whenever deterministic assertions matter. Generation smoke tests bound real generation and verify command, worker, and database composition without asserting a random difficulty result. The public `--from-db` boundary provides deterministic exact-grade acquisition and migration coverage; focused package tests cover generated-fallback accounting. The proposed play-statistics increment extends the database catalog across the line CLI, TUI, and API so completion semantics cannot drift between frontends.
 
 ## Running the Catalogs
 

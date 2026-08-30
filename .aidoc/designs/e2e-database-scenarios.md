@@ -8,17 +8,20 @@ dependencies:
   - .aidoc/designs/e2e-test-scenarios.md
   - .aidoc/designs/game-engine.md
   - .aidoc/designs/database-puzzle-selection.md
+  - .aidoc/designs/database-play-statistics.md
 ---
 
 # E2E Database Scenarios
 
-The database scenario catalog protects root-command database composition, played-state acquisition behavior, Cobra discovery, and explicitly deferred database work.
+The database scenario catalog protects root-command database composition, played-state acquisition behavior, proposed acquisition/completion statistics, Cobra discovery, and explicitly deferred database work.
 
 ## Related Docs
 
 | Document | Relationship |
 |----------|-------------|
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E discovery map, isolation rules, and automation entry points |
+| `.aidoc/designs/database-puzzle-selection.md` | Current exact-grade acquisition and recycling contract |
+| `.aidoc/designs/database-play-statistics.md` | Proposed completion, statistics, and history-reset contract |
 | `AGENT.md` | Required black-box verification discipline |
 
 ## Why This Boundary
@@ -80,9 +83,38 @@ These built-binary cases run in `scripts/e2e_cli.py` with an isolated database:
 **Action:** Use the narrowest deterministic package seam to cover matched generation, generated mismatch with exact-grade DB fallback, and mismatch without a DB fallback.
 **Expected:** Only the puzzle ultimately selected for play is marked played; a stored but unused generated mismatch remains unplayed.
 
-## 13. Other Deferred Database Scenarios
+## 13. Acquisition And Completion Statistics
 
-Keep these independently reviewed after played-state selection:
+These scenarios become executable with the implementation of `.aidoc/designs/database-play-statistics.md`:
+
+### 13.1 Separate History Dimensions
+**Setup:** Use a fixed normalized puzzle fixture. Acquire it twice, quit one run unfinished, and complete the other with player actions.
+**Action:** Run `sudoku db stats --db <path>`.
+**Expected:** The row reports two acquisitions and one completion. Acquisition is never labeled as completion or abandonment, and the overall row agrees with the per-grade snapshot.
+
+### 13.2 Completion Boundaries
+**Action:** Exercise quit, save/recovery, invalid moves, `solve`, a final player value, a hint-assisted final value, and undo/re-solve in isolated runs through the applicable built frontend.
+**Expected:** Quit, persistence, invalid actions, and `solve` do not increment completion. A player or hint-assisted solve increments once per run; undo/re-solve does not increment twice. Loading an already solved session does not count.
+
+### 13.3 Normalized Identity And Migration
+**Setup:** Open a pre-completion-schema database, then submit digit-relabelled forms that normalize to the same existing puzzle.
+**Expected:** Migration preserves the row and acquisition history, initializes completion history to zero, and every equivalent form contributes to the same normalized statistics row without creating a duplicate.
+
+### 13.4 Statistics Filtering And Snapshot
+**Action:** Request all-grade and single-grade statistics while a focused package test exercises a concurrent counter update.
+**Expected:** Unknown grades fail before database work. Each successful command reports stored, selected, acquisition, completed-puzzle, completion, and latest-time fields from one read snapshot; empty timestamps render as `-`.
+
+### 13.5 Explicit Reset Scope
+**Action:** Preview `reset-history` for `acquisition`, `completion`, and `all`; cancel once; then confirm with `--yes`, both with and without `--level`.
+**Expected:** The preview names the database, scope, filter, rows, and counters. Cancellation changes nothing. Confirmation resets exactly the requested counter/timestamp pairs atomically while preserving puzzle rows, classification, source, saved sessions, recovery records, and the non-selected history dimension.
+
+### 13.6 Frontend And Failure Consistency
+**Action:** Complete a puzzle through the line CLI, TUI, and HTTP API where each boundary applies; separately force completion persistence and reset failures.
+**Expected:** Every frontend applies the same completion rule. A completion-write failure leaves the game solved and surfaces a concise warning; a reset failure exits non-zero with no partial reset.
+
+## 14. Other Deferred Database Scenarios
+
+Keep these independently reviewed after acquisition/completion statistics:
 
 - **Large import progress indicator:** Import 150+ puzzles → progress indicator fires every 100 puzzles.
 - **Minimum-clues guard:** Import a puzzle with fewer than 17 clues → rejected or warned (prevents solver hang on near-empty boards).
