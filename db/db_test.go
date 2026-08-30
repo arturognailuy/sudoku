@@ -294,3 +294,163 @@ func TestMarkForPlayUpdatesOnlyTheSelectedPuzzle(t *testing.T) {
 		t.Fatalf("unselected play count = %d, want 0", count)
 	}
 }
+
+func TestCompletionStatisticsAndResetScopes(t *testing.T) {
+	database, err := Open(filepath.Join(t.TempDir(), "statistics.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	for _, puzzle := range []Puzzle{{Puzzle: "easy", Difficulty: "easy", Score: 1, MaxTechnique: "single"}, {Puzzle: "hard", Difficulty: "hard", Score: 2, MaxTechnique: "pair"}} {
+		if _, err := database.InsertPuzzle(puzzle); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := database.MarkForPlay("easy"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.MarkForPlay("easy"); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := database.RecordCompletion("easy"); err != nil || !ok {
+		t.Fatalf("completion = %v, %v", ok, err)
+	}
+	if ok, err := database.RecordCompletion("missing"); err != nil || ok {
+		t.Fatalf("missing completion = %v, %v", ok, err)
+	}
+	rows, err := database.PlayStatistics("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 6 {
+		t.Fatalf("statistics rows = %d, want five grades plus overall", len(rows))
+	}
+	if rows[0].Stored != 1 || rows[0].Acquisitions != 2 || rows[0].Completions != 1 || rows[5].Stored != 2 {
+		t.Fatalf("statistics = %+v", rows)
+	}
+	preview, err := database.PreviewHistoryReset("easy")
+	if err != nil || preview != (HistoryPreview{Rows: 1, Acquisitions: 2, Completions: 1}) {
+		t.Fatalf("preview = %+v, %v", preview, err)
+	}
+	if err := database.ResetHistory("completion", "easy"); err != nil {
+		t.Fatal(err)
+	}
+	preview, _ = database.PreviewHistoryReset("easy")
+	if preview.Acquisitions != 2 || preview.Completions != 0 {
+		t.Fatalf("completion reset changed wrong scope: %+v", preview)
+	}
+	if err := database.ResetHistory("all", "easy"); err != nil {
+		t.Fatal(err)
+	}
+	preview, _ = database.PreviewHistoryReset("easy")
+	if preview.Acquisitions != 0 || preview.Completions != 0 {
+		t.Fatalf("all reset = %+v", preview)
+	}
+}
+
+func TestCompletionMigrationPreservesAcquisitionHistory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "pre-completion.db")
+	conn, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = conn.Exec(`CREATE TABLE puzzles (puzzle TEXT PRIMARY KEY, difficulty TEXT NOT NULL, score INTEGER NOT NULL, max_technique TEXT NOT NULL, source TEXT, play_count INTEGER NOT NULL DEFAULT 0, last_played_at TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`)
+	if err == nil {
+		_, err = conn.Exec(`INSERT INTO puzzles (puzzle,difficulty,score,max_technique,play_count,last_played_at) VALUES ('legacy','easy',1,'single',3,CURRENT_TIMESTAMP)`)
+	}
+	conn.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	database, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	var plays, completions int
+	var completed any
+	if err := database.conn.QueryRow(`SELECT play_count, completion_count, last_completed_at FROM puzzles WHERE puzzle='legacy'`).Scan(&plays, &completions, &completed); err != nil {
+		t.Fatal(err)
+	}
+	if plays != 3 || completions != 0 || completed != nil {
+		t.Fatalf("migrated history = %d, %d, %v", plays, completions, completed)
+	}
+}
+
+func TestConcurrentCompletionIncrements(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "completion.db")
+	seed, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := seed.InsertPuzzle(Puzzle{Puzzle: "shared", Difficulty: "easy", Score: 1, MaxTechnique: "single"}); err != nil {
+		t.Fatal(err)
+	}
+	seed.Close()
+	const workers = 8
+	start := make(chan struct{})
+	errors := make(chan error, workers)
+	var group sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			database, err := Open(path)
+			if err != nil {
+				errors <- err
+				return
+			}
+			defer database.Close()
+			<-start
+			_, err = database.RecordCompletion("shared")
+			errors <- err
+		}()
+	}
+	close(start)
+	group.Wait()
+	close(errors)
+	for err := range errors {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	check, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer check.Close()
+	var count int
+	if err := check.conn.QueryRow(`SELECT completion_count FROM puzzles WHERE puzzle='shared'`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != workers {
+		t.Fatalf("completion_count = %d, want %d", count, workers)
+	}
+}
+
+func TestResetHistoryRollsBackOnDatabaseError(t *testing.T) {
+	database, err := Open(filepath.Join(t.TempDir(), "rollback.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	if _, err := database.InsertPuzzle(Puzzle{Puzzle: "protected", Difficulty: "easy", Score: 1, MaxTechnique: "single"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.conn.Exec(`UPDATE puzzles SET play_count=2, completion_count=3 WHERE puzzle='protected'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.conn.Exec(`CREATE TRIGGER reject_history_reset BEFORE UPDATE ON puzzles BEGIN SELECT RAISE(ABORT, 'protected'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if err := database.ResetHistory("all", "easy"); err == nil {
+		t.Fatal("expected reset failure")
+	}
+	var plays, completions int
+	if err := database.conn.QueryRow(`SELECT play_count, completion_count FROM puzzles WHERE puzzle='protected'`).Scan(&plays, &completions); err != nil {
+		t.Fatal(err)
+	}
+	if plays != 2 || completions != 3 {
+		t.Fatalf("failed reset changed counters: %d %d", plays, completions)
+	}
+}

@@ -17,7 +17,7 @@ dependencies:
 
 # Database Play Statistics and History Reset
 
-Add completion counters beside the existing acquisition counters, expose both as separate concepts through `sudoku db stats`, and provide an explicitly confirmed `sudoku db reset-history` command. A completion is counted once per play run when a player action first solves the puzzle; the automatic `solve` action does not count. This increment does not infer abandonment or elapsed play duration, and it preserves the current normalized puzzle key and `INSERT OR IGNORE` deduplication contract.
+The database keeps completion counters beside acquisition counters, exposes both as separate concepts through `sudoku db stats`, and provides an explicitly confirmed `sudoku db reset-history` command. A completion is counted once per play run when a player action first solves the puzzle; the automatic `solve` action does not count. This behavior does not infer abandonment or elapsed play duration, and it preserves the normalized puzzle key and `INSERT OR IGNORE` deduplication contract.
 
 ## Related Docs
 

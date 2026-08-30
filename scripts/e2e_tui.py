@@ -7,12 +7,14 @@ import pty
 import re
 import select
 import signal
+import sqlite3
 import struct
 import subprocess
 import tempfile
 import termios
 import time
 
+NEARLY_SOLVED = ".23456789456789123789123456214365897365897214897214365531642978642978531978531642"
 PUZZLE = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 ANSI = re.compile(rb"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|[()][A-Z0-9])")
 
@@ -146,6 +148,26 @@ def main():
         os.close(master)
         if any(name.endswith(".json") for name in os.listdir(recovery_directory)):
             raise AssertionError("--no-autosave created a recovery record")
+
+        # A player-driven solve records completion through the same play-run tracker.
+        completion_database = os.path.join(directory, "tui-completion.db")
+        master, slave = pty.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 42, 90, 0, 0))
+        completion_process = subprocess.Popen([args.binary, "tui", "--input", NEARLY_SOLVED, "--db", completion_database, "--no-autosave"], stdin=slave, stdout=slave, stderr=slave, env=env, close_fds=True)
+        os.close(slave)
+        drain(master, 0.7)
+        os.write(master, b"1")
+        completion_output = drain(master, 0.5)
+        os.write(master, b"q")
+        completion_output += drain(master, 0.2)
+        os.write(master, b"y")
+        completion_output += drain(master, 0.3)
+        if completion_process.wait(timeout=3) != 0 or b"solved" not in ANSI.sub(b"", completion_output).lower():
+            raise AssertionError("TUI player completion did not reach solved state")
+        os.close(master)
+        with sqlite3.connect(completion_database) as connection:
+            if connection.execute("SELECT SUM(completion_count) FROM puzzles").fetchone()[0] != 1:
+                raise AssertionError("TUI player completion was not recorded")
 
         corrupt = os.path.join(directory, "corrupt.json")
         with open(corrupt, "w", encoding="utf-8") as handle:

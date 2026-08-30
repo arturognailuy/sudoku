@@ -16,6 +16,7 @@ import (
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/playrun"
 	"github.com/gnailuy/sudoku/recovery"
 )
 
@@ -25,6 +26,7 @@ const (
 )
 
 type CreateGame func(kind, value string) (game.Game, error)
+type CreateTrackedGame func(kind, value string) (game.Game, *playrun.Tracker, error)
 
 type persistentSession struct {
 	Version  int             `json:"version"`
@@ -38,13 +40,15 @@ type entry struct {
 	revision  int64
 	updatedAt time.Time
 	recovered bool
+	tracker   *playrun.Tracker
 }
 
 type Registry struct {
-	mu      sync.RWMutex
-	entries map[string]*entry
-	store   recovery.Store
-	options game.Options
+	mu             sync.RWMutex
+	entries        map[string]*entry
+	store          recovery.Store
+	options        game.Options
+	trackerFactory func(game.Game) *playrun.Tracker
 }
 
 func NewRegistry(store recovery.Store, options game.Options) (*Registry, error) {
@@ -78,6 +82,22 @@ func decodePersistent(data []byte, options game.Options) (game.Game, int64, erro
 	return g, doc.Revision, err
 }
 
+// SetTrackerFactory attaches one tracker to each recovered or newly imported play run.
+func (r *Registry) SetTrackerFactory(factory func(game.Game) *playrun.Tracker) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.trackerFactory = factory
+	for _, entry := range r.entries {
+		entry.mu.Lock()
+		if factory == nil {
+			entry.tracker = nil
+		} else {
+			entry.tracker = factory(entry.game)
+		}
+		entry.mu.Unlock()
+	}
+}
+
 func (r *Registry) persist(id string, e *entry) error {
 	data, err := e.game.Serialize()
 	if err != nil {
@@ -104,6 +124,9 @@ func (r *Registry) add(g game.Game) (string, *entry, error) {
 		return "", nil, err
 	}
 	r.mu.Lock()
+	if r.trackerFactory != nil {
+		e.tracker = r.trackerFactory(g)
+	}
 	r.entries[id] = e
 	r.mu.Unlock()
 	return id, e, nil
@@ -133,12 +156,17 @@ func (r *Registry) delete(id string) (bool, error) {
 }
 
 type Server struct {
-	registry   *Registry
-	createGame CreateGame
+	registry          *Registry
+	createGame        CreateGame
+	createTrackedGame CreateTrackedGame
 }
 
 func NewServer(registry *Registry, createGame CreateGame) *Server {
 	return &Server{registry: registry, createGame: createGame}
+}
+
+func NewTrackedServer(registry *Registry, createGame CreateTrackedGame) *Server {
+	return &Server{registry: registry, createTrackedGame: createGame}
 }
 
 func (s *Server) ListSessions(context.Context, ListSessionsRequestObject) (ListSessionsResponseObject, error) {
@@ -184,11 +212,22 @@ func (s *Server) CreateSession(_ context.Context, request CreateSessionRequestOb
 	if err != nil {
 		return CreateSession422JSONResponse{UnprocessableEntityJSONResponse(apiError(ErrorCodeInvalidRequest, "invalid session source"))}, nil
 	}
-	g, err := s.createGame(kind, value)
+	var g game.Game
+	var tracker *playrun.Tracker
+	if s.createTrackedGame != nil {
+		g, tracker, err = s.createTrackedGame(kind, value)
+	} else {
+		g, err = s.createGame(kind, value)
+	}
 	if err != nil {
 		return CreateSession422JSONResponse{UnprocessableEntityJSONResponse(apiError(ErrorCodeInvalidSession, err.Error()))}, nil
 	}
 	id, e, err := s.registry.add(g)
+	if e != nil && tracker != nil {
+		e.mu.Lock()
+		e.tracker = tracker
+		e.mu.Unlock()
+	}
 	if err != nil {
 		return CreateSession500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodePersistenceFailed, "unable to persist session"))}, nil
 	}
@@ -244,6 +283,7 @@ func (s *Server) ApplyAction(_ context.Context, request ApplyActionRequestObject
 	if serializeErr != nil {
 		return ApplyAction500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodeInternalError, "unable to snapshot session"))}, nil
 	}
+	beforeStatus := e.game.Snapshot().Status
 	result, err := e.game.Apply(action)
 	if err != nil {
 		var engineErr *game.EngineError
@@ -260,7 +300,15 @@ func (s *Server) ApplyAction(_ context.Context, request ApplyActionRequestObject
 		}
 		return ApplyAction500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodePersistenceFailed, "unable to persist action"))}, nil
 	}
-	return ApplyAction200JSONResponse(ActionResponse{Revision: e.revision, Snapshot: apiSnapshot(e.game.Snapshot()), Result: apiResult(result)}), nil
+	var warnings *[]string
+	if e.tracker != nil {
+		e.tracker.Observe(beforeStatus, result)
+		if warning := e.tracker.TakeWarning(); warning != nil {
+			items := []string{warning.Error()}
+			warnings = &items
+		}
+	}
+	return ApplyAction200JSONResponse(ActionResponse{Revision: e.revision, Snapshot: apiSnapshot(e.game.Snapshot()), Result: apiResult(result), Warnings: warnings}), nil
 }
 
 func (s *Server) ExportSession(context.Context, ExportSessionRequestObject) (ExportSessionResponseObject, error) {

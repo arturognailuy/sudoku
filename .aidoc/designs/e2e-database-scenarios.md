@@ -13,7 +13,7 @@ dependencies:
 
 # E2E Database Scenarios
 
-The database scenario catalog protects root-command database composition, played-state acquisition behavior, proposed acquisition/completion statistics, Cobra discovery, and explicitly deferred database work.
+The database scenario catalog protects root-command database composition, played-state acquisition behavior, acquisition/completion statistics, Cobra discovery, and explicitly deferred database work.
 
 ## Related Docs
 
@@ -21,7 +21,7 @@ The database scenario catalog protects root-command database composition, played
 |----------|-------------|
 | `.aidoc/designs/e2e-test-scenarios.md` | E2E discovery map, isolation rules, and automation entry points |
 | `.aidoc/designs/database-puzzle-selection.md` | Current exact-grade acquisition and recycling contract |
-| `.aidoc/designs/database-play-statistics.md` | Proposed completion, statistics, and history-reset contract |
+| `.aidoc/designs/database-play-statistics.md` | Current completion, statistics, and history-reset contract |
 | `AGENT.md` | Required black-box verification discipline |
 
 ## Why This Boundary
@@ -85,7 +85,7 @@ These built-binary cases run in `scripts/e2e_cli.py` with an isolated database:
 
 ## 13. Acquisition And Completion Statistics
 
-These scenarios become executable with the implementation of `.aidoc/designs/database-play-statistics.md`:
+These scenarios are executable through the package suites and built-binary harness described below:
 
 ### 13.1 Separate History Dimensions
 **Setup:** Use a fixed normalized puzzle fixture. Acquire it twice, quit one run unfinished, and complete the other with player actions.

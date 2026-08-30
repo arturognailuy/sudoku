@@ -7,13 +7,28 @@ import (
 
 // Puzzle represents a stored puzzle record.
 type Puzzle struct {
-	Puzzle       string // Normalized 81-char puzzle string.
-	Difficulty   string // Difficulty level name (easy/medium/hard/expert/evil).
-	Score        int    // Total difficulty score.
-	MaxTechnique string // Highest-tier technique required.
-	Source       string // Origin: "generated", "imported", or source name.
-	PlayCount    int    // Number of times selected for play.
-	LastPlayedAt string // SQLite timestamp of the latest selection, or empty.
+	Puzzle          string // Normalized 81-char puzzle string.
+	Difficulty      string // Difficulty level name (easy/medium/hard/expert/evil).
+	Score           int    // Total difficulty score.
+	MaxTechnique    string // Highest-tier technique required.
+	Source          string // Origin: "generated", "imported", or source name.
+	PlayCount       int    // Number of times selected for play.
+	LastPlayedAt    string // SQLite timestamp of the latest selection, or empty.
+	CompletionCount int    // Number of player-driven completions.
+	LastCompletedAt string // SQLite timestamp of the latest completion, or empty.
+}
+
+// RecordCompletion atomically records a completion for an existing normalized puzzle.
+func (db *DB) RecordCompletion(puzzle string) (bool, error) {
+	result, err := db.conn.Exec(`UPDATE puzzles SET completion_count = completion_count + 1, last_completed_at = CURRENT_TIMESTAMP WHERE puzzle = ?`, puzzle)
+	if err != nil {
+		return false, fmt.Errorf("record completion: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("record completion rows affected: %w", err)
+	}
+	return rows == 1, nil
 }
 
 // AcquireForPlay atomically selects and marks an exact-difficulty puzzle.
@@ -125,4 +140,121 @@ func (db *DB) GetStats() (*Stats, error) {
 	}
 
 	return stats, rows.Err()
+}
+
+// PlayStats is one aggregate row from a single statistics snapshot.
+type PlayStats struct {
+	Level                                         string
+	Stored, NeverSelected, Selected, Acquisitions int
+	Completed, Completions                        int
+	LatestSelection, LatestCompletion             string
+}
+
+// PlayStatistics returns per-grade rows followed by an overall row from one read transaction.
+func (db *DB) PlayStatistics(level string) ([]PlayStats, error) {
+	tx, err := db.conn.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("begin statistics snapshot: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	where, args := "", []any{}
+	if level != "" {
+		where, args = " WHERE difficulty = ?", append(args, level)
+	}
+	rows, err := tx.Query(`SELECT difficulty, COUNT(*),
+		SUM(CASE WHEN play_count = 0 THEN 1 ELSE 0 END),
+		SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END), COALESCE(SUM(play_count), 0),
+		SUM(CASE WHEN completion_count > 0 THEN 1 ELSE 0 END), COALESCE(SUM(completion_count), 0),
+		COALESCE(CAST(MAX(last_played_at) AS TEXT), ''), COALESCE(CAST(MAX(last_completed_at) AS TEXT), '')
+		FROM puzzles`+where+` GROUP BY difficulty ORDER BY difficulty`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query statistics: %w", err)
+	}
+	var result []PlayStats
+	for rows.Next() {
+		var row PlayStats
+		if err := rows.Scan(&row.Level, &row.Stored, &row.NeverSelected, &row.Selected, &row.Acquisitions, &row.Completed, &row.Completions, &row.LatestSelection, &row.LatestCompletion); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scan statistics: %w", err)
+		}
+		result = append(result, row)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	byLevel := make(map[string]PlayStats, len(result))
+	for _, row := range result {
+		byLevel[row.Level] = row
+	}
+	result = result[:0]
+	levels := []string{"easy", "medium", "hard", "expert", "evil"}
+	if level != "" {
+		levels = []string{level}
+	}
+	for _, included := range levels {
+		row := byLevel[included]
+		row.Level = included
+		result = append(result, row)
+	}
+	overall := PlayStats{Level: "overall"}
+	err = tx.QueryRow(`SELECT COUNT(*),
+		COALESCE(SUM(CASE WHEN play_count = 0 THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END), 0), COALESCE(SUM(play_count), 0),
+		COALESCE(SUM(CASE WHEN completion_count > 0 THEN 1 ELSE 0 END), 0), COALESCE(SUM(completion_count), 0),
+		COALESCE(CAST(MAX(last_played_at) AS TEXT), ''), COALESCE(CAST(MAX(last_completed_at) AS TEXT), '')
+		FROM puzzles`+where, args...).Scan(&overall.Stored, &overall.NeverSelected, &overall.Selected, &overall.Acquisitions, &overall.Completed, &overall.Completions, &overall.LatestSelection, &overall.LatestCompletion)
+	if err != nil {
+		return nil, fmt.Errorf("query overall statistics: %w", err)
+	}
+	result = append(result, overall)
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit statistics snapshot: %w", err)
+	}
+	return result, nil
+}
+
+// HistoryPreview reports the rows and counters selected for a reset.
+type HistoryPreview struct {
+	Rows, Acquisitions, Completions int
+}
+
+func (db *DB) PreviewHistoryReset(level string) (HistoryPreview, error) {
+	where, args := "", []any{}
+	if level != "" {
+		where, args = " WHERE difficulty = ?", append(args, level)
+	}
+	var preview HistoryPreview
+	err := db.conn.QueryRow(`SELECT COUNT(*), COALESCE(SUM(play_count), 0), COALESCE(SUM(completion_count), 0) FROM puzzles`+where, args...).Scan(&preview.Rows, &preview.Acquisitions, &preview.Completions)
+	if err != nil {
+		return preview, fmt.Errorf("preview history reset: %w", err)
+	}
+	return preview, nil
+}
+
+// ResetHistory atomically clears the requested history dimension.
+func (db *DB) ResetHistory(history, level string) error {
+	set := map[string]string{
+		"acquisition": "play_count = 0, last_played_at = NULL",
+		"completion":  "completion_count = 0, last_completed_at = NULL",
+		"all":         "play_count = 0, last_played_at = NULL, completion_count = 0, last_completed_at = NULL",
+	}[history]
+	if set == "" {
+		return fmt.Errorf("invalid history %q", history)
+	}
+	where, args := "", []any{}
+	if level != "" {
+		where, args = " WHERE difficulty = ?", append(args, level)
+	}
+	tx, err := db.conn.Begin()
+	if err != nil {
+		return fmt.Errorf("begin history reset: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.Exec(`UPDATE puzzles SET `+set+where, args...); err != nil {
+		return fmt.Errorf("reset history: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit history reset: %w", err)
+	}
+	return nil
 }

@@ -52,7 +52,7 @@ The project index provides reading chains for common starting points and a compl
 13. `generator/options.go` — `Options` and `BestEffortOptions` (time/round limits)
 14. `solver/classify.go` — puzzle classification (difficulty tier, score, max technique)
 15. `.aidoc/designs/database-puzzle-selection.md` — current acquisition, recycling, and migration contract
-16. `.aidoc/designs/database-play-statistics.md` — proposed completion, statistics, and history-reset contract
+16. `.aidoc/designs/database-play-statistics.md` — current completion, statistics, and history-reset contract
 17. `db/db.go` — SQLite database open/close/migrate
 18. `db/puzzle.go` — puzzle CRUD, random query by difficulty, dedup
 19. `cmd/play.go` — fallback flow (generator → DB lookup → graceful degradation) and auto-store
@@ -65,7 +65,7 @@ The project index provides reading chains for common starting points and a compl
 3. `.aidoc/designs/difficulty-model.md` — calibration boundary and strategy-grade invariants
 4. `.aidoc/designs/difficulty-calibration.md` — strategy measurement methodology, report contract, and product decisions
 5. `.aidoc/designs/database-puzzle-selection.md` — current database behavior, migration, and acceptance boundary
-6. `.aidoc/designs/database-play-statistics.md` — proposed completion, statistics, and explicit reset behavior
+6. `.aidoc/designs/database-play-statistics.md` — current completion, statistics, and explicit reset behavior
 7. `.aidoc/designs/future-directions.md` — deliberately non-priority product and production directions
 8. `.aidoc/designs/web-api.md` — client-neutral HTTP resources, revisions, recovery, client access, and security boundary
 9. `api/openapi.yaml` — canonical OpenAPI 3.1.1 wire contract, schemas, errors, and examples
@@ -104,7 +104,7 @@ The project index provides reading chains for common starting points and a compl
 | `.aidoc/designs/difficulty-calibration.md` | Strategy calibration methodology, corpus contract, evidence, reports, and decision gates |
 | `.aidoc/designs/roadmap.md` | Stabilization priorities, sequencing, and exit criteria |
 | `.aidoc/designs/database-puzzle-selection.md` | Current exact-grade acquisition, played-state recycling, migration, and acceptance contract |
-| `.aidoc/designs/database-play-statistics.md` | Proposed completion counters, acquisition/completion statistics, and explicit history reset |
+| `.aidoc/designs/database-play-statistics.md` | Current completion counters, acquisition/completion statistics, and explicit history reset |
 | `.aidoc/designs/future-directions.md` | Non-priority product and production directions with decision gates |
 | `.aidoc/designs/web-api.md` | Contract-first OpenAPI workflow, resources, revisions, recovery, client access, and network security boundary |
 | `.aidoc/designs/background-autosave.md` | Background autosave lifecycle, privacy, retention, and conflict design |

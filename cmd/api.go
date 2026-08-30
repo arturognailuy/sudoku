@@ -16,13 +16,14 @@ import (
 	"time"
 
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/playrun"
 	"github.com/gnailuy/sudoku/recovery"
 	"github.com/gnailuy/sudoku/webapi"
 	"github.com/spf13/cobra"
 )
 
 func newAPICommand() *cobra.Command {
-	var listen, token string
+	var listen, token, dbPath string
 	var origins []string
 	var readTimeout, writeTimeout, idleTimeout, shutdownTimeout time.Duration
 	command := &cobra.Command{
@@ -30,12 +31,13 @@ func newAPICommand() *cobra.Command {
 		Short: "Serve the versioned Sudoku HTTP API",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runAPI(cmd, apiConfig{listen: listen, token: token, origins: origins, readTimeout: readTimeout, writeTimeout: writeTimeout, idleTimeout: idleTimeout, shutdownTimeout: shutdownTimeout})
+			return runAPI(cmd, apiConfig{listen: listen, token: token, dbPath: dbPath, origins: origins, readTimeout: readTimeout, writeTimeout: writeTimeout, idleTimeout: idleTimeout, shutdownTimeout: shutdownTimeout})
 		},
 	}
 	flags := command.Flags()
 	flags.StringVar(&listen, "listen", "127.0.0.1:8080", "HTTP listen address")
 	flags.StringVar(&token, "auth-token", "", "bearer token required for non-loopback listeners")
+	flags.StringVar(&dbPath, "db", "", "Puzzle database path (defaults to the XDG data directory)")
 	flags.StringSliceVar(&origins, "allowed-origin", nil, "allowed browser origin (repeatable)")
 	flags.DurationVar(&readTimeout, "read-timeout", 15*time.Second, "maximum request read time")
 	flags.DurationVar(&writeTimeout, "write-timeout", 30*time.Second, "maximum response write time")
@@ -45,7 +47,7 @@ func newAPICommand() *cobra.Command {
 }
 
 type apiConfig struct {
-	listen, token                                           string
+	listen, token, dbPath                                   string
 	origins                                                 []string
 	readTimeout, writeTimeout, idleTimeout, shutdownTimeout time.Duration
 }
@@ -84,7 +86,8 @@ func runAPI(command *cobra.Command, config apiConfig) error {
 	if err != nil {
 		return fmt.Errorf("load API recovery sessions: %w", err)
 	}
-	server := webapi.NewServer(registry, func(kind, value string) (game.Game, error) {
+	registry.SetTrackerFactory(func(current game.Game) *playrun.Tracker { return newCompletionTracker(current, config.dbPath) })
+	server := webapi.NewTrackedServer(registry, func(kind, value string) (game.Game, *playrun.Tracker, error) {
 		request := sessionRequest{}
 		switch kind {
 		case "difficulty":
@@ -92,10 +95,11 @@ func runAPI(command *cobra.Command, config apiConfig) error {
 		case "puzzle":
 			request.input = value
 		default:
-			return game.Game{}, errors.New("invalid source")
+			return game.Game{}, nil, errors.New("invalid source")
 		}
-		created, _, createErr := createSession(request, io.Discard, io.Discard)
-		return created, createErr
+		request.dbPath = config.dbPath
+		created, _, tracker, createErr := createTrackedSession(request, io.Discard, io.Discard)
+		return created, tracker, createErr
 	})
 
 	httpServer := &http.Server{Addr: config.listen, Handler: webapi.NewHandler(server, config.token, config.origins), ReadTimeout: config.readTimeout, ReadHeaderTimeout: 5 * time.Second, WriteTimeout: config.writeTimeout, IdleTimeout: config.idleTimeout, MaxHeaderBytes: 32 << 10}

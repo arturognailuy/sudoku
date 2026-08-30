@@ -3,6 +3,7 @@ package webapi
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/playrun"
 	"github.com/gnailuy/sudoku/recovery"
 	"github.com/gnailuy/sudoku/solver"
 )
@@ -298,5 +300,49 @@ func TestConcurrentSessionsAdvanceIndependently(t *testing.T) {
 		if err := json.Unmarshal(w.Body.Bytes(), &session); err != nil || session.Revision != 1 {
 			t.Fatalf("session %s did not advance independently: %+v err=%v", id, session, err)
 		}
+	}
+}
+
+type completionRecorder struct {
+	calls int
+	err   error
+}
+
+func (recorder *completionRecorder) RecordCompletion(string) (bool, error) {
+	recorder.calls++
+	return true, recorder.err
+}
+
+func TestTrackedServerRecordsPlayerCompletion(t *testing.T) {
+	store := solver.NewStore()
+	options := game.NewDefaultOptions(store)
+	recoveryStore := recovery.NewStore(filepath.Join(t.TempDir(), "recovery"))
+	registry, err := NewRegistry(recoveryStore, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recorder := &completionRecorder{err: errors.New("database locked")}
+	factory := func(_, _ string) (game.Game, *playrun.Tracker, error) {
+		board := core.NewEmptyBoard()
+		board.FromString(".23456789456789123789123456214365897365897214897214365531642978642978531978531642")
+		current := game.NewGame(board, options)
+		return current, playrun.New("normalized", recorder), nil
+	}
+	handler := NewHandler(NewTrackedServer(registry, factory), "", nil)
+	session := createTestSession(t, handler, nil)
+	path := "/api/v1/sessions/" + session.Id + "/actions"
+	response := request(t, handler, http.MethodPost, path, "application/json", `{"kind":"set-value","expected_revision":0,"row":1,"column":1,"value":1}`, nil)
+	if response.Code != http.StatusOK {
+		t.Fatalf("completion status=%d body=%s", response.Code, response.Body.String())
+	}
+	var actionResponse ActionResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &actionResponse); err != nil {
+		t.Fatal(err)
+	}
+	if actionResponse.Warnings == nil || len(*actionResponse.Warnings) != 1 || !strings.Contains((*actionResponse.Warnings)[0], "database locked") {
+		t.Fatalf("warnings = %#v", actionResponse.Warnings)
+	}
+	if recorder.calls != 1 {
+		t.Fatalf("completion calls = %d, want 1", recorder.calls)
 	}
 }

@@ -13,6 +13,7 @@ import time
 
 PUZZLE_DOTS = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 PUZZLE_ZEROS = PUZZLE_DOTS.replace(".", "0")
+SOLUTION = "483921657967345821251876493548132976729564138136798245372689514814253769695417382"
 MULTIPLE_SOLUTIONS = "....7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
 
 
@@ -60,6 +61,14 @@ def acquisition_rows(database):
         return connection.execute(
             "SELECT puzzle, play_count, last_played_at FROM puzzles ORDER BY puzzle"
         ).fetchall()
+
+
+def completion_commands(puzzle, solution):
+    commands = []
+    for index, value in enumerate(puzzle):
+        if value == ".":
+            commands.append(f"add {index // 9 + 1} {index % 9 + 1} {solution[index]}")
+    return "\n".join(commands) + "\n"
 
 
 def main():
@@ -334,6 +343,42 @@ def main():
             run(binary, ["--from-db", "--input", PUZZLE_DOTS, "--db", str(acquisition_database)], root, expected=1),
             "none of the others can be",
         )
+
+        # Acquisition and completion are separate, inspectable history dimensions.
+        statistics_database = root / "statistics.db"
+        run(binary, ["--input", PUZZLE_DOTS, "--db", str(statistics_database)], root, "q\n")
+        with sqlite3.connect(statistics_database) as connection:
+            statistics_level = connection.execute("SELECT difficulty FROM puzzles").fetchone()[0]
+        run(binary, ["--from-db", "--level", statistics_level, "--db", str(statistics_database)], root, "q\n")
+        contains(run(binary, ["--input", PUZZLE_DOTS, "--db", str(statistics_database)], root, "solve\n"), "Congratulations! You have solved the problem.")
+        with sqlite3.connect(statistics_database) as connection:
+            if connection.execute("SELECT completion_count FROM puzzles").fetchone()[0] != 0:
+                raise AssertionError("automatic solve counted as player completion")
+        contains(
+            run(binary, ["--input", PUZZLE_DOTS, "--db", str(statistics_database)], root, completion_commands(PUZZLE_DOTS, SOLUTION)),
+            "Congratulations! You have solved the problem.",
+        )
+        run(binary, ["--from-db", "--level", statistics_level, "--db", str(statistics_database)], root, "q\n")
+        with sqlite3.connect(statistics_database) as connection:
+            history = connection.execute("SELECT play_count, completion_count, last_played_at, last_completed_at FROM puzzles").fetchone()
+        if history[0:2] != (2, 1) or not history[2] or not history[3]:
+            raise AssertionError(f"separate history was not recorded: {history}")
+        output = run(binary, ["db", "stats", "--db", str(statistics_database), "--level", statistics_level], root)
+        contains(output, "ACQUISITIONS", "COMPLETIONS", statistics_level, "overall")
+        contains(run(binary, ["db", "stats", "--level", "banana", "--db", str(root / "must-not-exist.db")], root, expected=1), "invalid difficulty level")
+        if (root / "must-not-exist.db").exists():
+            raise AssertionError("invalid statistics filter opened a database")
+        contains(run(binary, ["db", "reset-history", "--history", "completion", "--level", statistics_level, "--db", str(statistics_database)], root, expected=1), "requires --yes")
+        contains(run(binary, ["db", "reset-history", "--history", "completion", "--level", statistics_level, "--db", str(statistics_database), "--yes"], root), "Affected puzzles: 1", "History reset complete.")
+        with sqlite3.connect(statistics_database) as connection:
+            reset_history = connection.execute("SELECT play_count, completion_count, last_played_at, last_completed_at FROM puzzles").fetchone()
+        if reset_history[0] != 2 or reset_history[1] != 0 or not reset_history[2] or reset_history[3] is not None:
+            raise AssertionError(f"completion reset changed the wrong history: {reset_history}")
+        run(binary, ["db", "reset-history", "--history", "all", "--db", str(statistics_database), "--yes"], root)
+        if len(puzzle_rows(statistics_database)) != 1:
+            raise AssertionError("history reset deleted a puzzle")
+        if not os.path.isfile(session):
+            raise AssertionError("history reset changed an explicit save file")
 
         # Generation validation and a tightly bounded real-worker smoke run.
         contains(run(binary, ["generate", "--count", "0"], root, expected=1), "count must be positive")

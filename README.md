@@ -8,7 +8,7 @@ Features:
 - 23 strategy solvers across 5 strategy grades (Easy → Evil)
 - Canonical strategy classification with within-grade HoDoKu-weighted scoring
 - Best-effort puzzle generator with time/round limits
-- SQLite puzzle database with automatic storage, exact-grade acquisition, balanced reuse, and fallback
+- SQLite puzzle database with automatic storage, exact-grade acquisition, balanced reuse, completion statistics, and explicit history reset
 - Batch generation CLI for offline puzzle creation
 - Import CLI for loading puzzles from files
 - Interactive play with manual notes, undo/redo, and technique-aware hints
@@ -91,6 +91,24 @@ Run deterministic classifications over an immutable JSON corpus and resume safel
 ```
 
 The command classifies each puzzle twice, appends manifest-bound observations to `observations.jsonl`, checkpoints progress, and derives JSON and Markdown reports. Reusing the output directory with a changed manifest is rejected rather than mixing evidence.
+
+## Database Statistics
+
+Inspect acquisition and completion history independently:
+
+```bash
+./sudoku db stats
+./sudoku db stats --level hard --db ./puzzles.db
+```
+
+Reset only an explicitly selected history dimension. Interactive use asks for confirmation; automation must pass `--yes`:
+
+```bash
+./sudoku db reset-history --history completion --level hard
+./sudoku db reset-history --history all --yes --db ./puzzles.db
+```
+
+History reset preserves puzzle rows, classifications, sources, save files, and recovery records.
 
 ## Batch Generate
 

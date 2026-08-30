@@ -4,6 +4,7 @@
 import json
 import os
 import signal
+import sqlite3
 import socket
 import subprocess
 import sys
@@ -12,6 +13,7 @@ import time
 import urllib.error
 import urllib.request
 
+NEARLY_SOLVED = ".23456789456789123789123456214365897365897214897214365531642978642978531978531642"
 PUZZLE = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 ORIGIN = "http://client.example"
 
@@ -79,7 +81,8 @@ def main():
     binary = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "./sudoku")
     with tempfile.TemporaryDirectory(prefix="sudoku-api-e2e-") as root:
         state = os.path.join(root, "state")
-        process, base = start(binary, state, free_port())
+        database = os.path.join(root, "puzzles.db")
+        process, base = start(binary, state, free_port(), ["--db", database])
         try:
             expect(request(base, "GET", "/missing")[0], 404, "unknown route")
             status, created, _ = request(base, "POST", "/api/v1/sessions", {"source": {"kind": "puzzle", "puzzle": PUZZLE}})
@@ -100,6 +103,13 @@ def main():
             expect(changed["revision"], 1, "mutated revision")
             expect(request(base, "POST", path + "/actions", action)[0], 409, "stale revision")
 
+            status, completion, _ = request(base, "POST", "/api/v1/sessions", {"source": {"kind": "puzzle", "puzzle": NEARLY_SOLVED}})
+            expect(status, 201, "create completion session")
+            completion_path = f"/api/v1/sessions/{completion['id']}/actions"
+            status, completed, _ = request(base, "POST", completion_path, {"kind": "set-value", "expected_revision": 0, "row": 1, "column": 1, "value": 1})
+            expect(status, 200, "complete through API")
+            expect(completed["snapshot"]["status"], "solved", "API completion status")
+
             status, exported, _ = request(base, "GET", path + "/export")
             expect(status, 200, "export")
 
@@ -115,7 +125,10 @@ def main():
         finally:
             stop(process)
 
-        process, base = start(binary, state, free_port())
+        with sqlite3.connect(database) as connection:
+            expect(connection.execute("SELECT SUM(completion_count) FROM puzzles").fetchone()[0], 1, "API completion count")
+
+        process, base = start(binary, state, free_port(), ["--db", database])
         try:
             expect(request(base, "GET", path)[1]["revision"], 1, "restart recovery")
             status, imported, _ = request(base, "POST", "/api/v1/sessions/import", exported, "application/vnd.sudoku.session+json")

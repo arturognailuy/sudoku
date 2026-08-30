@@ -939,6 +939,11 @@ components:
           $ref: "#/components/schemas/Snapshot"
         result:
           $ref: "#/components/schemas/ActionResult"
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Non-fatal diagnostics produced after the game action was accepted.
 
     ErrorDetail:
       type: object
