@@ -8,6 +8,7 @@ import (
 	"github.com/gnailuy/sudoku/db"
 	"github.com/gnailuy/sudoku/game"
 	"github.com/gnailuy/sudoku/generator"
+	"github.com/gnailuy/sudoku/playrun"
 	"github.com/gnailuy/sudoku/sessionfile"
 	"github.com/gnailuy/sudoku/solver"
 )
@@ -116,4 +117,31 @@ func difficultyForLevel(level string) (generator.Difficulty, error) {
 	default:
 		return generator.Difficulty{}, fmt.Errorf("invalid difficulty level: %s. Options: easy, medium, hard, expert, evil", level)
 	}
+}
+
+type completionRecorder struct{ path string }
+
+func (recorder completionRecorder) RecordCompletion(puzzle string) (bool, error) {
+	puzzleDB, err := db.Open(recorder.path)
+	if err != nil {
+		return false, err
+	}
+	defer puzzleDB.Close()
+	return puzzleDB.RecordCompletion(puzzle)
+}
+
+func newCompletionTracker(current game.Game, path string) *playrun.Tracker {
+	if path == "" {
+		path = defaultDBPath()
+	}
+	key := normalizePuzzleForDB(solverStore, current.ProblemBoard())
+	return playrun.New(key, completionRecorder{path: path})
+}
+
+func createTrackedSession(request sessionRequest, output, errorOutput io.Writer) (game.Game, string, *playrun.Tracker, error) {
+	current, resumePath, err := createSession(request, output, errorOutput)
+	if err != nil {
+		return game.Game{}, "", nil, err
+	}
+	return current, resumePath, newCompletionTracker(current, request.dbPath), nil
 }

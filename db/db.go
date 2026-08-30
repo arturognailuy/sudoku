@@ -57,6 +57,8 @@ func (db *DB) migrate() error {
 			source         TEXT,
 			play_count     INTEGER NOT NULL DEFAULT 0,
 			last_played_at TIMESTAMP,
+			completion_count INTEGER NOT NULL DEFAULT 0,
+			last_completed_at TIMESTAMP,
 			created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	`); err != nil {
@@ -75,6 +77,16 @@ func (db *DB) migrate() error {
 	if !columns["last_played_at"] {
 		if _, err := db.conn.Exec(`ALTER TABLE puzzles ADD COLUMN last_played_at TIMESTAMP`); err != nil {
 			return fmt.Errorf("add last_played_at: %w", err)
+		}
+	}
+	if !columns["completion_count"] {
+		if _, err := db.conn.Exec(`ALTER TABLE puzzles ADD COLUMN completion_count INTEGER NOT NULL DEFAULT 0`); err != nil {
+			return fmt.Errorf("add completion_count: %w", err)
+		}
+	}
+	if !columns["last_completed_at"] {
+		if _, err := db.conn.Exec(`ALTER TABLE puzzles ADD COLUMN last_completed_at TIMESTAMP`); err != nil {
+			return fmt.Errorf("add last_completed_at: %w", err)
 		}
 	}
 	_, err = db.conn.Exec(`CREATE INDEX IF NOT EXISTS puzzles_acquisition_idx ON puzzles (difficulty, play_count, last_played_at)`)

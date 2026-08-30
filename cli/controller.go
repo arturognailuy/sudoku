@@ -10,6 +10,7 @@ import (
 
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/playrun"
 	"github.com/gnailuy/sudoku/sessionfile"
 )
 
@@ -18,11 +19,26 @@ import (
 type Controller struct {
 	game         *game.Game
 	closeChannel CloseChannel
+	tracker      *playrun.Tracker
 }
 
 // NewController creates a CLI controller for the given game.
-func NewController(g *game.Game) *Controller {
-	return &Controller{game: g, closeChannel: NewCloseChannel()}
+func NewController(g *game.Game) *Controller { return NewTrackedController(g, nil) }
+
+// NewTrackedController creates a controller that records play-run completion.
+func NewTrackedController(g *game.Game, tracker *playrun.Tracker) *Controller {
+	return &Controller{game: g, closeChannel: NewCloseChannel(), tracker: tracker}
+}
+
+func (ctrl *Controller) apply(action game.Action) (game.Result, error) {
+	if ctrl.tracker == nil {
+		return ctrl.game.Apply(action)
+	}
+	result, err := ctrl.tracker.Apply(ctrl.game, action)
+	if warning := ctrl.tracker.TakeWarning(); warning != nil {
+		printError("Warning:", warning)
+	}
+	return result, err
 }
 
 // printError prints an error message with a prefix [ERROR].
@@ -172,7 +188,7 @@ func (ctrl *Controller) setValue(rowInput, columnInput, valueInput int) (bool, e
 	if valueInput != 0 {
 		action = game.SetValue{Position: *position, Value: valueInput}
 	}
-	_, err = ctrl.game.Apply(action)
+	_, err = ctrl.apply(action)
 	return err == nil, err
 }
 
@@ -223,7 +239,7 @@ func (ctrl *Controller) runNoteCommand(arguments string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error in the input position: %w", err)
 	}
-	_, err = ctrl.game.Apply(game.ToggleNote{Position: *position, Value: values[2]})
+	_, err = ctrl.apply(game.ToggleNote{Position: *position, Value: values[2]})
 	return err == nil, err
 }
 
@@ -236,7 +252,7 @@ func (ctrl *Controller) runClearNotesCommand(arguments string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error in the input position: %w", err)
 	}
-	_, err = ctrl.game.Apply(game.ClearNotes{Position: *position})
+	_, err = ctrl.apply(game.ClearNotes{Position: *position})
 	return err == nil, err
 }
 
@@ -306,16 +322,16 @@ func (ctrl *Controller) RunCommand(command string) bool {
 			fmt.Println("You have entered incorrect value(s).")
 		}
 	case "undo", "u":
-		_, err := ctrl.game.Apply(game.Undo{})
+		_, err := ctrl.apply(game.Undo{})
 		return err == nil
 	case "redo", "r":
-		_, err := ctrl.game.Apply(game.Redo{})
+		_, err := ctrl.apply(game.Redo{})
 		return err == nil
 	case "repair", "f":
-		_, err := ctrl.game.Apply(game.Repair{})
+		_, err := ctrl.apply(game.Repair{})
 		return err == nil
 	case "hint", "i":
-		result, err := ctrl.game.Apply(game.ApplyHint{})
+		result, err := ctrl.apply(game.ApplyHint{})
 		if err != nil {
 			printError("Failed to apply hint:", userFacingError(err))
 			return false
@@ -325,10 +341,10 @@ func (ctrl *Controller) RunCommand(command string) bool {
 		}
 		return true
 	case "solve", "s":
-		_, err := ctrl.game.Apply(game.Solve{})
+		_, err := ctrl.apply(game.Solve{})
 		return err == nil
 	case "reset", "e":
-		_, err := ctrl.game.Apply(game.Reset{})
+		_, err := ctrl.apply(game.Reset{})
 		return err == nil
 	case "quit", "q":
 		ctrl.closeChannel.Close()

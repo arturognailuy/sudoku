@@ -20,6 +20,7 @@ func newTUICommand() *cobra.Command {
 			level, _ := command.Flags().GetString("level")
 			resume, _ := command.Flags().GetString("resume")
 			noAutosave, _ := command.Flags().GetBool("no-autosave")
+			dbPath, _ := command.Flags().GetString("db")
 
 			var recoveryOptions front.RecoveryOptions
 			if !noAutosave {
@@ -43,7 +44,7 @@ func newTUICommand() *cobra.Command {
 							for _, record := range records {
 								restored, restoreErr := game.Restore(record.Session, options)
 								if restoreErr == nil {
-									recoveryOptions.Choices = append(recoveryOptions.Choices, front.RecoveryChoice{Record: record, Game: restored})
+									recoveryOptions.Choices = append(recoveryOptions.Choices, front.RecoveryChoice{Record: record, Game: restored, Tracker: newCompletionTracker(restored, dbPath)})
 								}
 							}
 						}
@@ -51,11 +52,11 @@ func newTUICommand() *cobra.Command {
 				}
 			}
 
-			current, resumePath, err := createSession(sessionRequest{input: input, level: level, resume: resume}, command.OutOrStdout(), command.ErrOrStderr())
+			current, resumePath, tracker, err := createTrackedSession(sessionRequest{input: input, level: level, resume: resume, dbPath: dbPath}, command.OutOrStdout(), command.ErrOrStderr())
 			if err != nil {
 				return err
 			}
-			program := tea.NewProgram(front.NewModelWithRecovery(current, resumePath, recoveryOptions), tea.WithAltScreen(), tea.WithInput(os.Stdin), tea.WithOutput(os.Stdout))
+			program := tea.NewProgram(front.NewTrackedModelWithRecovery(current, resumePath, recoveryOptions, tracker), tea.WithAltScreen(), tea.WithInput(os.Stdin), tea.WithOutput(os.Stdout))
 			_, err = program.Run()
 			return err
 		},
@@ -64,6 +65,7 @@ func newTUICommand() *cobra.Command {
 	command.Flags().StringP("level", "l", "hard", "Difficulty level: easy, medium, hard, expert, evil")
 	command.Flags().String("resume", "", "Resume a saved game session")
 	command.Flags().Bool("no-autosave", false, "Disable TUI background autosave and recovery")
+	command.Flags().String("db", "", "Puzzle database path (defaults to the XDG data directory)")
 	command.MarkFlagsMutuallyExclusive("resume", "input")
 	command.MarkFlagsMutuallyExclusive("resume", "level")
 	return command

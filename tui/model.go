@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gnailuy/sudoku/core"
 	"github.com/gnailuy/sudoku/game"
+	"github.com/gnailuy/sudoku/playrun"
 	"github.com/gnailuy/sudoku/recovery"
 	"github.com/gnailuy/sudoku/sessionfile"
 	"github.com/gnailuy/sudoku/solver"
@@ -41,8 +42,9 @@ const (
 
 // RecoveryChoice pairs validated recovery metadata with its restored game.
 type RecoveryChoice struct {
-	Record recovery.Record
-	Game   game.Game
+	Record  recovery.Record
+	Game    game.Game
+	Tracker *playrun.Tracker
 }
 
 // RecoveryOptions configures autosave and optional startup recovery choices.
@@ -62,6 +64,7 @@ type autosaveDoneMsg struct {
 // Model owns presentation state while delegating all puzzle transitions to game.Game.
 type Model struct {
 	game           *game.Game
+	tracker        *playrun.Tracker
 	snapshot       game.Snapshot
 	row, column    int
 	width, height  int
@@ -94,8 +97,14 @@ func NewModel(current game.Game, resumePath string) Model {
 
 // NewModelWithRecovery creates a TUI model with background recovery enabled.
 func NewModelWithRecovery(current game.Game, resumePath string, options RecoveryOptions) Model {
+	return NewTrackedModelWithRecovery(current, resumePath, options, nil)
+}
+
+// NewTrackedModelWithRecovery creates a TUI model with completion tracking.
+func NewTrackedModelWithRecovery(current game.Game, resumePath string, options RecoveryOptions, tracker *playrun.Tracker) Model {
 	model := Model{
 		game:            &current,
+		tracker:         tracker,
 		snapshot:        current.Snapshot(),
 		savePath:        resumePath,
 		theme:           themeFromEnvironment(),
@@ -282,6 +291,7 @@ func (m Model) updateModal(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "enter":
 			choice := m.recoveryChoices[m.recoverySelection]
 			m.game = &choice.Game
+			m.tracker = choice.Tracker
 			m.snapshot = choice.Game.Snapshot()
 			m.recoveryID = choice.Record.ID
 			m.recoveryChoices = nil
@@ -366,7 +376,13 @@ func (m Model) updateModal(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) apply(action game.Action) tea.Cmd {
-	result, err := m.game.Apply(action)
+	var result game.Result
+	var err error
+	if m.tracker == nil {
+		result, err = m.game.Apply(action)
+	} else {
+		result, err = m.tracker.Apply(m.game, action)
+	}
 	if err != nil {
 		m.message = err.Error()
 		return nil
@@ -375,6 +391,11 @@ func (m *Model) apply(action game.Action) tea.Cmd {
 	m.dirty = true
 	m.hint = nil
 	m.message = fmt.Sprintf("Applied %s; board is %s.", result.Action, result.Status)
+	if m.tracker != nil {
+		if warning := m.tracker.TakeWarning(); warning != nil {
+			m.recoveryWarning = "Warning: " + warning.Error()
+		}
+	}
 	return m.scheduleRecovery()
 }
 
