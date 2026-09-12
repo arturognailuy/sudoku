@@ -395,6 +395,44 @@ func TestSetValueCleansPeerNotesAtomically(t *testing.T) {
 	}
 }
 
+func TestInvalidValuePreservesPeerNotesAndCandidates(t *testing.T) {
+	game := newTestGame()
+	target := core.NewPosition(0, 2)
+	peer := core.NewPosition(0, 3)
+
+	for _, position := range []core.Position{target, peer} {
+		if _, err := game.Apply(SetNotes{Position: position, Values: []int{9}}); err != nil {
+			t.Fatalf("add note at %v: %v", position, err)
+		}
+	}
+	beforeCandidates := game.Snapshot().Candidates
+
+	if _, err := game.Apply(SetValue{Position: target, Value: 9}); err != nil {
+		t.Fatalf("set invalid value: %v", err)
+	}
+	snapshot := game.Snapshot()
+	if !snapshot.Invalid[target.Row][target.Column] {
+		t.Fatal("test value should be visible and invalid")
+	}
+	if !snapshot.Notes[target.Row][target.Column].IsEmpty() {
+		t.Fatal("the occupied target should clear its own notes")
+	}
+	if !snapshot.Notes[peer.Row][peer.Column].Has(9) {
+		t.Fatal("an invalid value should not remove a peer note")
+	}
+	if snapshot.Candidates != beforeCandidates {
+		t.Fatal("an invalid value should not change solver-safe candidates")
+	}
+
+	if _, err := game.Apply(Undo{}); err != nil {
+		t.Fatalf("undo invalid value: %v", err)
+	}
+	snapshot = game.Snapshot()
+	if !snapshot.Notes[target.Row][target.Column].Has(9) || !snapshot.Notes[peer.Row][peer.Column].Has(9) {
+		t.Fatal("undo should restore the exact note state")
+	}
+}
+
 func TestSetNotesAndRedoTruncation(t *testing.T) {
 	game := newTestGame()
 	position := core.NewPosition(0, 2)
