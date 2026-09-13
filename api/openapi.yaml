@@ -446,6 +446,7 @@ components:
         - redo
         - apply-hint
         - set-notes
+        - adopt-candidates-as-notes
         - repair
         - solve
 
