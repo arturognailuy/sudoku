@@ -203,6 +203,64 @@ func TestApplySetNotesIsAtomicAndUndoable(t *testing.T) {
 	}
 }
 
+func TestAdoptCandidatesAsNotesIsWholeBoardAtomicAndUndoable(t *testing.T) {
+	game := newTestGame()
+	target := core.NewPosition(0, 2)
+	hiddenNotePosition := core.NewPosition(0, 3)
+	if _, err := game.Apply(SetNotes{Position: hiddenNotePosition, Values: []int{9}}); err != nil {
+		t.Fatal(err)
+	}
+	before := game.Snapshot()
+	toggle := before.Candidates[target.Row][target.Column].Values()[0]
+
+	result, err := game.Apply(AdoptCandidatesAsNotes{Position: target, Value: toggle})
+	if err != nil {
+		t.Fatalf("Apply(AdoptCandidatesAsNotes) returned error: %v", err)
+	}
+	if result.Action != ActionAdoptCandidatesAsNotes || len(result.Changes) < 2 {
+		t.Fatalf("unexpected adoption result: %+v", result)
+	}
+
+	adopted := game.Snapshot()
+	for row := 0; row < 9; row++ {
+		for column := 0; column < 9; column++ {
+			position := core.NewPosition(row, column)
+			want := before.Candidates[row][column]
+			if position == target {
+				want.Remove(toggle)
+			}
+			if got := adopted.Notes[row][column]; got != want {
+				t.Fatalf("notes at %v=%v, want candidates %v", position, got.Values(), want.Values())
+			}
+		}
+	}
+
+	if _, err := game.Apply(Undo{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := game.Snapshot().Notes; got != before.Notes {
+		t.Fatal("undo did not restore the complete prior manual-note map")
+	}
+	if _, err := game.Apply(Redo{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := game.Snapshot().Notes; got != adopted.Notes {
+		t.Fatal("redo did not restore the complete adopted candidate map")
+	}
+}
+
+func TestAdoptCandidatesAsNotesRejectsInvalidInitiatingEditWithoutMutation(t *testing.T) {
+	game := newTestGame()
+	before := game.Snapshot()
+	_, err := game.Apply(AdoptCandidatesAsNotes{Position: core.NewPosition(0, 2), Value: 10})
+	if !errors.Is(err, &EngineError{Code: ErrorInvalidCell}) {
+		t.Fatalf("expected invalid-cell error, got %v", err)
+	}
+	if after := game.Snapshot(); after != before {
+		t.Fatal("invalid adoption mutated the game")
+	}
+}
+
 func TestApplyReturnsTypedErrorsWithoutMutation(t *testing.T) {
 	game := newTestGame()
 	before := game.Snapshot()
