@@ -216,7 +216,7 @@ func (game *Game) recordTransition(before sessionState) {
 func (game *Game) applyValueNoteCleanup(input core.Cell) {
 	row, column := input.Position.Row, input.Position.Column
 	game.notes[row][column] = 0
-	if input.Value == 0 {
+	if input.Value == 0 || game.playBoard.Get(input.Position) != input.Value {
 		return
 	}
 	for index := 0; index < 9; index++ {

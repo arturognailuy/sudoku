@@ -71,7 +71,7 @@ The stable contract is organized around four concepts:
 
 Notes are player annotations, distinct from `core.Board.Candidates`, which computes legal solver candidates. Notes use `core.CandidateSet` as a value representation but are stored by the game engine.
 
-Notes are allowed only on editable empty cells and contain digits 1–9. Setting a value clears notes in that cell and removes that value from notes in peer cells. Clearing a value does not recreate notes. Every automatic note cleanup is part of the same action delta, so undo restores the exact previous notes.
+Notes are allowed only on editable empty cells and contain digits 1–9. Setting any visible value clears notes in that cell. Only a value accepted into the solver-safe board removes that value from notes in peer cells; a visible invalid entry does not constrain legal candidates and therefore must not prune peer notes. Clearing a value does not recreate notes. Every automatic note cleanup is part of the same action delta, so undo restores the exact previous notes.
 
 `Game.Snapshot` derives legal candidates from the solver-safe play board through `core.Board.Candidates`. Derived candidates remain separate from manual notes, actions, history, dirty state, and serialization; frontends decide whether to display them.
 

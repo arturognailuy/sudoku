@@ -122,6 +122,14 @@ def main():
             expect(request(base, "POST", path + "/actions", {"kind": "toggle-note", "expected_revision": 3, "row": 1, "column": 1, "value": 2})[0], 400, "legacy toggle-note rejected")
             expect(request(base, "POST", path + "/actions", {"kind": "clear-notes", "expected_revision": 3, "row": 1, "column": 1})[0], 400, "legacy clear-notes rejected")
 
+            candidates_before_invalid = changed["snapshot"]["candidates"]
+            status, invalid, _ = request(base, "POST", path + "/actions", {"kind": "set-value", "expected_revision": 3, "row": 1, "column": 2, "value": 2})
+            expect(status, 200, "visible invalid value")
+            expect(invalid["revision"], 4, "invalid-value revision")
+            expect(invalid["snapshot"]["invalid"][0][1], True, "invalid marker")
+            expect(invalid["snapshot"]["notes"][0][0], [2], "invalid value preserves peer note")
+            expect(invalid["snapshot"]["candidates"], candidates_before_invalid, "invalid value preserves solver-safe candidates")
+
             status, completion, _ = request(base, "POST", "/api/v1/sessions", {"source": {"kind": "puzzle", "puzzle": NEARLY_SOLVED}})
             expect(status, 201, "create completion session")
             completion_path = f"/api/v1/sessions/{completion['id']}/actions"
@@ -149,7 +157,7 @@ def main():
 
         process, base = start(binary, state, free_port(), ["--db", database])
         try:
-            expect(request(base, "GET", path)[1]["revision"], 3, "restart recovery")
+            expect(request(base, "GET", path)[1]["revision"], 4, "restart recovery")
             status, imported, _ = request(base, "POST", "/api/v1/sessions/import", exported, "application/vnd.sudoku.session+json")
             expect(status, 201, "import")
             expect(request(base, "GET", "/api/v1/sessions")[0], 200, "list")
