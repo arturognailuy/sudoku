@@ -261,6 +261,44 @@ func TestAdoptCandidatesAsNotesRejectsInvalidInitiatingEditWithoutMutation(t *te
 	}
 }
 
+func TestAdoptCandidatesAsNotesRejectsUneditableCellsWithoutMutation(t *testing.T) {
+	tests := []struct {
+		name     string
+		prepare  func(*Game)
+		position core.Position
+		code     ErrorCode
+	}{
+		{name: "given", position: core.NewPosition(0, 0), code: ErrorImmutableCell},
+		{
+			name: "filled editable cell",
+			prepare: func(game *Game) {
+				if _, err := game.Apply(SetValue{Position: core.NewPosition(0, 2), Value: 4}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			position: core.NewPosition(0, 2),
+			code:     ErrorNoteNotAllowed,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			game := newTestGame()
+			if test.prepare != nil {
+				test.prepare(&game)
+			}
+			before := game.Snapshot()
+			_, err := game.Apply(AdoptCandidatesAsNotes{Position: test.position, Value: 1})
+			if !errors.Is(err, &EngineError{Code: test.code}) {
+				t.Fatalf("expected %s error, got %v", test.code, err)
+			}
+			if after := game.Snapshot(); after != before {
+				t.Fatal("rejected adoption mutated the game")
+			}
+		})
+	}
+}
+
 func TestApplyReturnsTypedErrorsWithoutMutation(t *testing.T) {
 	game := newTestGame()
 	before := game.Snapshot()
