@@ -40,9 +40,9 @@ The TUI scenarios require a pseudo-terminal. The standard-library harness exerci
 **Action:** Move with arrows or `h`/`j`/`k`/`l`, enter a value, toggle note mode with `n`, enter a note, then use `u` and `r`.
 **Expected:** Focus stops at board edges. Keys submit engine actions, note cleanup follows peer rules, and undo/redo restore whole transitions.
 
-### 9.3 Help, Hint Preview, and Apply
-**Action:** Press `?`, inspect and close the keyboard-help overlay, press `i`, inspect the technique/reason, then press Enter.
-**Expected:** Help does not mutate the board. Hint preview retains one complete deterministic plan without mutating the board; Enter submits that exact `plan_id` through `game.ApplyHint` and marks the session dirty.
+### 9.3 Help, Hint Step Navigation, and Apply
+**Action:** Press `?`, inspect and close the keyboard-help overlay, press `i`, navigate Back and Next with Left/Right or `h`/`l`, then press Enter; separately cancel a preview with Esc.
+**Expected:** Help and local step navigation do not mutate the board, history, or dirty state. The active step shows `Step X of Y`, its teaching message, and color-independent focus, premise, elimination, or conclusion marks. Enter submits the retained `plan_id` once through `game.ApplyHint`; Esc discards it without mutation.
 
 ### 9.4 Explicit Save and Safe Quit
 **Action:** Change a cell, press `q` and decline, press `S`, enter a path, then quit. Resume with `sudoku tui --resume <path>`.

@@ -46,6 +46,60 @@ func TestCommandsRejectExtraArguments(t *testing.T) {
 	}
 }
 
+func TestHintPreviewApplyAndCancel(t *testing.T) {
+	controller := newTestController(t)
+	before := controller.game.Snapshot()
+	if controller.RunCommand("hint") {
+		t.Fatal("hint preview reported a board change")
+	}
+	if controller.hintPlan == nil || controller.game.Snapshot() != before {
+		t.Fatal("hint preview was not retained read-only")
+	}
+	formatted := formatHintPlan(*controller.hintPlan)
+	for _, marker := range []string{"Strategy:", "Summary:", "Steps:", "1. [", "Conclusion:", "hint apply", "hint cancel"} {
+		if !strings.Contains(formatted, marker) {
+			t.Fatalf("formatted hint missing %q:\n%s", marker, formatted)
+		}
+	}
+	if !controller.RunCommand("hint apply") || controller.game.Snapshot() == before || controller.hintPlan != nil {
+		t.Fatal("hint apply did not apply and consume the previewed plan")
+	}
+	if controller.RunCommand("hint apply") {
+		t.Fatal("consumed hint plan was applied twice")
+	}
+	controller.RunCommand("hint")
+	if controller.hintPlan == nil {
+		t.Fatal("second hint preview missing")
+	}
+	if controller.RunCommand("hint cancel") || controller.hintPlan != nil {
+		t.Fatal("hint cancel did not discard the preview without mutation")
+	}
+}
+
+func TestHintApplyRejectsCachedPlanAfterStateChange(t *testing.T) {
+	controller := newTestController(t)
+	controller.RunCommand("hint")
+	if controller.hintPlan == nil {
+		t.Fatal("hint preview missing")
+	}
+	if !controller.RunCommand("add 1 1 4") {
+		t.Fatal("test setup did not change the game")
+	}
+	if controller.RunCommand("hint apply") || controller.hintPlan == nil {
+		t.Fatal("stale cached hint was applied or silently discarded")
+	}
+}
+
+func TestHintConclusionTextSupportsEliminations(t *testing.T) {
+	plan := game.HintPlan{Conclusion: game.HintConclusion{Eliminations: []solver.CandidateRef{
+		{Position: core.NewPosition(0, 1), Value: 3},
+		{Position: core.NewPosition(1, 1), Value: 3},
+	}}}
+	if got := hintConclusionText(plan); got != "Remove candidate 3 from r1c2, 3 from r2c2." {
+		t.Fatalf("elimination conclusion=%q", got)
+	}
+}
+
 func TestNoteCommandsAndRendering(t *testing.T) {
 	controller := newTestController(t)
 	if !controller.RunCommand("note 1 1 1") || !controller.RunCommand("n 1 1 9") {

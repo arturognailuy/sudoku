@@ -262,6 +262,7 @@ def main():
                 "note 1 1 1",
                 "notes-clear 1 1",
                 "hint",
+                "hint apply",
                 "reset",
                 "q",
                 "",
@@ -271,7 +272,11 @@ def main():
         contains(
             output,
             "You have entered incorrect value(s).",
-            "Hint:",
+            "Hint preview",
+            "Strategy:",
+            "Steps:",
+            "Conclusion:",
+            "Applied hint:",
             "Exiting the game.",
         )
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gnailuy/sudoku/game"
 	"github.com/muesli/termenv"
 )
 
@@ -35,6 +36,8 @@ type renderStyles struct {
 	title, status, message, guide, modal           lipgloss.Style
 	given, player, invalid, empty, note, candidate lipgloss.Style
 	focus, peer, border, strongBorder              lipgloss.Style
+	hintFocus, hintPremise, hintEliminated         lipgloss.Style
+	hintConclusion                                 lipgloss.Style
 }
 
 func render(m Model) string {
@@ -89,7 +92,11 @@ func render(m Model) string {
 	case helpModal, recoveryModal:
 		parts = append(parts, styles.canvas.Render(strings.Repeat(" ", m.width)))
 	default:
-		parts = append(parts, center(m.width, styles.guide.Render("arrows move  •  1–9 set  •  n notes  •  a candidates  •  i hint  •  ? help  •  S save  •  q quit"), styles.canvas))
+		guide := "arrows move  •  1–9 set  •  n notes  •  a candidates  •  i hint  •  ? help  •  S save  •  q quit"
+		if m.hint != nil {
+			guide = "←/h Back  •  →/l Next  •  Enter applies exact plan  •  Esc cancels"
+		}
+		parts = append(parts, center(m.width, styles.guide.Render(guide), styles.canvas))
 	}
 	return strings.Join(parts, "\n") + "\n"
 }
@@ -158,13 +165,14 @@ func renderCell(m Model, styles renderStyles, row, column, noteRow int) string {
 		default:
 			style = styles.player
 		}
+		style = hintCellStyle(m, styles, row, column, style)
 		return contextualStyle(m, styles, row, column, style).Render(cellContent(m, row, column, noteRow))
 	}
 
 	notes := m.snapshot.Notes[row][column]
 	candidates := m.snapshot.Candidates[row][column]
-	if notes.IsEmpty() && (!m.autoCandidates || candidates.IsEmpty()) {
-		return contextualStyle(m, styles, row, column, styles.empty).Render("     ")
+	if notes.IsEmpty() && (!m.autoCandidates || candidates.IsEmpty()) && !hasHintCandidate(m, row, column) {
+		return contextualStyle(m, styles, row, column, hintCellStyle(m, styles, row, column, styles.empty)).Render("     ")
 	}
 
 	var out strings.Builder
@@ -173,7 +181,11 @@ func renderCell(m Model, styles renderStyles, row, column, noteRow int) string {
 		content := " "
 		if offset >= 0 && offset < 3 {
 			digit := noteRow*3 + offset + 1
+			role, marked := hintCandidateRole(m, row, column, digit)
 			switch {
+			case marked:
+				style = hintRoleStyle(styles, role).Inherit(style)
+				content = string(rune('0' + digit))
 			case notes.Has(digit):
 				style = styles.note
 				content = string(rune('0' + digit))
@@ -195,6 +207,82 @@ func contextualStyle(m Model, styles renderStyles, row, column int, style lipglo
 		return styles.peer.Inherit(style)
 	}
 	return style
+}
+
+func activeHintMarks(m Model) []game.HintMark {
+	if m.hint == nil || m.hintStep < 0 || m.hintStep >= len(m.hint.Steps) {
+		return nil
+	}
+	return m.hint.Steps[m.hintStep].Marks
+}
+
+func hasHintCandidate(m Model, row, column int) bool {
+	for digit := 1; digit <= 9; digit++ {
+		if _, ok := hintCandidateRole(m, row, column, digit); ok {
+			return true
+		}
+	}
+	return false
+}
+
+func hintCandidateRole(m Model, row, column, digit int) (game.HintRole, bool) {
+	var selected game.HintRole
+	for _, mark := range activeHintMarks(m) {
+		target := mark.Target
+		if target.Kind != game.HintTargetCandidate || target.Position == nil || target.Position.Row != row || target.Position.Column != column || target.Value != digit {
+			continue
+		}
+		if hintRolePriority(mark.Role) >= hintRolePriority(selected) {
+			selected = mark.Role
+		}
+	}
+	return selected, selected != ""
+}
+
+func hintCellStyle(m Model, styles renderStyles, row, column int, base lipgloss.Style) lipgloss.Style {
+	role := game.HintRole("")
+	for _, mark := range activeHintMarks(m) {
+		target := mark.Target
+		matches := target.Kind == game.HintTargetCell && target.Position != nil && target.Position.Row == row && target.Position.Column == column
+		matches = matches || target.Kind == game.HintTargetRow && target.Index == row
+		matches = matches || target.Kind == game.HintTargetColumn && target.Index == column
+		matches = matches || target.Kind == game.HintTargetBox && target.Index == (row/3)*3+column/3
+		if matches && hintRolePriority(mark.Role) >= hintRolePriority(role) {
+			role = mark.Role
+		}
+	}
+	if role == "" {
+		return base
+	}
+	return hintRoleStyle(styles, role).Inherit(base)
+}
+
+func hintRolePriority(role game.HintRole) int {
+	switch role {
+	case game.HintRoleConclusion:
+		return 4
+	case game.HintRoleEliminated:
+		return 3
+	case game.HintRolePremise:
+		return 2
+	case game.HintRoleFocus:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func hintRoleStyle(styles renderStyles, role game.HintRole) lipgloss.Style {
+	switch role {
+	case game.HintRoleConclusion:
+		return styles.hintConclusion
+	case game.HintRoleEliminated:
+		return styles.hintEliminated
+	case game.HintRolePremise:
+		return styles.hintPremise
+	default:
+		return styles.hintFocus
+	}
 }
 
 func cellContent(m Model, row, column, noteRow int) string {
@@ -243,7 +331,8 @@ func renderHelp(styles renderStyles) string {
 		"Move     arrows / h j k l",
 		"Edit     1–9 set or note  •  0 clears  •  n toggles mode",
 		"Assist   a toggles automatic legal candidates",
-		"Game     i previews hint  •  Enter applies  •  u/r undo/redo  •  c checks",
+		"Game     i previews hint  •  ←/→ steps  •  Enter applies  •  Esc cancels",
+		"Hint     bold focus  •  underlined premise  •  struck elimination  •  reversed conclusion",
 		"Session  S saves  •  R resets  •  q quits",
 	}, "\n"))
 }
@@ -294,22 +383,26 @@ func stylesFor(name themeName) renderStyles {
 		base = base.Foreground(p.text).Background(p.background)
 	}
 	return renderStyles{
-		canvas:       base,
-		title:        base.Foreground(p.accent).Bold(true),
-		status:       base.Foreground(p.muted),
-		message:      base.Foreground(p.accent),
-		guide:        base.Foreground(p.muted).Faint(name == noColorTheme),
-		modal:        base.Border(lipgloss.RoundedBorder()).BorderForeground(p.panelBorder).Padding(0, 2),
-		given:        base.Foreground(p.given).Bold(true),
-		player:       base.Foreground(p.player),
-		invalid:      base.Foreground(p.invalid).Bold(true).Underline(true),
-		empty:        base,
-		note:         base.Foreground(p.player).Bold(name == noColorTheme),
-		candidate:    base.Foreground(p.muted).Faint(true),
-		focus:        renderer.NewStyle().Background(p.focusBackground).Bold(true).Reverse(name == noColorTheme),
-		peer:         renderer.NewStyle().Background(p.peerBackground).Faint(name == noColorTheme),
-		border:       base.Foreground(p.border),
-		strongBorder: base.Foreground(p.strongBorder).Bold(true),
+		canvas:         base,
+		title:          base.Foreground(p.accent).Bold(true),
+		status:         base.Foreground(p.muted),
+		message:        base.Foreground(p.accent),
+		guide:          base.Foreground(p.muted).Faint(name == noColorTheme),
+		modal:          base.Border(lipgloss.RoundedBorder()).BorderForeground(p.panelBorder).Padding(0, 2),
+		given:          base.Foreground(p.given).Bold(true),
+		player:         base.Foreground(p.player),
+		invalid:        base.Foreground(p.invalid).Bold(true).Underline(true),
+		empty:          base,
+		note:           base.Foreground(p.player).Bold(name == noColorTheme),
+		candidate:      base.Foreground(p.muted).Faint(true),
+		focus:          renderer.NewStyle().Background(p.focusBackground).Bold(true).Reverse(name == noColorTheme),
+		peer:           renderer.NewStyle().Background(p.peerBackground).Faint(name == noColorTheme),
+		hintFocus:      renderer.NewStyle().Bold(true),
+		hintPremise:    renderer.NewStyle().Underline(true),
+		hintEliminated: renderer.NewStyle().Strikethrough(true),
+		hintConclusion: renderer.NewStyle().Reverse(true).Bold(true),
+		border:         base.Foreground(p.border),
+		strongBorder:   base.Foreground(p.strongBorder).Bold(true),
 	}
 }
 

@@ -96,9 +96,9 @@ The game-command scenarios verify the stable engine boundary through the real te
 **Input:** After making several moves: `reset` or `e`
 **Expected:** Board returns to the original problem state. All user inputs cleared.
 
-### 2.8 Hint (`hint` / `i`)
-**Input:** `hint` or `i`
-**Expected:** The engine returns one deterministic teaching plan, the CLI accepts that exact plan as one action, a correct value is filled into a cell, and the plan summary is displayed.
+### 2.8 Hint Preview and Apply (`hint` / `i`)
+**Input:** Run `hint` or `i`, inspect the output, then run `hint apply`; separately preview and run `hint cancel`.
+**Expected:** Preview displays the strategy, summary, ordered teaching steps, and exact placement or elimination conclusion without changing the board or history. `hint apply` submits the cached `plan_id` as one action and consumes it; `hint cancel` discards it without mutation. A changed, missing, or consumed plan cannot be applied.
 
 ### 2.9 Solve (`solve` / `s`)
 **Input:** `solve` or `s`

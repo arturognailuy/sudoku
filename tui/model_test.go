@@ -251,16 +251,37 @@ func TestSaveUsesSerializedSessionAndClearsDirty(t *testing.T) {
 	}
 }
 
-func TestHintPreviewDoesNotMutateUntilEnter(t *testing.T) {
+func TestHintPreviewNavigatesLocallyUntilEnter(t *testing.T) {
 	model := testModel(t)
 	before := model.snapshot
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
-	if model.hint == nil || model.snapshot != before {
-		t.Fatal("hint preview missing or mutated game")
+	if model.hint == nil || model.snapshot != before || model.hintStep != 0 {
+		t.Fatal("hint preview missing, mutated game, or started on the wrong step")
+	}
+	if !strings.Contains(ansi.Strip(model.View()), "Step 1 of") {
+		t.Fatal("hint preview did not render the active step")
+	}
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRight})
+	if model.hintStep != 1 || model.snapshot != before || !strings.Contains(ansi.Strip(model.View()), "Step 2 of") {
+		t.Fatal("hint navigation did not remain local and read-only")
+	}
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyLeft})
+	if model.hintStep != 0 || model.snapshot != before {
+		t.Fatal("hint back navigation changed the game")
 	}
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyEnter})
-	if model.snapshot == before || !model.dirty {
-		t.Fatal("hint was not applied")
+	if model.snapshot == before || !model.dirty || model.hint != nil {
+		t.Fatal("hint was not applied exactly once")
+	}
+}
+
+func TestHintPreviewCanBeCanceled(t *testing.T) {
+	model := testModel(t)
+	before := model.snapshot
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyEscape})
+	if model.hint != nil || model.snapshot != before || model.dirty {
+		t.Fatal("canceling a hint preview changed the game")
 	}
 }
 

@@ -72,6 +72,7 @@ type Model struct {
 	theme          themeName
 	message        string
 	hint           *game.HintPlan
+	hintStep       int
 	dirty          bool
 	autoCandidates bool
 	savePath       string
@@ -192,6 +193,32 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.message = ""
 	var command tea.Cmd
+	if m.hint != nil {
+		switch key.String() {
+		case "left", "h":
+			if m.hintStep > 0 {
+				m.hintStep--
+			}
+			m.message = hintStepMessage(*m.hint, m.hintStep)
+			return m, nil
+		case "right", "l":
+			if m.hintStep+1 < len(m.hint.Steps) {
+				m.hintStep++
+			}
+			m.message = hintStepMessage(*m.hint, m.hintStep)
+			return m, nil
+		case "enter":
+			return m, m.apply(game.ApplyHint{PlanID: m.hint.PlanID})
+		case "esc":
+			m.hint = nil
+			m.hintStep = 0
+			m.message = "Hint preview canceled."
+			return m, nil
+		default:
+			m.message = hintStepMessage(*m.hint, m.hintStep)
+			return m, nil
+		}
+	}
 	switch key.String() {
 	case "up", "k":
 		if m.row > 0 {
@@ -230,18 +257,14 @@ func (m Model) updateBoard(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.modal = helpModal
 	case "i":
 		m.hint = m.game.Hint()
+		m.hintStep = 0
 		if m.hint == nil {
 			m.message = "No hint is available."
 		} else {
-			m.message = "Hint preview: " + m.hint.String()
+			m.message = hintStepMessage(*m.hint, m.hintStep)
 		}
 	case "enter":
-		if m.hint != nil {
-			command = m.apply(game.ApplyHint{PlanID: m.hint.PlanID})
-			m.hint = nil
-		} else {
-			m.message = "Press ? to preview a hint first."
-		}
+		m.message = "Press i to preview a hint first."
 	case "c":
 		m.snapshot = m.game.Snapshot()
 		m.message = "Board is " + string(m.snapshot.Status) + "."
@@ -404,6 +427,7 @@ func (m *Model) apply(action game.Action) tea.Cmd {
 	m.snapshot = m.game.Snapshot()
 	m.dirty = true
 	m.hint = nil
+	m.hintStep = 0
 	m.message = fmt.Sprintf("Applied %s; board is %s.", result.Action, result.Status)
 	if m.tracker != nil {
 		if warning := m.tracker.TakeWarning(); warning != nil {
@@ -411,6 +435,14 @@ func (m *Model) apply(action game.Action) tea.Cmd {
 		}
 	}
 	return m.scheduleRecovery()
+}
+
+func hintStepMessage(plan game.HintPlan, index int) string {
+	if len(plan.Steps) == 0 {
+		return "Hint preview: " + plan.Summary
+	}
+	step := plan.Steps[index]
+	return fmt.Sprintf("Hint — %s (%s)  •  Step %d of %d [%s]: %s", plan.Strategy.DisplayName, plan.Strategy.Grade, index+1, len(plan.Steps), step.Kind, step.Message)
 }
 
 func (m *Model) scheduleRecovery() tea.Cmd {
