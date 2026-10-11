@@ -36,6 +36,7 @@ Interactive commands extend the current vocabulary without changing existing ali
 
 - `note`, `n <row><column><value>` computes the cell’s next complete note set and submits `game.SetNotes`.
 - `notes-clear`, `x <row><column>` submits an empty `game.SetNotes` value for the cell.
+- `hint` or `i` caches and prints one complete teaching plan without mutation; `hint apply` submits its exact `plan_id`, while `hint cancel` discards it. A successful non-hint mutation also discards the preview with a notice so stale plans do not remain in the CLI.
 - `save <path>` serializes the current game and atomically replaces the destination.
 - `quit`, `q` continues to exit without an implicit save.
 
@@ -71,9 +72,9 @@ Persistence helpers accept explicit paths and byte slices and return errors. Per
 - A failed note or save command leaves the in-memory session unchanged.
 - A failed restore never falls back to a generated puzzle.
 - Save and resume preserve current values, invalid entries, notes, history records, and the undo/redo cursor.
-- Existing value, hint, repair, solve, reset, undo, redo, and quit behavior remains compatible.
+- Hint preview prints strategy metadata, summary, ordered steps, and the exact conclusion without changing state; only explicit apply mutates from the preview. Successful non-hint mutations discard the preview, while failed and no-op commands preserve it.
 - Session files contain gameplay state only; difficulty labels, database paths, and terminal preferences remain frontend configuration.
 
 ## Verification
 
-Package tests cover command parsing, snapshot rendering, bounded reads, atomic replacement, and error translation. Cobra and built-binary scenarios cover option conflicts, manual notes, peer cleanup, mixed note/value undo and redo, save/resume round trips, redo preservation, corrupt input rejection, and protection of an existing destination when saving fails.
+Package tests cover command parsing, read-only hint caching, exact-plan apply/cancel, mutation-driven preview discard, snapshot rendering, bounded reads, atomic replacement, and error translation. Cobra and built-binary scenarios cover option conflicts, teaching-plan output and discard, manual notes, peer cleanup, mixed note/value undo and redo, save/resume round trips, redo preservation, corrupt input rejection, and protection of an existing destination when saving fails.

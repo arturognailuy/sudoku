@@ -20,6 +20,7 @@ type Controller struct {
 	game         *game.Game
 	closeChannel CloseChannel
 	tracker      *playrun.Tracker
+	hintPlan     *game.HintPlan
 }
 
 // NewController creates a CLI controller for the given game.
@@ -31,14 +32,35 @@ func NewTrackedController(g *game.Game, tracker *playrun.Tracker) *Controller {
 }
 
 func (ctrl *Controller) apply(action game.Action) (game.Result, error) {
+	before := ctrl.game.Snapshot()
+	var result game.Result
+	var err error
 	if ctrl.tracker == nil {
-		return ctrl.game.Apply(action)
+		result, err = ctrl.game.Apply(action)
+	} else {
+		result, err = ctrl.tracker.Apply(ctrl.game, action)
+		if warning := ctrl.tracker.TakeWarning(); warning != nil {
+			printError("Warning:", warning)
+		}
 	}
-	result, err := ctrl.tracker.Apply(ctrl.game, action)
-	if warning := ctrl.tracker.TakeWarning(); warning != nil {
-		printError("Warning:", warning)
+	if err == nil {
+		ctrl.discardHintAfterMutation(action, before)
 	}
 	return result, err
+}
+
+func (ctrl *Controller) discardHintAfterMutation(action game.Action, before game.Snapshot) {
+	if ctrl.hintPlan == nil {
+		return
+	}
+	if _, applyingHint := action.(game.ApplyHint); applyingHint {
+		return
+	}
+	if ctrl.game.Snapshot() == before {
+		return
+	}
+	ctrl.hintPlan = nil
+	fmt.Println("Hint preview discarded because the board changed.")
 }
 
 // printError prints an error message with a prefix [ERROR].
@@ -167,7 +189,9 @@ func (ctrl *Controller) PrintHelp() {
 	fmt.Println("  - undo, u                       : Undo last move.")
 	fmt.Println("  - redo, r                       : Redo last undo.")
 	fmt.Println("  - repair, f                     : Undo all invalid inputs.")
-	fmt.Println("  - hint, i                       : Apply a hint for the next move.")
+	fmt.Println("  - hint, i                       : Preview a teaching hint without changing the game.")
+	fmt.Println("  - hint apply                   : Apply the exact previewed hint as one action.")
+	fmt.Println("  - hint cancel                  : Discard the previewed hint.")
 	fmt.Println("  - solve, s                      : Solve the problem for me.")
 	fmt.Println("  - reset, e                      : Reset the game and start over.")
 	fmt.Println("  - quit, q                       : Quit the game.")
@@ -278,6 +302,66 @@ func (ctrl *Controller) runSaveCommand(path string) (bool, error) {
 	return false, nil
 }
 
+func formatHintPlan(plan game.HintPlan) string {
+	var result strings.Builder
+	result.WriteString("Hint preview\n")
+	fmt.Fprintf(&result, "Strategy: %s (%s)\n", plan.Strategy.DisplayName, plan.Strategy.Grade)
+	fmt.Fprintf(&result, "Summary: %s\n", plan.Summary)
+	result.WriteString("Steps:\n")
+	for index, step := range plan.Steps {
+		fmt.Fprintf(&result, "  %d. [%s] %s\n", index+1, step.Kind, step.Message)
+	}
+	fmt.Fprintf(&result, "Conclusion: %s\n", hintConclusionText(plan))
+	result.WriteString("Run `hint apply` to accept this plan or `hint cancel` to discard it.\n")
+	return result.String()
+}
+
+func hintConclusionText(plan game.HintPlan) string {
+	if placement := plan.Conclusion.Placement; placement != nil {
+		return fmt.Sprintf("Place %d at r%dc%d.", placement.Value, placement.Position.Row+1, placement.Position.Column+1)
+	}
+	parts := make([]string, len(plan.Conclusion.Eliminations))
+	for index, elimination := range plan.Conclusion.Eliminations {
+		parts[index] = fmt.Sprintf("%d from r%dc%d", elimination.Value, elimination.Position.Row+1, elimination.Position.Column+1)
+	}
+	return "Remove candidate " + strings.Join(parts, ", ") + "."
+}
+
+func (ctrl *Controller) runHintCommand(arguments string) bool {
+	switch strings.TrimSpace(arguments) {
+	case "":
+		ctrl.hintPlan = ctrl.game.Hint()
+		if ctrl.hintPlan == nil {
+			printError("Failed to preview hint:", "no hint is available")
+			return false
+		}
+		fmt.Print(formatHintPlan(*ctrl.hintPlan))
+		return false
+	case "apply":
+		if ctrl.hintPlan == nil {
+			printError("Failed to apply hint:", "preview a hint first")
+			return false
+		}
+		result, err := ctrl.apply(game.ApplyHint{PlanID: ctrl.hintPlan.PlanID})
+		if err != nil {
+			printError("Failed to apply hint:", userFacingError(err))
+			return false
+		}
+		ctrl.hintPlan = nil
+		if result.Hint != nil {
+			fmt.Printf("Applied hint: %s\n", result.Hint.Summary)
+		}
+		return true
+	case "cancel":
+		ctrl.hintPlan = nil
+		fmt.Println("Hint preview canceled.")
+		return false
+	default:
+		printError("Failed to run the hint command: expected `hint`, `hint apply`, or `hint cancel`")
+		return false
+	}
+}
+
 func (ctrl *Controller) runCommandWithArguments(name, arguments string) (bool, error) {
 	if arguments == "" {
 		return false, errors.New("no argument specified for the command")
@@ -337,20 +421,7 @@ func (ctrl *Controller) RunCommand(command string) bool {
 		_, err := ctrl.apply(game.Repair{})
 		return err == nil
 	case "hint", "i":
-		plan := ctrl.game.Hint()
-		if plan == nil {
-			printError("Failed to apply hint:", "no hint is available")
-			return false
-		}
-		result, err := ctrl.apply(game.ApplyHint{PlanID: plan.PlanID})
-		if err != nil {
-			printError("Failed to apply hint:", userFacingError(err))
-			return false
-		}
-		if result.Hint != nil {
-			fmt.Printf("Hint: %s\n", result.Hint.Summary)
-		}
-		return true
+		return ctrl.runHintCommand(arguments)
 	case "solve", "s":
 		_, err := ctrl.apply(game.Solve{})
 		return err == nil
@@ -371,7 +442,7 @@ func (ctrl *Controller) RunCommand(command string) bool {
 
 func commandTakesNoArguments(name string) bool {
 	switch name {
-	case "help", "h", "check", "c", "undo", "u", "redo", "r", "repair", "f", "hint", "i", "solve", "s", "reset", "e", "quit", "q":
+	case "help", "h", "check", "c", "undo", "u", "redo", "r", "repair", "f", "solve", "s", "reset", "e", "quit", "q":
 		return true
 	default:
 		return false
@@ -394,6 +465,8 @@ func userFacingError(err error) string {
 			return "there is no action to redo"
 		case game.ErrorNoHint:
 			return "no hint is available"
+		case game.ErrorStaleHint:
+			return "the previewed hint is stale or already consumed; preview a new hint"
 		}
 	}
 	return err.Error()

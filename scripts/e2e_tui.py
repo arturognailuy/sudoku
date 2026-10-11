@@ -69,7 +69,7 @@ def main():
         # Adopt automatic candidates on the first note edit, prove the whole
         # transition is one undo/redo step, then exercise ordinary gameplay,
         # save explicitly, resume, and quit.
-        for keys in (b"a", b"n", b"1", b"u", b"r", b"n", b"l", b"5", b"a", b"q", b"n", b"a", b"n", b"j", b"4", b"u", b"r", b"?", b"\x1b", b"i", b"\r", b"S"):
+        for keys in (b"a", b"n", b"1", b"u", b"r", b"n", b"l", b"5", b"a", b"q", b"n", b"a", b"n", b"j", b"4", b"u", b"r", b"?", b"\x1b", b"i", b"\x1b[C", b"\x1b[D", b"\r", b"S"):
             os.write(master, keys)
             output += drain(master)
         os.write(master, session.encode() + b"\r")
@@ -84,7 +84,7 @@ def main():
         finally:
             os.close(master)
         text = ANSI.sub(b"", output).decode("utf-8", "replace")
-        required = ("SUDOKU", "Mistakes: 0", "Mistakes: 1", "AUTO ON", "AUTO OFF", "Candidates copied. Notes on.", "NOTE  ", "KEYBOARD HELP", "Hint preview:", "Saved to ", "unsaved", "Unsaved changes")
+        required = ("SUDOKU", "Mistakes: 0", "Mistakes: 1", "AUTO ON", "AUTO OFF", "Candidates copied. Notes on.", "NOTE  ", "KEYBOARD HELP", "Step 1 of", "Step 2 of", "Saved to ", "unsaved", "Unsaved changes")
         missing = [value for value in required if value not in text]
         if missing:
             raise AssertionError(f"screen output missing {missing}\n{text[-4000:]}")
