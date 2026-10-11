@@ -280,6 +280,22 @@ def main():
             "Exiting the game.",
         )
 
+        # A successful non-hint mutation explicitly discards the preview so a
+        # stale plan cannot remain available for a later apply attempt.
+        output = run(
+            binary,
+            ["--input", PUZZLE_DOTS],
+            root,
+            "hint\nadd 1 1 4\nhint apply\nq\n",
+        )
+        contains(
+            output,
+            "Hint preview",
+            "Hint preview discarded because the board changed.",
+            "preview a hint first",
+            "Exiting the game.",
+        )
+
         # A new action after undo must truncate the abandoned redo branch.
         output = run(
             binary,

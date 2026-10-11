@@ -76,7 +76,7 @@ func TestHintPreviewApplyAndCancel(t *testing.T) {
 	}
 }
 
-func TestHintApplyRejectsCachedPlanAfterStateChange(t *testing.T) {
+func TestStateChangeDiscardsCachedHintPlan(t *testing.T) {
 	controller := newTestController(t)
 	controller.RunCommand("hint")
 	if controller.hintPlan == nil {
@@ -85,8 +85,22 @@ func TestHintApplyRejectsCachedPlanAfterStateChange(t *testing.T) {
 	if !controller.RunCommand("add 1 1 4") {
 		t.Fatal("test setup did not change the game")
 	}
-	if controller.RunCommand("hint apply") || controller.hintPlan == nil {
-		t.Fatal("stale cached hint was applied or silently discarded")
+	if controller.hintPlan != nil {
+		t.Fatal("state change did not discard the cached hint")
+	}
+	if controller.RunCommand("hint apply") {
+		t.Fatal("discarded hint was applied")
+	}
+}
+
+func TestNoOpAndFailedActionPreserveCachedHintPlan(t *testing.T) {
+	controller := newTestController(t)
+	controller.RunCommand("hint")
+	if controller.RunCommand("clear 1 1") || controller.hintPlan == nil {
+		t.Fatal("no-op clear discarded the cached hint")
+	}
+	if controller.RunCommand("add 1 3 4") || controller.hintPlan == nil {
+		t.Fatal("failed immutable-cell action discarded the cached hint")
 	}
 }
 

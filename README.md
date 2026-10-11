@@ -171,7 +171,7 @@ During play, enter moves as `row col value` (for example, `1 2 5`). Commands acc
 - `notes-clear`, `x <row> <column>` — clear a cell's notes
 - `save <path>` — atomically save values, notes, and undo/redo history
 - `undo`, `u` / `redo`, `r` — move through value and note history
-- `hint`, `i` — apply a technique-aware hint
+- `hint`, `i` — preview a technique-aware hint; use `hint apply` or `hint cancel`
 - `check`, `c` / `repair`, `f` — inspect or remove invalid entries
 - `reset`, `e` / `solve`, `s` — restart or solve the puzzle
 - `help`, `h` / `quit`, `q` — show command help or exit without saving

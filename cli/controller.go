@@ -32,14 +32,35 @@ func NewTrackedController(g *game.Game, tracker *playrun.Tracker) *Controller {
 }
 
 func (ctrl *Controller) apply(action game.Action) (game.Result, error) {
+	before := ctrl.game.Snapshot()
+	var result game.Result
+	var err error
 	if ctrl.tracker == nil {
-		return ctrl.game.Apply(action)
+		result, err = ctrl.game.Apply(action)
+	} else {
+		result, err = ctrl.tracker.Apply(ctrl.game, action)
+		if warning := ctrl.tracker.TakeWarning(); warning != nil {
+			printError("Warning:", warning)
+		}
 	}
-	result, err := ctrl.tracker.Apply(ctrl.game, action)
-	if warning := ctrl.tracker.TakeWarning(); warning != nil {
-		printError("Warning:", warning)
+	if err == nil {
+		ctrl.discardHintAfterMutation(action, before)
 	}
 	return result, err
+}
+
+func (ctrl *Controller) discardHintAfterMutation(action game.Action, before game.Snapshot) {
+	if ctrl.hintPlan == nil {
+		return
+	}
+	if _, applyingHint := action.(game.ApplyHint); applyingHint {
+		return
+	}
+	if ctrl.game.Snapshot() == before {
+		return
+	}
+	ctrl.hintPlan = nil
+	fmt.Println("Hint preview discarded because the board changed.")
 }
 
 // printError prints an error message with a prefix [ERROR].
