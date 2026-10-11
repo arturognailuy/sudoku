@@ -255,12 +255,7 @@ func (game *Game) Hint() *HintPlan {
 		if move == nil {
 			continue
 		}
-		if move.Evidence == nil {
-			move.Evidence = &solver.Evidence{}
-		}
-		if move.EliminationOnly && len(move.Evidence.Eliminations) == 0 {
-			move.Evidence.Eliminations = candidateEliminations(before, candidateGrid(&hintBoard))
-		}
+		completeTeachingEvidence(&hintBoard, before, move)
 		return composeHintPlan(game.Snapshot(), strategy, move)
 	}
 
@@ -275,9 +270,113 @@ func (game *Game) Hint() *HintPlan {
 			Technique: "backtracker",
 			Reason:    fmt.Sprintf("backtracking finds %d at %s", value, position.ToString()),
 		}
+		completeTeachingEvidence(&hintBoard, candidateGrid(&hintBoard), move)
 		return composeHintPlan(game.Snapshot(), game.completeSolver, move)
 	}
 	return nil
+}
+
+// completeTeachingEvidence turns every registered solver result into the same
+// typed teaching boundary. Strategies may provide narrower evidence directly;
+// the fallback derives exact effects and the candidate neighborhood used to
+// explain them without requiring a client to understand a strategy name.
+func completeTeachingEvidence(board *core.Board, before [9][9]core.CandidateSet, move *solver.Move) {
+	if move.Evidence == nil {
+		move.Evidence = &solver.Evidence{}
+	}
+	after := candidateGrid(board)
+	if len(move.Evidence.Eliminations) == 0 {
+		move.Evidence.Eliminations = candidateEliminations(before, after)
+	}
+
+	// Solvers that identify a placement without mutating their working board
+	// still prove that every other candidate at the target is ruled out.
+	if move.IsPlacement() && len(move.Evidence.RuledOut) == 0 {
+		candidates := before[move.Cell.Position.Row][move.Cell.Position.Column]
+		for _, value := range candidates.Values() {
+			if value != move.Cell.Value {
+				move.Evidence.RuledOut = append(move.Evidence.RuledOut, solver.CandidateRef{Position: move.Cell.Position, Value: value})
+			}
+		}
+	}
+
+	if len(move.Evidence.Premises) == 0 {
+		move.Evidence.Premises = teachingPremises(before, move)
+	}
+	if len(move.Evidence.Units) == 0 {
+		move.Evidence.Units = premiseUnits(move.Evidence.Premises)
+	}
+	if move.Evidence.Unit != nil && !containsUnit(move.Evidence.Units, *move.Evidence.Unit) {
+		move.Evidence.Units = append(move.Evidence.Units, *move.Evidence.Unit)
+	}
+}
+
+func teachingPremises(before [9][9]core.CandidateSet, move *solver.Move) []solver.CandidateGroup {
+	targets := append([]solver.CandidateRef(nil), move.Evidence.Eliminations...)
+	targets = append(targets, move.Evidence.RuledOut...)
+	if move.IsPlacement() {
+		targets = append(targets, solver.CandidateRef{Position: move.Cell.Position, Value: move.Cell.Value})
+	}
+	positions := make(map[core.Position]struct{})
+	for _, target := range targets {
+		positions[target.Position] = struct{}{}
+		for row := 0; row < 9; row++ {
+			for column := 0; column < 9; column++ {
+				position := core.NewPosition(row, column)
+				if position != target.Position && sharesTeachingUnit(position, target.Position) && before[row][column].Has(target.Value) {
+					positions[position] = struct{}{}
+				}
+			}
+		}
+	}
+	var groups []solver.CandidateGroup
+	for row := 0; row < 9; row++ {
+		for column := 0; column < 9; column++ {
+			position := core.NewPosition(row, column)
+			if _, ok := positions[position]; !ok || before[row][column].IsEmpty() {
+				continue
+			}
+			groups = append(groups, solver.CandidateGroup{Position: position, Values: before[row][column].Values()})
+		}
+	}
+	return groups
+}
+
+func sharesTeachingUnit(a, b core.Position) bool {
+	return a.Row == b.Row || a.Column == b.Column || (a.Row/3 == b.Row/3 && a.Column/3 == b.Column/3)
+}
+
+func premiseUnits(groups []solver.CandidateGroup) []solver.UnitRef {
+	seen := make(map[solver.UnitRef]struct{})
+	for _, group := range groups {
+		refs := []solver.UnitRef{
+			{Kind: solver.UnitRow, Index: group.Position.Row},
+			{Kind: solver.UnitColumn, Index: group.Position.Column},
+			{Kind: solver.UnitBox, Index: (group.Position.Row/3)*3 + group.Position.Column/3},
+		}
+		for _, ref := range refs {
+			seen[ref] = struct{}{}
+		}
+	}
+	var units []solver.UnitRef
+	for _, kind := range []solver.UnitKind{solver.UnitRow, solver.UnitColumn, solver.UnitBox} {
+		for index := 0; index < 9; index++ {
+			ref := solver.UnitRef{Kind: kind, Index: index}
+			if _, ok := seen[ref]; ok {
+				units = append(units, ref)
+			}
+		}
+	}
+	return units
+}
+
+func containsUnit(units []solver.UnitRef, target solver.UnitRef) bool {
+	for _, unit := range units {
+		if unit == target {
+			return true
+		}
+	}
+	return false
 }
 
 func candidateGrid(board *core.Board) [9][9]core.CandidateSet {

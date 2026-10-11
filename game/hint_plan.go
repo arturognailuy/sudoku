@@ -146,16 +146,62 @@ func composeHintPlan(snapshot Snapshot, strategy solver.Solver, move *solver.Mov
 	case "naked-pair":
 		plan.Steps = nakedPairSteps(move)
 	default:
-		plan.Steps = []HintStep{{ID: "conclusion", Kind: HintStepConclude, Message: move.Reason, Marks: conclusionMarks(plan.Conclusion), Effect: conclusionEffect(plan.Conclusion)}}
+		plan.Steps = evidenceSteps(move, plan.Conclusion)
 	}
 	plan.PlanID = deterministicPlanID(snapshot, *plan)
 	return plan
 }
 
+func evidenceSteps(move *solver.Move, conclusion HintConclusion) []HintStep {
+	evidence := move.Evidence
+	var premiseMarks []HintMark
+	for _, unitRef := range evidence.Units {
+		unit := unitRef
+		if target, ok := unitTarget(&unit); ok {
+			premiseMarks = append(premiseMarks, HintMark{Target: target, Role: HintRoleFocus})
+		}
+	}
+	for _, premise := range evidence.Premises {
+		premiseMarks = append(premiseMarks, HintMark{Target: cellTarget(premise.Position), Role: HintRoleFocus})
+		for _, value := range premise.Values {
+			premiseMarks = append(premiseMarks, HintMark{Target: candidateTarget(solver.CandidateRef{Position: premise.Position, Value: value}), Role: HintRolePremise})
+		}
+	}
+	var comparisonMarks []HintMark
+	refs := append([]solver.CandidateRef(nil), evidence.RuledOut...)
+	refs = append(refs, evidence.Eliminations...)
+	for _, ref := range refs {
+		comparisonMarks = append(comparisonMarks, HintMark{Target: candidateTarget(ref), Role: HintRoleEliminated})
+	}
+	steps := []HintStep{
+		{ID: "observe-candidate-pattern", Kind: HintStepObserve, Message: fmt.Sprintf("Inspect the candidate pattern used by %s.", move.Technique), Marks: premiseMarks},
+		{ID: "compare-candidate-constraints", Kind: HintStepCompare, Message: move.Reason, Marks: append(append([]HintMark(nil), premiseMarks...), comparisonMarks...)},
+	}
+	kind := HintStepConclude
+	if conclusion.Placement == nil {
+		kind = HintStepEliminate
+	}
+	steps = append(steps, HintStep{ID: "apply-deduction", Kind: kind, Message: conclusionMessage(conclusion), Marks: conclusionMarks(conclusion), Effect: conclusionEffect(conclusion)})
+	return steps
+}
+
+func conclusionMessage(conclusion HintConclusion) string {
+	if conclusion.Placement != nil {
+		return fmt.Sprintf("Therefore %s must be %d.", cellName(conclusion.Placement.Position), conclusion.Placement.Value)
+	}
+	return eliminationMessage(conclusion.Eliminations)
+}
+
 func nakedSingleSteps(move *solver.Move) []HintStep {
 	ref := solver.CandidateRef{Position: move.Cell.Position, Value: move.Cell.Value}
+	units := []HintMark{
+		{Target: HintTarget{Kind: HintTargetRow, Index: move.Cell.Position.Row}, Role: HintRoleFocus},
+		{Target: HintTarget{Kind: HintTargetColumn, Index: move.Cell.Position.Column}, Role: HintRoleFocus},
+		{Target: HintTarget{Kind: HintTargetBox, Index: (move.Cell.Position.Row/3)*3 + move.Cell.Position.Column/3}, Role: HintRoleFocus},
+	}
+	observeMarks := append(units, HintMark{Target: cellTarget(move.Cell.Position), Role: HintRoleFocus}, HintMark{Target: candidateTarget(ref), Role: HintRolePremise})
 	return []HintStep{
-		{ID: "inspect-" + cellName(move.Cell.Position), Kind: HintStepObserve, Message: fmt.Sprintf("Cell %s has only one candidate: %d.", cellName(move.Cell.Position), move.Cell.Value), Marks: []HintMark{{Target: cellTarget(move.Cell.Position), Role: HintRoleFocus}, {Target: candidateTarget(ref), Role: HintRolePremise}}},
+		{ID: "inspect-" + cellName(move.Cell.Position), Kind: HintStepObserve, Message: fmt.Sprintf("Cell %s has only one candidate: %d.", cellName(move.Cell.Position), move.Cell.Value), Marks: observeMarks},
 		{ID: fmt.Sprintf("place-%s-%d", cellName(move.Cell.Position), move.Cell.Value), Kind: HintStepConclude, Message: fmt.Sprintf("Therefore %s must be %d.", cellName(move.Cell.Position), move.Cell.Value), Marks: []HintMark{{Target: cellTarget(move.Cell.Position), Role: HintRoleFocus}, {Target: candidateTarget(ref), Role: HintRoleConclusion}}, Effect: &HintEffect{Placement: &move.Cell}},
 	}
 }

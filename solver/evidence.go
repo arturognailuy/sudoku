@@ -31,7 +31,11 @@ type CandidateRef struct {
 
 // Evidence is renderer-neutral strategy evidence for one deduction.
 type Evidence struct {
+	// Unit is retained for common single-unit techniques. Units contains every
+	// typed unit involved in the deduction and is the renderer-neutral form
+	// consumed by generic teaching plans.
 	Unit         *UnitRef
+	Units        []UnitRef
 	Premises     []CandidateGroup
 	RuledOut     []CandidateRef
 	Eliminations []CandidateRef
