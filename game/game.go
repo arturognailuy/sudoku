@@ -239,62 +239,167 @@ func (game *Game) solve() {
 	game.notes = [9][9]core.CandidateSet{}
 }
 
-// Hint returns the next recommended move.
-// It first checks for invalid inputs to clear, then tries strategy solvers,
-// and falls back to the complete solver.
-//
-// Strategy solvers may return elimination-only moves (no cell placement) when
-// they reduce candidates without creating a naked single. In that case, the
-// hint loop continues to try other solvers — the eliminations are applied to
-// the board's elimination layer and may enable other techniques.
-func (game *Game) Hint() *solver.Move {
-	// Solvers may record candidate eliminations while searching. Work on a
-	// detached board so a query never mutates engine state.
+// Hint returns one complete renderer-neutral teaching plan without mutation.
+// Interactive hint selection stops at the first meaningful deduction,
+// including elimination-only progress.
+func (game *Game) Hint() *HintPlan {
 	hintBoard := game.playBoard.Copy()
-
-	// If there is any invalid input, randomly remove one of them.
-	if !game.invalidInput.IsEmpty() {
-		positionPointer := game.invalidInput.GetRandomPositionWith(func(value int) bool {
-			return value != 0
-		})
-
-		if positionPointer == nil {
-			panic("Bug: Invalid input board is not empty but cannot find a valid position")
+	for _, strategy := range game.strategySolvers {
+		before := candidateGrid(&hintBoard)
+		var move *solver.Move
+		if teaching, ok := strategy.(solver.TeachingStrategy); ok {
+			move = teaching.Hint(&hintBoard)
+		} else {
+			move = strategy.Apply(&hintBoard)
 		}
+		if move == nil {
+			continue
+		}
+		completeTeachingEvidence(&hintBoard, before, move)
+		return composeHintPlan(game.Snapshot(), strategy, move)
+	}
 
-		return &solver.Move{
-			Cell: core.Cell{
-				Position: *positionPointer,
-				Value:    0,
-			},
-			Technique: "clear-invalid",
-			Reason:    fmt.Sprintf("clear invalid input at %s", positionPointer.ToString()),
+	solved := hintBoard.Copy()
+	if !game.completeSolver.Solve(&solved) {
+		return nil
+	}
+	for _, position := range hintBoard.EmptyPositions() {
+		value := solved.Get(position)
+		move := &solver.Move{
+			Cell:      core.NewCell(position, value),
+			Technique: "backtracker",
+			Reason:    fmt.Sprintf("backtracking finds %d at %s", value, position.ToString()),
+		}
+		completeTeachingEvidence(&hintBoard, candidateGrid(&hintBoard), move)
+		return composeHintPlan(game.Snapshot(), game.completeSolver, move)
+	}
+	return nil
+}
+
+// completeTeachingEvidence turns every registered solver result into the same
+// typed teaching boundary. Strategies may provide narrower evidence directly;
+// the fallback derives exact effects and the candidate neighborhood used to
+// explain them without requiring a client to understand a strategy name.
+func completeTeachingEvidence(board *core.Board, before [9][9]core.CandidateSet, move *solver.Move) {
+	if move.Evidence == nil {
+		move.Evidence = &solver.Evidence{}
+	}
+	after := candidateGrid(board)
+	if len(move.Evidence.Eliminations) == 0 {
+		move.Evidence.Eliminations = candidateEliminations(before, after)
+	}
+
+	// Solvers that identify a placement without mutating their working board
+	// still prove that every other candidate at the target is ruled out.
+	if move.IsPlacement() && len(move.Evidence.RuledOut) == 0 {
+		candidates := before[move.Cell.Position.Row][move.Cell.Position.Column]
+		for _, value := range candidates.Values() {
+			if value != move.Cell.Value {
+				move.Evidence.RuledOut = append(move.Evidence.RuledOut, solver.CandidateRef{Position: move.Cell.Position, Value: value})
+			}
 		}
 	}
 
-	// Try strategy solvers. Elimination-only moves are progress (they reduce
-	// candidates), so restart the solver loop when one fires.
-	for {
-		progress := false
-		for _, s := range game.strategySolvers {
-			move := s.Apply(&hintBoard)
-			if move == nil {
+	if len(move.Evidence.Premises) == 0 {
+		move.Evidence.Premises = teachingPremises(before, move)
+	}
+	if len(move.Evidence.Units) == 0 {
+		move.Evidence.Units = premiseUnits(move.Evidence.Premises)
+	}
+	if move.Evidence.Unit != nil && !containsUnit(move.Evidence.Units, *move.Evidence.Unit) {
+		move.Evidence.Units = append(move.Evidence.Units, *move.Evidence.Unit)
+	}
+}
+
+func teachingPremises(before [9][9]core.CandidateSet, move *solver.Move) []solver.CandidateGroup {
+	targets := append([]solver.CandidateRef(nil), move.Evidence.Eliminations...)
+	targets = append(targets, move.Evidence.RuledOut...)
+	if move.IsPlacement() {
+		targets = append(targets, solver.CandidateRef{Position: move.Cell.Position, Value: move.Cell.Value})
+	}
+	positions := make(map[core.Position]struct{})
+	for _, target := range targets {
+		positions[target.Position] = struct{}{}
+		for row := 0; row < 9; row++ {
+			for column := 0; column < 9; column++ {
+				position := core.NewPosition(row, column)
+				if position != target.Position && sharesTeachingUnit(position, target.Position) && before[row][column].Has(target.Value) {
+					positions[position] = struct{}{}
+				}
+			}
+		}
+	}
+	var groups []solver.CandidateGroup
+	for row := 0; row < 9; row++ {
+		for column := 0; column < 9; column++ {
+			position := core.NewPosition(row, column)
+			if _, ok := positions[position]; !ok || before[row][column].IsEmpty() {
 				continue
 			}
-			if move.IsPlacement() {
-				return move
-			}
-			// Elimination-only move — keep going.
-			progress = true
-			break
-		}
-		if !progress {
-			break
+			groups = append(groups, solver.CandidateGroup{Position: position, Values: before[row][column].Values()})
 		}
 	}
+	return groups
+}
 
-	// Otherwise, get a hint from the complete solver.
-	return game.completeSolver.Hint(&hintBoard)
+func sharesTeachingUnit(a, b core.Position) bool {
+	return a.Row == b.Row || a.Column == b.Column || (a.Row/3 == b.Row/3 && a.Column/3 == b.Column/3)
+}
+
+func premiseUnits(groups []solver.CandidateGroup) []solver.UnitRef {
+	seen := make(map[solver.UnitRef]struct{})
+	for _, group := range groups {
+		refs := []solver.UnitRef{
+			{Kind: solver.UnitRow, Index: group.Position.Row},
+			{Kind: solver.UnitColumn, Index: group.Position.Column},
+			{Kind: solver.UnitBox, Index: (group.Position.Row/3)*3 + group.Position.Column/3},
+		}
+		for _, ref := range refs {
+			seen[ref] = struct{}{}
+		}
+	}
+	var units []solver.UnitRef
+	for _, kind := range []solver.UnitKind{solver.UnitRow, solver.UnitColumn, solver.UnitBox} {
+		for index := 0; index < 9; index++ {
+			ref := solver.UnitRef{Kind: kind, Index: index}
+			if _, ok := seen[ref]; ok {
+				units = append(units, ref)
+			}
+		}
+	}
+	return units
+}
+
+func containsUnit(units []solver.UnitRef, target solver.UnitRef) bool {
+	for _, unit := range units {
+		if unit == target {
+			return true
+		}
+	}
+	return false
+}
+
+func candidateGrid(board *core.Board) [9][9]core.CandidateSet {
+	var candidates [9][9]core.CandidateSet
+	for row := 0; row < 9; row++ {
+		for column := 0; column < 9; column++ {
+			candidates[row][column] = board.Candidates(core.NewPosition(row, column))
+		}
+	}
+	return candidates
+}
+
+func candidateEliminations(before, after [9][9]core.CandidateSet) []solver.CandidateRef {
+	var refs []solver.CandidateRef
+	for row := 0; row < 9; row++ {
+		for column := 0; column < 9; column++ {
+			removed := before[row][column] &^ after[row][column]
+			for _, value := range removed.Values() {
+				refs = append(refs, solver.CandidateRef{Position: core.NewPosition(row, column), Value: value})
+			}
+		}
+	}
+	return refs
 }
 
 // Function to check if the game is solved.

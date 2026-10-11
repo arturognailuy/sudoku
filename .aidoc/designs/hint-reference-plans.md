@@ -18,7 +18,7 @@ The reference plans make the portable teaching protocol concrete for placement a
 |----------|--------------|
 | `.aidoc/designs/hint-presentation-protocol.md` | Canonical plan schema, ownership, application, and degradation rules |
 | `.aidoc/designs/game-engine.md` | Authoritative hint query and action semantics |
-| `solver/move.go` | Current recommendation boundary to be replaced by typed evidence |
+| `solver/evidence.go` | Typed candidate and unit evidence consumed by every plan |
 | `game/contract.go` | Engine hint preview and application boundary |
 
 ## Why Reference Plans Exist
@@ -54,4 +54,4 @@ The Naked Pair reference examines row 4, where `r4c2` and `r4c7` each contain ex
 | `reserve-row4-2-7` | `compare` | focus row 4; premise pair cells; focus candidate `r4c9:2` | none | “Those two digits must occupy the pair cells, so neither can appear elsewhere in row 4.” |
 | `remove-r4c9-2` | `eliminate` | premise pair cells; conclusion candidate `r4c9:2` | eliminate candidate `2` from `r4c9` | “Remove candidate 2 from r4c9; this deduction does not place a value.” |
 
-Every renderer applies the same conclusion without parsing fallback prose or reconstructing logic from the technique name. The Naked Pair reference explicitly proves that a valid hint may change notes without placing a value.
+Every renderer applies the same conclusion without parsing fallback prose or reconstructing logic from the technique name. The Naked Pair reference explicitly proves that a valid hint may change notes without placing a value. The remaining registered strategies use the same semantic roles and exact effects through the shared evidence composition defined in `.aidoc/designs/hint-presentation-protocol.md`; separate examples are unnecessary because they would duplicate the protocol rather than establish another invariant.

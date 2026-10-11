@@ -24,7 +24,7 @@ The hint presentation protocol turns one solver recommendation into a portable t
 | `.aidoc/designs/game-engine.md` | Authoritative hint query and action semantics |
 | `.aidoc/designs/web-api.md` | Revisioned transport and client-neutral contract |
 | `.aidoc/designs/hint-reference-plans.md` | Concrete placement and elimination teaching plans |
-| `solver/move.go` | Current recommendation boundary to be replaced by typed evidence |
+| `solver/evidence.go` | Typed candidate, unit, elimination, and placement evidence |
 | `game/contract.go` | Engine hint preview and application boundary |
 
 ## Why a Shared Teaching Contract Exists
@@ -39,7 +39,7 @@ The project is still in development, so the protocol replaces the current hint s
 
 A strategy produces typed evidence for one deduction: examined units, candidate constraints, eliminations, placements, and the technique identity. Placement and candidate elimination are equally valid conclusions; elimination strategies are not duplicated as hint-only variants. Strategy evidence contains no colors, animation timing, widget commands, prose parsing requirements, or transport models.
 
-A shared engine composer converts typed evidence into one `HintPlan`. The composer owns default teaching order and wording so 23 strategies do not duplicate client choreography. A strategy-specific composer is justified only when the technique requires a genuinely different teaching sequence, and it still emits the same protocol.
+A shared engine composer converts typed evidence into one `HintPlan`. The composer owns default teaching order and wording so 23 strategies do not duplicate client choreography. Naked Single, Hidden Single, and Naked Pair keep focused reference compositions; every other registered strategy uses the same evidence-driven observe, compare, and apply sequence without renderer branching.
 
 A renderer consumes a complete plan and never infers Sudoku reasoning from technique names or fallback prose. Renderers may omit unsupported reinforcement, but must preserve the ordered text and logical conclusion.
 
@@ -113,8 +113,8 @@ Unsupported semantic data is ignored visibly rather than guessed. A renderer may
 
 ## Delivery Boundary
 
-The first implementation slice defines typed strategy evidence, the shared composer, deterministic IDs, Naked Single, Hidden Single, and Naked Pair plans, and engine contract tests. The slice proves both placement and elimination application, including atomic note deltas and undo, while replacing the old engine hint shape rather than maintaining parallel contracts.
+`game.Game.Hint` returns the complete plan, `game.ApplyHint` requires its deterministic `plan_id`, and the engine applies either a placement or a multi-cell note elimination as one undoable transition. `game.completeTeachingEvidence` preserves strategy-authored evidence and completes missing typed candidate neighborhoods, affected units, ruled-out candidates, and exact elimination effects from the solver board transition. All 23 registered strategies therefore produce ordered semantic steps and a machine-readable conclusion; fallback prose remains presentation text rather than a client parsing contract.
 
-The next backend slice replaces the OpenAPI hint schema and generated adapters, returns one complete plan from the existing hint query, binds `apply-hint` with `plan_id` inside the existing actions endpoint, and extends built-binary API acceptance. CLI and TUI then render the same plans before remaining strategies migrate; the separate web project consumes the published contract and proves the same plans at desktop and phone widths.
+The line CLI consumes the plan summary and applies the exact plan in one command. The TUI keeps the complete plan during preview and submits its identity on Enter. The version 1 HTTP contract returns the complete plan with one-based transport coordinates, requires its explicit `plan_id` on `apply-hint`, and returns the applied plan in the action result. Built-binary API acceptance proves read-only preview, exact-plan application, stale-plan rejection, and one revision per accepted conclusion.
 
-A strategy joins the protocol only with evidence tests, plan contract tests, and at least one renderer-neutral reference assertion. The migration is complete when no renderer parses `Reason`, switches on a technique name to reconstruct logic, or owns Sudoku-specific teaching order.
+`game.TestEveryRegisteredStrategyBuildsTypedPlanFromRealGame` drives the canonical solver to each strategy using complete valid games from the maintained calibration corpus and catalog audit. The coverage contract rejects synthetic candidate-only boards, missing typed premises, unstable plan identities, incomplete effects, and any registered strategy without a placement or elimination plan.
