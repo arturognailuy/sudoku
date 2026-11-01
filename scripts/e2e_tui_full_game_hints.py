@@ -16,15 +16,13 @@ import termios
 from e2e_tui_hint_strategies import MAX_HINTS_PER_GAME, drain, isolated_env, load_cases, send
 
 CORPUS = {
-    "hidden-triple",
-    "w-wing",
-    "swordfish",
-    "naked-quad",
-    "xyz-wing",
+    "hidden-pair",
+    "hidden-quad",
     "jellyfish",
+    "naked-quad",
+    "swordfish",
     "unique-rectangle-2",
     "unique-rectangle-3",
-    "unique-rectangle-4",
 }
 
 

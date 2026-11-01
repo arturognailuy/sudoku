@@ -88,7 +88,7 @@ The TUI scenarios require a pseudo-terminal. The standard-library harness exerci
 **Expected:** The status starts at `Mistakes: 0`, changes to `Mistakes: 1` after the invalid value, and remains at one after Undo because the authoritative count is cumulative rather than part of history.
 
 ### 9.14 Complete Hint-Driven Games and Exact Strategy Union
-**Action:** Execute `scripts/e2e_tui_full_game_hints.py` against the built binary. The harness solves the maintained minimum nine-game corpus entirely through TUI preview and apply controls.
+**Action:** Execute `scripts/e2e_tui_full_game_hints.py` against the built binary. The harness solves the maintained minimum seven-game corpus entirely through TUI preview and apply controls.
 **Expected:** Every game reaches the solved state, exits cleanly, and the combined trace equals the exact 23 public strategy names. This preserves complete-game acceptance after the compact line CLI stops at candidate deductions.
 
 ---
