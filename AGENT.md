@@ -52,6 +52,14 @@ Keep packages focused and preserve dependency direction. The engine contains no 
 - **Mandatory PR documentation gate:** before creating, updating, or requesting review on any PR, compare every changed documentation file with the base branch and reread each complete changed section. Active documents must describe only the current implemented system; Drafts must describe only unimplemented work. Delete chronology, superseded wording, rejected alternatives, migration narration, and review history instead of preserving them as context. Verify that the title and section scope still match the canonical owner, then run `python3 scripts/validate_aidoc.py` and `python3 -m unittest scripts/test_validate_aidoc.py`. Stop the PR workflow and repair any failure before pushing or reporting readiness.
 - In every PR description, name the canonical documentation owner, list the exact documentation files audited (or state that documentation impact is `none`), and record the current-state gate separately from mechanical, semantic, and fresh-context evidence. A generic `semantic passed` claim is insufficient.
 
+## Readability Ratchet
+
+- Run `python3 scripts/review_size.py` before editing and again after the work is complete.
+- When the checker reports violations, inspect those in files you will touch and remove at least one nearby violation when the cleanup is safe and bounded. Do not count mechanical wrapping that makes the code harder to read as an improvement.
+- Never introduce or worsen a reported metric. When cleanup reduces accepted debt, run `python3 scripts/review_size.py --write-baseline`, review the baseline diff, and rerun the checker.
+- Keep opportunistic cleanup within the touched file or its immediate owner; keep dedicated cleanup changes small and behavior-preserving rather than coupling unrelated refactors to urgent work.
+- If violations remain, report the before/after counts in the PR description, identify what was fixed, and explain why any applicable cleanup was not made. When the checker reports no violations, omit readability status from the PR description.
+
 ## Test and Review Gates
 
 - New solvers require package tests and registration updates.
