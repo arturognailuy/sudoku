@@ -12,9 +12,9 @@ import (
 // A naked pair occurs when two cells in a unit share the same two candidates —
 // those candidates can be eliminated from all other cells in the unit.
 //
-// This solver does not place values directly. Instead, it finds eliminations
-// and then checks if any elimination creates a naked single (a cell with one
-// candidate remaining), returning that as the move.
+// This solver does not place values directly. Apply retains the solving
+// contract of returning a move when an elimination creates a naked single;
+// Hint can expose the elimination itself for interactive teaching.
 type NakedPairSolver struct {
 	Base
 }
@@ -78,6 +78,15 @@ func (s *NakedTripleSolver) Apply(board *core.Board) *Move {
 	return nil
 }
 
+// Hint returns the first useful naked-triple elimination even when it does not
+// immediately create a placement.
+func (s *NakedTripleSolver) Hint(board *core.Board) *Move {
+	if move := s.Apply(board); move != nil {
+		return move
+	}
+	return findNakedSubsetHint(board, 3, s.Key, "Naked triple")
+}
+
 // NakedQuadSolver finds naked quads in rows, columns, and boxes.
 //
 // A naked quad occurs when four cells in a unit collectively have exactly
@@ -110,6 +119,15 @@ func (s *NakedQuadSolver) Apply(board *core.Board) *Move {
 	}
 
 	return nil
+}
+
+// Hint returns the first useful naked-quad elimination even when it does not
+// immediately create a placement.
+func (s *NakedQuadSolver) Hint(board *core.Board) *Move {
+	if move := s.Apply(board); move != nil {
+		return move
+	}
+	return findNakedSubsetHint(board, 4, s.Key, "Naked quad")
 }
 
 // nakedSubsetCell holds an empty cell's position and its candidate set.
@@ -249,60 +267,83 @@ func nakedSubsetValNames(vals []int) string {
 // Hint returns the first naked-pair elimination as a teaching deduction without
 // requiring that the elimination immediately creates a placement.
 func (s *NakedPairSolver) Hint(board *core.Board) *Move {
-	for _, u := range allUnits() {
-		if move := findNakedPairElimination(board, u.positions, u.name, s.Key); move != nil {
+	return findNakedSubsetHint(board, 2, s.Key, "Naked pair")
+}
+
+func findNakedSubsetHint(board *core.Board, size int, technique, displayName string) *Move {
+	for _, unit := range allUnits() {
+		if move := findNakedSubsetElimination(board, unit.positions, unit.name, size, technique, displayName); move != nil {
 			return move
 		}
 	}
 	return nil
 }
 
-func findNakedPairElimination(board *core.Board, positions []core.Position, unitName, technique string) *Move {
+func findNakedSubsetElimination(board *core.Board, positions []core.Position, unitName string, size int, technique, displayName string) *Move {
 	var eligible []nakedSubsetCell
 	for _, position := range positions {
 		candidates := board.Candidates(position)
-		if candidates.Count() == 2 {
+		if count := candidates.Count(); count > 0 && count <= size {
 			eligible = append(eligible, nakedSubsetCell{pos: position, candidates: candidates})
 		}
 	}
-	for left := 0; left < len(eligible); left++ {
-		for right := left + 1; right < len(eligible); right++ {
-			if eligible[left].candidates != eligible[right].candidates {
-				continue
+	if len(eligible) < size {
+		return nil
+	}
+	indices := make([]int, size)
+	return nakedSubsetEliminationSearch(board, eligible, positions, unitName, size, technique, displayName, indices, 0, 0)
+}
+
+func nakedSubsetEliminationSearch(board *core.Board, eligible []nakedSubsetCell, positions []core.Position, unitName string, size int, technique, displayName string, indices []int, start, depth int) *Move {
+	if depth < size {
+		for index := start; index < len(eligible); index++ {
+			indices[depth] = index
+			if move := nakedSubsetEliminationSearch(board, eligible, positions, unitName, size, technique, displayName, indices, index+1, depth+1); move != nil {
+				return move
 			}
-			pair := eligible[left].candidates.Values()
-			var eliminations []CandidateRef
-			for _, position := range positions {
-				if position == eligible[left].pos || position == eligible[right].pos || board.Get(position) != 0 {
-					continue
-				}
-				candidates := board.Candidates(position)
-				for _, value := range pair {
-					if candidates.Has(value) {
-						eliminations = append(eliminations, CandidateRef{Position: position, Value: value})
-					}
-				}
-			}
-			if len(eliminations) == 0 {
-				continue
-			}
-			return &Move{
-				Technique: technique,
-				Reason: fmt.Sprintf("Naked pair {%s} in %s at {%s, %s} eliminates candidates from the other cells",
-					nakedSubsetValNames(pair), unitName, eligible[left].pos.ToString(), eligible[right].pos.ToString()),
-				EliminationOnly: true,
-				Evidence: &Evidence{
-					Unit: parseNakedSubsetUnit(unitName),
-					Premises: []CandidateGroup{
-						{Position: eligible[left].pos, Values: pair},
-						{Position: eligible[right].pos, Values: pair},
-					},
-					Eliminations: eliminations,
-				},
+		}
+		return nil
+	}
+
+	var union core.CandidateSet
+	selected := make(map[core.Position]bool, size)
+	premises := make([]CandidateGroup, size)
+	for index := 0; index < size; index++ {
+		cell := eligible[indices[index]]
+		union |= cell.candidates
+		selected[cell.pos] = true
+		premises[index] = CandidateGroup{Position: cell.pos, Values: cell.candidates.Values()}
+	}
+	if union.Count() != size {
+		return nil
+	}
+
+	values := union.Values()
+	var eliminations []CandidateRef
+	for _, position := range positions {
+		if selected[position] || board.Get(position) != 0 {
+			continue
+		}
+		candidates := board.Candidates(position)
+		for _, value := range values {
+			if candidates.Has(value) {
+				eliminations = append(eliminations, CandidateRef{Position: position, Value: value})
 			}
 		}
 	}
-	return nil
+	if len(eliminations) == 0 {
+		return nil
+	}
+	return &Move{
+		Technique:       technique,
+		Reason:          fmt.Sprintf("%s {%s} in %s at {%s} eliminates candidates from the other cells", displayName, nakedSubsetValNames(values), unitName, nakedSubsetCellNames(eligible, indices, size)),
+		EliminationOnly: true,
+		Evidence: &Evidence{
+			Unit:         parseNakedSubsetUnit(unitName),
+			Premises:     premises,
+			Eliminations: eliminations,
+		},
+	}
 }
 
 func parseNakedSubsetUnit(name string) *UnitRef {

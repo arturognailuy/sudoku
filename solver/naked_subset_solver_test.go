@@ -123,3 +123,72 @@ func TestNakedQuadSolver_Metadata(t *testing.T) {
 		t.Errorf("Expected weight %d, got %d", solver.WeightNakedQuad, s.GetWeight())
 	}
 }
+
+func TestNakedSubsetHintsExposeCandidateOnlyEliminations(t *testing.T) {
+	tests := []struct {
+		name      string
+		size      int
+		premises  [][]int
+		technique string
+		hint      func(*core.Board) *solver.Move
+		targetCol int
+	}{
+		{
+			name:      "triple",
+			size:      3,
+			premises:  [][]int{{1, 2}, {1, 3}, {2, 3}},
+			technique: "naked-triple",
+			hint:      solver.NewNakedTripleSolver().Hint,
+			targetCol: 3,
+		},
+		{
+			name:      "quad",
+			size:      4,
+			premises:  [][]int{{1, 2}, {2, 3}, {3, 4}, {1, 4}},
+			technique: "naked-quad",
+			hint:      solver.NewNakedQuadSolver().Hint,
+			targetCol: 4,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			board := core.NewEmptyBoard()
+			for column, values := range test.premises {
+				keep := make(map[int]bool, len(values))
+				for _, value := range values {
+					keep[value] = true
+				}
+				position := core.NewPosition(0, column)
+				for value := 1; value <= 9; value++ {
+					if !keep[value] {
+						board.EliminateCandidate(position, value)
+					}
+				}
+			}
+			for value := 2; value <= test.size; value++ {
+				board.EliminateCandidate(core.NewPosition(0, test.targetCol), value)
+			}
+			for column := test.targetCol + 1; column < 9; column++ {
+				for value := 1; value <= test.size; value++ {
+					board.EliminateCandidate(core.NewPosition(0, column), value)
+				}
+			}
+
+			move := test.hint(&board)
+			if move == nil {
+				t.Fatal("expected an elimination-only hint, got nil")
+			}
+			if move.Technique != test.technique || !move.EliminationOnly || move.IsPlacement() {
+				t.Fatalf("unexpected move: %+v", move)
+			}
+			want := []solver.CandidateRef{{Position: core.NewPosition(0, test.targetCol), Value: 1}}
+			if move.Evidence == nil || len(move.Evidence.Eliminations) != 1 || move.Evidence.Eliminations[0] != want[0] {
+				t.Fatalf("eliminations = %+v, want %+v", move.Evidence, want)
+			}
+			if len(move.Evidence.Premises) != test.size {
+				t.Fatalf("premise count = %d, want %d", len(move.Evidence.Premises), test.size)
+			}
+		})
+	}
+}

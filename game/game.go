@@ -282,8 +282,6 @@ func (game *Game) Hint() *HintPlan {
 			}
 		}
 	}
-	var deferredIntersectionStrategy solver.StrategySolver
-	var deferredIntersectionMove *solver.Move
 	for _, strategy := range game.strategySolvers {
 		before := candidateGrid(&hintBoard)
 		var move *solver.Move
@@ -296,14 +294,6 @@ func (game *Game) Hint() *HintPlan {
 			continue
 		}
 		completeTeachingEvidence(&hintBoard, before, move)
-		if strategy.GetKey() == "pointing-pair" && move.EliminationOnly {
-			deferredIntersectionStrategy = strategy
-			deferredIntersectionMove = move
-			continue
-		}
-		if deferredIntersectionMove != nil && sameEliminationConclusion(deferredIntersectionMove, move) {
-			return composeHintPlan(game.Snapshot(), deferredIntersectionStrategy, deferredIntersectionMove)
-		}
 		return composeHintPlan(game.Snapshot(), strategy, move)
 	}
 
@@ -322,29 +312,6 @@ func (game *Game) Hint() *HintPlan {
 		return composeHintPlan(game.Snapshot(), game.completeSolver, move)
 	}
 	return nil
-}
-
-func sameEliminationConclusion(left, right *solver.Move) bool {
-	if left == nil || right == nil || left.IsPlacement() || right.IsPlacement() || left.Evidence == nil || right.Evidence == nil {
-		return false
-	}
-	leftRefs, rightRefs := left.Evidence.Eliminations, right.Evidence.Eliminations
-	if len(leftRefs) == 0 || len(leftRefs) != len(rightRefs) {
-		return false
-	}
-	for _, leftRef := range leftRefs {
-		found := false
-		for _, rightRef := range rightRefs {
-			if leftRef == rightRef {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }
 
 func (game *Game) valueCorrectionHint() *HintPlan {
