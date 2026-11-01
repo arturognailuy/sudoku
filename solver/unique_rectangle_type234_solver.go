@@ -134,9 +134,18 @@ func (s *UniqueRectangleType2Solver) checkType2(board *core.Board, corners [4]co
 							Technique: s.Key,
 							Reason: fmt.Sprintf(
 								"Unique Rectangle Type 2: corners %s,%s have {%d,%d}, corners %s,%s have {%d,%d,%d} — %d eliminated from %s, leaving %d",
-								corners[biIdxs[0]].ToString(), corners[biIdxs[1]].ToString(), a, b,
-								posE0.ToString(), posE1.ToString(), a, b, x,
-								x, pos.ToString(), value,
+								corners[biIdxs[0]].ToString(),
+								corners[biIdxs[1]].ToString(),
+								a,
+								b,
+								posE0.ToString(),
+								posE1.ToString(),
+								a,
+								b,
+								x,
+								x,
+								pos.ToString(),
+								value,
 							),
 						}
 					}
@@ -274,7 +283,13 @@ func (s *UniqueRectangleType3Solver) checkType3(board *core.Board, corners [4]co
 
 // tryNakedSubset checks if the extras from the two UR corners plus other cells
 // in the unit form a naked subset, enabling eliminations.
-func (s *UniqueRectangleType3Solver) tryNakedSubset(board *core.Board, u unit, posE0, posE1 core.Position, corners [4]core.Position, extras core.CandidateSet) *Move {
+func (s *UniqueRectangleType3Solver) tryNakedSubset(
+	board *core.Board,
+	u unit,
+	posE0, posE1 core.Position,
+	corners [4]core.Position,
+	extras core.CandidateSet,
+) *Move {
 	subsetSize := extras.Count()
 
 	// Find cells in this unit (excluding the two extra UR corners) whose
@@ -324,7 +339,16 @@ func (s *UniqueRectangleType3Solver) tryNakedSubset(board *core.Board, u unit, p
 	return s.combinePartners(board, u, posE0, posE1, corners, extras, partners, indices, 0, 0)
 }
 
-func (s *UniqueRectangleType3Solver) combinePartners(board *core.Board, u unit, posE0, posE1 core.Position, corners [4]core.Position, extras core.CandidateSet, partners []core.Position, indices []int, start, depth int) *Move {
+func (s *UniqueRectangleType3Solver) combinePartners(
+	board *core.Board,
+	u unit,
+	posE0, posE1 core.Position,
+	corners [4]core.Position,
+	extras core.CandidateSet,
+	partners []core.Position,
+	indices []int,
+	start, depth int,
+) *Move {
 	if depth == len(indices) {
 		// Verify the combined candidates of the chosen partners match extras.
 		var combined core.CandidateSet
@@ -373,7 +397,13 @@ func mapKeys(m map[core.Position]bool) []core.Position {
 	return keys
 }
 
-func (s *UniqueRectangleType3Solver) eliminateFromUnit(board *core.Board, u unit, excludeList []core.Position, corners [4]core.Position, extras core.CandidateSet) *Move {
+func (s *UniqueRectangleType3Solver) eliminateFromUnit(
+	board *core.Board,
+	u unit,
+	excludeList []core.Position,
+	corners [4]core.Position,
+	extras core.CandidateSet,
+) *Move {
 	unitRef := unitReference(u)
 	premisePositions := append([]core.Position(nil), corners[:]...)
 	premisePositions = append(premisePositions, excludeList...)
@@ -406,7 +436,10 @@ func (s *UniqueRectangleType3Solver) eliminateFromUnit(board *core.Board, u unit
 						Technique: s.Key,
 						Reason: fmt.Sprintf(
 							"Unique Rectangle Type 3: UR extras form naked subset {%s} — %d eliminated from %s, leaving %d",
-							formatValues(extras.Values()), v, pos.ToString(), value,
+							formatValues(extras.Values()),
+							v,
+							pos.ToString(),
+							value,
 						),
 					}
 				}
@@ -559,8 +592,12 @@ func (s *UniqueRectangleType4Solver) checkType4(board *core.Board, corners [4]co
 								Technique: s.Key,
 								Reason: fmt.Sprintf(
 									"Unique Rectangle Type 4: %d is conjugate in %s,%s — %d eliminated from %s, leaving %d",
-									conjugateDigit, posE0.ToString(), posE1.ToString(),
-									elimDigit, pos.ToString(), value,
+									conjugateDigit,
+									posE0.ToString(),
+									posE1.ToString(),
+									elimDigit,
+									pos.ToString(),
+									value,
 								),
 							}
 						}

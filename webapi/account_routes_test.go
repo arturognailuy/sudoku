@@ -31,7 +31,17 @@ func (provider *accountRouteProvider) AuthorizationURL(state, nonce, _ string) s
 
 func (provider *accountRouteProvider) Exchange(context.Context, string, string) (oidcauth.Claims, error) {
 	now := time.Now().UTC()
-	return oidcauth.Claims{Issuer: oidcauth.GoogleIssuer, Subject: "subject-1", Audience: []string{"client-1"}, Nonce: provider.nonce, Email: "player@example.test", EmailVerified: true, Name: "Player", IssuedAt: now.Add(-time.Minute), ExpiresAt: now.Add(time.Hour)}, nil
+	return oidcauth.Claims{
+		Issuer:        oidcauth.GoogleIssuer,
+		Subject:       "subject-1",
+		Audience:      []string{"client-1"},
+		Nonce:         provider.nonce,
+		Email:         "player@example.test",
+		EmailVerified: true,
+		Name:          "Player",
+		IssuedAt:      now.Add(-time.Minute),
+		ExpiresAt:     now.Add(time.Hour),
+	}, nil
 }
 
 func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
@@ -44,23 +54,41 @@ func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
 	}
 	defer database.Close()
 	baseID := db.BasePuzzleID(knownPuzzle)
-	if inserted, err := database.InsertPuzzle(db.Puzzle{BasePuzzleID: baseID, Puzzle: knownPuzzle, Difficulty: "easy", Score: 1, MaxTechnique: "single", Source: "test"}); err != nil || !inserted {
+	if inserted, err := database.InsertPuzzle(db.Puzzle{BasePuzzleID: baseID, Puzzle: knownPuzzle, Difficulty: "easy",
+		Score: 1, MaxTechnique: "single", Source: "test"}); err != nil ||
+		!inserted {
 		t.Fatalf("insert puzzle = %v, %v", inserted, err)
 	}
 	key := make([]byte, 32)
 	for i := range key {
 		key[i] = 7
 	}
-	documents, err := guestdoc.New(guestdoc.Config{ActiveKeyID: "test", Keys: map[string][]byte{"test": key}, Lifetime: 24 * time.Hour})
+	documents, err := guestdoc.New(
+		guestdoc.Config{ActiveKeyID: "test", Keys: map[string][]byte{"test": key}, Lifetime: 24 * time.Hour},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	provider := &accountRouteProvider{}
-	login, err := oidcauth.New(oidcauth.Config{Provider: provider, Issuer: oidcauth.GoogleIssuer, ClientID: "client-1", ReturnPathPrefix: "/app/"})
+	login, err := oidcauth.New(
+		oidcauth.Config{
+			Provider:         provider,
+			Issuer:           oidcauth.GoogleIssuer,
+			ClientID:         "client-1",
+			ReturnPathPrefix: "/app/",
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	authentication, err := accountauth.New(accountauth.Config{Login: login, Store: database, IdleLifetime: 24 * time.Hour, AbsoluteLifetime: 30 * 24 * time.Hour})
+	authentication, err := accountauth.New(
+		accountauth.Config{
+			Login:            login,
+			Store:            database,
+			IdleLifetime:     24 * time.Hour,
+			AbsoluteLifetime: 30 * 24 * time.Hour,
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,9 +105,13 @@ func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
 		board.FromString(knownPuzzle)
 		return game.NewGame(board, options)
 	}
-	guestRuntime := &GuestRuntime{Documents: documents, Options: options, Create: func(_, _ string) (game.Game, string, Difficulty, error) {
-		return newGame(), baseID, Easy, nil
-	}}
+	guestRuntime := &GuestRuntime{
+		Documents: documents,
+		Options:   options,
+		Create: func(_, _ string) (game.Game, string, Difficulty, error) {
+			return newGame(), baseID, Easy, nil
+		},
+	}
 	runtime := &AccountRuntime{
 		Guest: guestRuntime, OIDC: login, Auth: authentication, Games: games, Claims: claims, Store: database,
 		CookiePath: "/app/", CSRFKey: append([]byte(nil), key...),
@@ -96,7 +128,15 @@ func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
 	server.SetAccountRuntime(runtime)
 	handler := NewHandler(server, nil)
 
-	created := request(t, handler, http.MethodPost, "/api/v1/guest/games", "application/json", `{"source":{"kind":"puzzle","puzzle":"`+knownPuzzle+`"}}`, nil)
+	created := request(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/guest/games",
+		"application/json",
+		`{"source":{"kind":"puzzle","puzzle":"`+knownPuzzle+`"}}`,
+		nil,
+	)
 	if created.Code != http.StatusCreated {
 		t.Fatalf("guest create status=%d body=%s", created.Code, created.Body.String())
 	}
@@ -104,25 +144,45 @@ func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
 	if err := json.Unmarshal(created.Body.Bytes(), &guest); err != nil || guest.Document == "" || guest.Revision != 0 {
 		t.Fatalf("guest create = %+v, %v", guest, err)
 	}
-	guestPreview := request(t, handler, http.MethodPost, "/api/v1/guest/games/hint", "application/json", `{"document":"`+guest.Document+`"}`, nil)
+	guestPreview := request(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/guest/games/hint",
+		"application/json",
+		`{"document":"`+guest.Document+`"}`,
+		nil,
+	)
 	if guestPreview.Code != http.StatusOK {
 		t.Fatalf("guest hint status=%d body=%s", guestPreview.Code, guestPreview.Body.String())
 	}
 	var guestHint HintPreview
-	if err := json.Unmarshal(guestPreview.Body.Bytes(), &guestHint); err != nil || guestHint.Revision != 0 || guestHint.Hint.PlanId == "" || len(guestHint.Hint.Steps) == 0 {
+	if err := json.Unmarshal(guestPreview.Body.Bytes(), &guestHint); err != nil || guestHint.Revision != 0 ||
+		guestHint.Hint.PlanId == "" ||
+		len(guestHint.Hint.Steps) == 0 {
 		t.Fatalf("guest hint = %+v, %v", guestHint, err)
 	}
-	action := request(t, handler, http.MethodPost, "/api/v1/guest/games/actions", "application/json", `{"document":"`+guest.Document+`","action":{"kind":"set-value","expected_revision":0,"row":1,"column":1,"value":4}}`, nil)
+	action := request(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/guest/games/actions",
+		"application/json",
+		`{"document":"`+guest.Document+`","action":{"kind":"set-value","expected_revision":0,"row":1,"column":1,"value":4}}`,
+		nil,
+	)
 	if action.Code != http.StatusOK {
 		t.Fatalf("guest action status=%d body=%s", action.Code, action.Body.String())
 	}
 	var guestAction GuestActionResponse
-	if err := json.Unmarshal(action.Body.Bytes(), &guestAction); err != nil || guestAction.Revision != 1 || guestAction.Snapshot.Values[0][0] != 4 {
+	if err := json.Unmarshal(action.Body.Bytes(), &guestAction); err != nil || guestAction.Revision != 1 ||
+		guestAction.Snapshot.Values[0][0] != 4 {
 		t.Fatalf("guest action = %+v, %v", guestAction, err)
 	}
 
 	unauthenticated := request(t, handler, http.MethodGet, "/api/v1/account", "", "", nil)
-	if unauthenticated.Code != http.StatusUnauthorized || !strings.Contains(unauthenticated.Body.String(), "account-unauthorized") {
+	if unauthenticated.Code != http.StatusUnauthorized ||
+		!strings.Contains(unauthenticated.Body.String(), "account-unauthorized") {
 		t.Fatalf("unauthenticated account status=%d body=%s", unauthenticated.Code, unauthenticated.Body.String())
 	}
 
@@ -136,17 +196,34 @@ func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
 		if err != nil || location.Query().Get("state") == "" {
 			t.Fatalf("login location = %q, %v", begin.Header().Get("Location"), err)
 		}
-		callback := request(t, handler, http.MethodGet, "/api/v1/auth/google/callback?state="+url.QueryEscape(location.Query().Get("state"))+"&code=accepted", "", "", nil)
+		callback := request(
+			t,
+			handler,
+			http.MethodGet,
+			"/api/v1/auth/google/callback?state="+url.QueryEscape(location.Query().Get("state"))+"&code=accepted",
+			"",
+			"",
+			nil,
+		)
 		if callback.Code != http.StatusSeeOther || callback.Header().Get("Location") != "/app/game" {
 			t.Fatalf("callback status=%d headers=%v body=%s", callback.Code, callback.Header(), callback.Body.String())
 		}
 		cookie := strings.SplitN(callback.Header().Get("Set-Cookie"), ";", 2)[0]
-		accountResponse := request(t, handler, http.MethodGet, "/api/v1/account", "", "", map[string]string{"Cookie": cookie})
+		accountResponse := request(
+			t,
+			handler,
+			http.MethodGet,
+			"/api/v1/account",
+			"",
+			"",
+			map[string]string{"Cookie": cookie},
+		)
 		if accountResponse.Code != http.StatusOK {
 			t.Fatalf("account status=%d body=%s", accountResponse.Code, accountResponse.Body.String())
 		}
 		var account Account
-		if err := json.Unmarshal(accountResponse.Body.Bytes(), &account); err != nil || account.CsrfToken == "" || account.Email != "player@example.test" {
+		if err := json.Unmarshal(accountResponse.Body.Bytes(), &account); err != nil || account.CsrfToken == "" ||
+			account.Email != "player@example.test" {
 			t.Fatalf("account = %+v, %v", account, err)
 		}
 		return cookie, account
@@ -154,7 +231,15 @@ func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
 
 	cookie, account := loginAccount()
 	headers := map[string]string{"Cookie": cookie, "X-Sudoku-CSRF": account.CsrfToken}
-	owned := request(t, handler, http.MethodPost, "/api/v1/account/games", "application/json", `{"source":{"kind":"puzzle","puzzle":"`+knownPuzzle+`"}}`, headers)
+	owned := request(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/account/games",
+		"application/json",
+		`{"source":{"kind":"puzzle","puzzle":"`+knownPuzzle+`"}}`,
+		headers,
+	)
 	if owned.Code != http.StatusCreated {
 		t.Fatalf("account create status=%d body=%s", owned.Code, owned.Body.String())
 	}
@@ -162,32 +247,67 @@ func TestGuestAndAccountRoutesUseSealedStateCookieAuthAndCSRF(t *testing.T) {
 	if err := json.Unmarshal(owned.Body.Bytes(), &ownedGame); err != nil {
 		t.Fatal(err)
 	}
-	accountPreview := request(t, handler, http.MethodGet, "/api/v1/account/games/"+ownedGame.Id+"/hint", "", "", map[string]string{"Cookie": cookie})
+	accountPreview := request(
+		t,
+		handler,
+		http.MethodGet,
+		"/api/v1/account/games/"+ownedGame.Id+"/hint",
+		"",
+		"",
+		map[string]string{"Cookie": cookie},
+	)
 	if accountPreview.Code != http.StatusOK {
 		t.Fatalf("account hint status=%d body=%s", accountPreview.Code, accountPreview.Body.String())
 	}
 	var accountHint HintPreview
-	if err := json.Unmarshal(accountPreview.Body.Bytes(), &accountHint); err != nil || accountHint.Revision != 0 || accountHint.Hint.PlanId == "" || len(accountHint.Hint.Steps) == 0 {
+	if err := json.Unmarshal(accountPreview.Body.Bytes(), &accountHint); err != nil || accountHint.Revision != 0 ||
+		accountHint.Hint.PlanId == "" ||
+		len(accountHint.Hint.Steps) == 0 {
 		t.Fatalf("account hint = %+v, %v", accountHint, err)
 	}
 	claimBody := `{"document":"` + guestAction.Document + `"}`
-	claimed := request(t, handler, http.MethodPost, "/api/v1/account/games/claim", "application/json", claimBody, headers)
+	claimed := request(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/account/games/claim",
+		"application/json",
+		claimBody,
+		headers,
+	)
 	if claimed.Code != http.StatusCreated {
 		t.Fatalf("claim status=%d body=%s", claimed.Code, claimed.Body.String())
 	}
 	var accountGame AccountGame
-	if err := json.Unmarshal(claimed.Body.Bytes(), &accountGame); err != nil || accountGame.Revision != 1 || accountGame.Snapshot.Values[0][0] != 4 {
+	if err := json.Unmarshal(claimed.Body.Bytes(), &accountGame); err != nil || accountGame.Revision != 1 ||
+		accountGame.Snapshot.Values[0][0] != 4 {
 		t.Fatalf("claimed game = %+v, %v", accountGame, err)
 	}
 	retry := request(t, handler, http.MethodPost, "/api/v1/account/games/claim", "application/json", claimBody, headers)
 	if retry.Code != http.StatusOK {
 		t.Fatalf("claim retry status=%d body=%s", retry.Code, retry.Body.String())
 	}
-	badCSRF := request(t, handler, http.MethodPost, "/api/v1/account/games/"+accountGame.Id+"/actions", "application/json", `{"kind":"clear-value","expected_revision":1,"row":1,"column":1}`, map[string]string{"Cookie": cookie, "X-Sudoku-CSRF": strings.Repeat("x", 43)})
+	badCSRF := request(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/account/games/"+accountGame.Id+"/actions",
+		"application/json",
+		`{"kind":"clear-value","expected_revision":1,"row":1,"column":1}`,
+		map[string]string{"Cookie": cookie, "X-Sudoku-CSRF": strings.Repeat("x", 43)},
+	)
 	if badCSRF.Code != http.StatusForbidden {
 		t.Fatalf("bad csrf status=%d body=%s", badCSRF.Code, badCSRF.Body.String())
 	}
-	mutated := request(t, handler, http.MethodPost, "/api/v1/account/games/"+accountGame.Id+"/actions", "application/json", `{"kind":"clear-value","expected_revision":1,"row":1,"column":1}`, headers)
+	mutated := request(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/account/games/"+accountGame.Id+"/actions",
+		"application/json",
+		`{"kind":"clear-value","expected_revision":1,"row":1,"column":1}`,
+		headers,
+	)
 	if mutated.Code != http.StatusOK {
 		t.Fatalf("account action status=%d body=%s", mutated.Code, mutated.Body.String())
 	}
@@ -226,11 +346,13 @@ func TestAccountRoutesRemainUnavailableWithoutPrivateConfiguration(t *testing.T)
 		contentType string
 		body        string
 	}{
-		{method: http.MethodPost, path: "/api/v1/guest/games", contentType: "application/json", body: `{"source":{"kind":"puzzle","puzzle":"` + knownPuzzle + `"}}`},
+		{method: http.MethodPost, path: "/api/v1/guest/games", contentType: "application/json",
+			body: `{"source":{"kind":"puzzle","puzzle":"` + knownPuzzle + `"}}`},
 		{method: http.MethodGet, path: "/api/v1/account"},
 	} {
 		response := request(t, handler, test.method, test.path, test.contentType, test.body, nil)
-		if response.Code != http.StatusServiceUnavailable || !strings.Contains(response.Body.String(), "account-unavailable") {
+		if response.Code != http.StatusServiceUnavailable ||
+			!strings.Contains(response.Body.String(), "account-unavailable") {
 			t.Fatalf("%s %s status=%d body=%s", test.method, test.path, response.Code, response.Body.String())
 		}
 	}

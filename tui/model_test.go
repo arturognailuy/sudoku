@@ -97,7 +97,8 @@ func TestAutomaticCandidateToggleIsPresentationOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !model.autoCandidates || model.dirty || model.snapshot != before || string(afterSerialized) != string(beforeSerialized) {
+	if !model.autoCandidates || model.dirty || model.snapshot != before ||
+		string(afterSerialized) != string(beforeSerialized) {
 		t.Fatal("automatic-candidate toggle mutated session state")
 	}
 	view := ansi.Strip(model.View())
@@ -144,7 +145,11 @@ func TestCandidateEditIsAtomicAndUndoable(t *testing.T) {
 	if !model.autoCandidates || model.mode != noteMode {
 		t.Fatal("candidate editing changed presentation mode")
 	}
-	if model.snapshot.Candidates[target.Row][target.Column].Has(value) == before.Candidates[target.Row][target.Column].Has(value) {
+	if model.snapshot.Candidates[target.Row][target.Column].Has(
+		value,
+	) == before.Candidates[target.Row][target.Column].Has(
+		value,
+	) {
 		t.Fatal("candidate edit did not apply the initiating toggle")
 	}
 	if !model.dirty {
@@ -156,7 +161,11 @@ func TestCandidateEditIsAtomicAndUndoable(t *testing.T) {
 		t.Fatal("one undo did not restore the candidate grid")
 	}
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	if model.snapshot.Candidates[target.Row][target.Column].Has(value) == before.Candidates[target.Row][target.Column].Has(value) {
+	if model.snapshot.Candidates[target.Row][target.Column].Has(
+		value,
+	) == before.Candidates[target.Row][target.Column].Has(
+		value,
+	) {
 		t.Fatal("one redo did not reapply candidate edit")
 	}
 }
@@ -168,7 +177,22 @@ func TestAutomaticCandidatesRefreshAndCoexistWithNotes(t *testing.T) {
 	legalNote := model.snapshot.Candidates[noteTarget.Row][noteTarget.Column].Values()[0]
 	model.snapshot.Candidates[noteTarget.Row][noteTarget.Column].Add(legalNote)
 	model.snapshot.Candidates[noteTarget.Row][noteTarget.Column].Add(9)
-	content := cellContent(model, noteTarget.Row, noteTarget.Column, 0) + cellContent(model, noteTarget.Row, noteTarget.Column, 1) + cellContent(model, noteTarget.Row, noteTarget.Column, 2)
+	content := cellContent(
+		model,
+		noteTarget.Row,
+		noteTarget.Column,
+		0,
+	) + cellContent(
+		model,
+		noteTarget.Row,
+		noteTarget.Column,
+		1,
+	) + cellContent(
+		model,
+		noteTarget.Row,
+		noteTarget.Column,
+		2,
+	)
 	if !strings.Contains(content, string(rune('0'+legalNote))) || !strings.Contains(content, "9") {
 		t.Fatalf("combined candidates omitted legal or stale manual note: %q", content)
 	}
@@ -183,7 +207,8 @@ func TestAutomaticCandidatesRefreshAndCoexistWithNotes(t *testing.T) {
 				for row := 0; row < 9 && !peer.IsValid(); row++ {
 					for column := 0; column < 9; column++ {
 						possiblePeer := core.NewPosition(row, column)
-						isPeer := row == targetRow || column == targetColumn || (row/3 == targetRow/3 && column/3 == targetColumn/3)
+						isPeer := row == targetRow || column == targetColumn ||
+							(row/3 == targetRow/3 && column/3 == targetColumn/3)
 						if possiblePeer != position && isPeer && model.snapshot.Candidates[row][column].Has(candidate) {
 							target, peer, legal = position, possiblePeer, candidate
 							break
@@ -199,7 +224,8 @@ func TestAutomaticCandidatesRefreshAndCoexistWithNotes(t *testing.T) {
 	before := model.snapshot.Candidates[peer.Row][peer.Column]
 	model.row, model.column = target.Row, target.Column
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{rune('0' + legal)}})
-	if model.snapshot.Candidates[target.Row][target.Column] != 0 || model.snapshot.Candidates[peer.Row][peer.Column] == before {
+	if model.snapshot.Candidates[target.Row][target.Column] != 0 ||
+		model.snapshot.Candidates[peer.Row][peer.Column] == before {
 		t.Fatal("candidate display did not refresh after a value action")
 	}
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
@@ -458,7 +484,9 @@ func TestDeterministicThemeSelectionAndNoColorFallback(t *testing.T) {
 	model.theme = noColorTheme
 	model = sendKey(t, model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
 	view := model.View()
-	for _, colorCode := range []string{"\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m", "\x1b[38;", "\x1b[40m", "\x1b[41m", "\x1b[42m", "\x1b[43m", "\x1b[44m", "\x1b[45m", "\x1b[46m", "\x1b[47m", "\x1b[48;"} {
+	for _, colorCode := range []string{"\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[35m",
+		"\x1b[36m", "\x1b[37m", "\x1b[38;", "\x1b[40m", "\x1b[41m", "\x1b[42m", "\x1b[43m", "\x1b[44m", "\x1b[45m",
+		"\x1b[46m", "\x1b[47m", "\x1b[48;"} {
 		if strings.Contains(view, colorCode) {
 			t.Fatalf("no-color view contains %q", colorCode)
 		}
@@ -552,7 +580,11 @@ func TestRecoverySelectionAndExplicitSaveCleanup(t *testing.T) {
 	}
 
 	fresh := testModel(t)
-	model := NewModelWithRecovery(*fresh.game, "", RecoveryOptions{Store: &store, Choices: []RecoveryChoice{{Record: records[0], Game: *recovered.game}}})
+	model := NewModelWithRecovery(
+		*fresh.game,
+		"",
+		RecoveryOptions{Store: &store, Choices: []RecoveryChoice{{Record: records[0], Game: *recovered.game}}},
+	)
 	model.width, model.height = 80, 42
 	if model.modal != recoveryModal {
 		t.Fatal("recovery chooser did not open")

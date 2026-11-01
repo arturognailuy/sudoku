@@ -34,7 +34,14 @@ one transaction.`,
 				Difficulty: level, Count: count, RandomSeed: randomSeed,
 				MaxClassifications: classifications, StatePath: state,
 			})
-			fmt.Fprintf(command.OutOrStdout(), "Classifications: %d\nAccepted: %d/%d\nState: %s\n", result.Classifications, result.Accepted, count, state)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Classifications: %d\nAccepted: %d/%d\nState: %s\n",
+				result.Classifications,
+				result.Accepted,
+				count,
+				state,
+			)
 			if err != nil {
 				return err
 			}
@@ -46,7 +53,8 @@ one transaction.`,
 			return nil
 		},
 	}
-	command.Flags().StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
+	command.Flags().
+		StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
 	command.Flags().StringVarP(&level, "level", "l", "", "Exact seed and candidate grade: expert or evil")
 	command.Flags().IntVarP(&count, "count", "n", 1, "Number of exact-grade additions to publish atomically")
 	command.Flags().Int64Var(&randomSeed, "seed", 1, "Deterministic search seed")

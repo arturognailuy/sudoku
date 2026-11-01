@@ -30,8 +30,9 @@ func NewPointingPairSolver() *PointingPairSolver {
 		Base: Base{
 			Key:         "pointing-pair",
 			DisplayName: "Pointing Pairs / Box-Line Reduction",
-			Description: "Finds candidates confined to a single row or column within a box (or vice versa), enabling eliminations that reveal a single candidate.",
-			Weight:      WeightPointingPair,
+			Description: ("Finds candidates confined to a single row or column within a box (or vice versa), " +
+				"enabling eliminations that reveal a single candidate."),
+			Weight: WeightPointingPair,
 		},
 	}
 }
@@ -156,7 +157,8 @@ func (s *PointingPairSolver) findBoxLineEliminations(board *core.Board) *Move {
 					}
 				}
 			}
-			if move := pointingEliminationMove(s.Key, UnitRef{Kind: UnitRow, Index: row}, UnitRef{Kind: UnitBox, Index: boxRow*3 + boxColumn}, positions, eliminations, digit); move != nil {
+			if move := pointingEliminationMove(s.Key, UnitRef{Kind: UnitRow, Index: row}, UnitRef{Kind: UnitBox,
+				Index: boxRow*3 + boxColumn}, positions, eliminations, digit); move != nil {
 				return move
 			}
 		}
@@ -190,7 +192,8 @@ func (s *PointingPairSolver) findBoxLineEliminations(board *core.Board) *Move {
 					}
 				}
 			}
-			if move := pointingEliminationMove(s.Key, UnitRef{Kind: UnitColumn, Index: column}, UnitRef{Kind: UnitBox, Index: boxRow*3 + boxColumn}, positions, eliminations, digit); move != nil {
+			if move := pointingEliminationMove(s.Key, UnitRef{Kind: UnitColumn, Index: column}, UnitRef{Kind: UnitBox,
+				Index: boxRow*3 + boxColumn}, positions, eliminations, digit); move != nil {
 				return move
 			}
 		}
@@ -198,15 +201,28 @@ func (s *PointingPairSolver) findBoxLineEliminations(board *core.Board) *Move {
 	return nil
 }
 
-func pointingEliminationMove(technique string, source, intersecting UnitRef, positions []core.Position, eliminations []CandidateRef, digit int) *Move {
+func pointingEliminationMove(
+	technique string,
+	source, intersecting UnitRef,
+	positions []core.Position,
+	eliminations []CandidateRef,
+	digit int,
+) *Move {
 	if len(eliminations) == 0 {
 		return nil
 	}
 	evidence := pointingEvidence(source, intersecting, positions, digit)
 	evidence.Eliminations = eliminations
 	return &Move{
-		Technique:       technique,
-		Reason:          fmt.Sprintf("candidate %d is confined to the intersection of %s %d and %s %d", digit, source.Kind, source.Index+1, intersecting.Kind, intersecting.Index+1),
+		Technique: technique,
+		Reason: fmt.Sprintf(
+			"candidate %d is confined to the intersection of %s %d and %s %d",
+			digit,
+			source.Kind,
+			source.Index+1,
+			intersecting.Kind,
+			intersecting.Index+1,
+		),
 		EliminationOnly: true,
 		Evidence:        evidence,
 	}
@@ -264,9 +280,18 @@ func (s *PointingPairSolver) findPointingPairs(board *core.Board) *Move {
 									Technique: s.Key,
 									Reason: fmt.Sprintf(
 										"Pointing pair: %d in box %d is confined to row %d, leaving %d as the only candidate for %s",
-										digit, boxRow*3+boxCol+1, row+1, value, pos.ToString(),
+										digit,
+										boxRow*3+boxCol+1,
+										row+1,
+										value,
+										pos.ToString(),
 									),
-									Evidence: pointingEvidence(UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol}, UnitRef{Kind: UnitRow, Index: row}, positions, digit),
+									Evidence: pointingEvidence(
+										UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol},
+										UnitRef{Kind: UnitRow, Index: row},
+										positions,
+										digit,
+									),
 								}
 							}
 						}
@@ -297,9 +322,18 @@ func (s *PointingPairSolver) findPointingPairs(board *core.Board) *Move {
 									Technique: s.Key,
 									Reason: fmt.Sprintf(
 										"Pointing pair: %d in box %d is confined to column %d, leaving %d as the only candidate for %s",
-										digit, boxRow*3+boxCol+1, col+1, value, pos.ToString(),
+										digit,
+										boxRow*3+boxCol+1,
+										col+1,
+										value,
+										pos.ToString(),
 									),
-									Evidence: pointingEvidence(UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol}, UnitRef{Kind: UnitColumn, Index: col}, positions, digit),
+									Evidence: pointingEvidence(
+										UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol},
+										UnitRef{Kind: UnitColumn, Index: col},
+										positions,
+										digit,
+									),
 								}
 							}
 						}
@@ -360,9 +394,18 @@ func (s *PointingPairSolver) findBoxLineReductions(board *core.Board) *Move {
 								Technique: s.Key,
 								Reason: fmt.Sprintf(
 									"Box-line reduction: %d in row %d is confined to box %d, leaving %d as the only candidate for %s",
-									digit, row+1, boxRow*3+boxCol+1, value, pos.ToString(),
+									digit,
+									row+1,
+									boxRow*3+boxCol+1,
+									value,
+									pos.ToString(),
 								),
-								Evidence: pointingEvidence(UnitRef{Kind: UnitRow, Index: row}, UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol}, positions, digit),
+								Evidence: pointingEvidence(
+									UnitRef{Kind: UnitRow, Index: row},
+									UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol},
+									positions,
+									digit,
+								),
 							}
 						}
 					}
@@ -416,9 +459,18 @@ func (s *PointingPairSolver) findBoxLineReductions(board *core.Board) *Move {
 								Technique: s.Key,
 								Reason: fmt.Sprintf(
 									"Box-line reduction: %d in column %d is confined to box %d, leaving %d as the only candidate for %s",
-									digit, col+1, boxRow*3+boxCol+1, value, pos.ToString(),
+									digit,
+									col+1,
+									boxRow*3+boxCol+1,
+									value,
+									pos.ToString(),
 								),
-								Evidence: pointingEvidence(UnitRef{Kind: UnitColumn, Index: col}, UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol}, positions, digit),
+								Evidence: pointingEvidence(
+									UnitRef{Kind: UnitColumn, Index: col},
+									UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol},
+									positions,
+									digit,
+								),
 							}
 						}
 					}

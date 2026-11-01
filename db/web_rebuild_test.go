@@ -15,10 +15,20 @@ func TestRebuildWebStatePreservesCatalogAndCohort(t *testing.T) {
 	}
 	puzzle := "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 	baseID := BasePuzzleID(puzzle)
-	if _, err := database.InsertPuzzle(Puzzle{BasePuzzleID: baseID, Puzzle: puzzle, Difficulty: "evil", Score: 1, MaxTechnique: "single", Source: "test"}); err != nil {
+	if _, err := database.InsertPuzzle(Puzzle{BasePuzzleID: baseID, Puzzle: puzzle, Difficulty: "evil", Score: 1,
+		MaxTechnique: "single", Source: "test"}); err != nil {
 		t.Fatal(err)
 	}
-	definition := CohortDefinition{Name: "test", Difficulty: "evil", RuleVersion: 1, ManifestHash: "manifest", RepositoryCommit: "commit", SolverConfigDigest: "solver", EvidenceHash: "evidence", MemberCount: 1}
+	definition := CohortDefinition{
+		Name:               "test",
+		Difficulty:         "evil",
+		RuleVersion:        1,
+		ManifestHash:       "manifest",
+		RepositoryCommit:   "commit",
+		SolverConfigDigest: "solver",
+		EvidenceHash:       "evidence",
+		MemberCount:        1,
+	}
 	if err := database.MaterializeServingCohort(definition, []string{baseID}); err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +36,8 @@ func TestRebuildWebStatePreservesCatalogAndCohort(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now().UTC()
-	if err := database.CreateWebSession(WebSession{ID: "session-1", UserID: "user-1", VerifierDigest: []byte("digest"), IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: now.Add(2 * time.Hour)}); err != nil {
+	if err := database.CreateWebSession(WebSession{ID: "session-1", UserID: "user-1",
+		VerifierDigest: []byte("digest"), IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: now.Add(2 * time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := database.conn.Exec(`ALTER TABLE application_sessions RENAME TO web_sessions`); err != nil {
@@ -54,7 +65,8 @@ func TestRebuildWebStatePreservesCatalogAndCohort(t *testing.T) {
 		t.Fatalf("catalog present=%v err=%v", present, err)
 	}
 	var cohorts, users, sessions int
-	if err := database.conn.QueryRow(`SELECT COUNT(*) FROM serving_cohort_members WHERE cohort_name = 'test' AND base_puzzle_id = ?`, baseID).Scan(&cohorts); err != nil {
+	if err := database.conn.QueryRow(("SELECT COUNT(*) FROM serving_cohort_members WHERE cohort_name = 'test' AND " +
+		"base_puzzle_id = ?"), baseID).Scan(&cohorts); err != nil {
 		t.Fatal(err)
 	}
 	if err := database.conn.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&users); err != nil {

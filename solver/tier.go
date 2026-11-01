@@ -7,7 +7,16 @@ var strategyTierTechniques = map[string][]string{
 	"medium": {"naked-pair", "naked-triple", "pointing-pair", "hidden-pair"},
 	"hard":   {"x-wing", "xy-wing", "hidden-triple", "w-wing"},
 	"expert": {"swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing"},
-	"evil":   {"jellyfish", "bug-plus-one", "unique-rectangle", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain"},
+	"evil": {
+		"jellyfish",
+		"bug-plus-one",
+		"unique-rectangle",
+		"unique-rectangle-2",
+		"unique-rectangle-3",
+		"unique-rectangle-4",
+		"x-cycles",
+		"xy-chain",
+	},
 }
 
 var strategyTechniqueTiers = func() map[string]int {

@@ -27,7 +27,19 @@ func newAPICommand() *cobra.Command {
 		Short: "Serve the versioned Sudoku HTTP API",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runAPI(cmd, apiConfig{listen: listen, dbPath: dbPath, webConfig: webConfig, origins: origins, readTimeout: readTimeout, writeTimeout: writeTimeout, idleTimeout: idleTimeout, shutdownTimeout: shutdownTimeout})
+			return runAPI(
+				cmd,
+				apiConfig{
+					listen:          listen,
+					dbPath:          dbPath,
+					webConfig:       webConfig,
+					origins:         origins,
+					readTimeout:     readTimeout,
+					writeTimeout:    writeTimeout,
+					idleTimeout:     idleTimeout,
+					shutdownTimeout: shutdownTimeout,
+				},
+			)
 		},
 	}
 	flags := command.Flags()
@@ -73,7 +85,15 @@ func runAPI(command *cobra.Command, config apiConfig) error {
 	server.SetGuestRuntime(guest)
 	server.SetAccountRuntime(accounts)
 
-	httpServer := &http.Server{Addr: config.listen, Handler: webapi.NewHandler(server, config.origins), ReadTimeout: config.readTimeout, ReadHeaderTimeout: 5 * time.Second, WriteTimeout: config.writeTimeout, IdleTimeout: config.idleTimeout, MaxHeaderBytes: 32 << 10}
+	httpServer := &http.Server{
+		Addr:              config.listen,
+		Handler:           webapi.NewHandler(server, config.origins),
+		ReadTimeout:       config.readTimeout,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      config.writeTimeout,
+		IdleTimeout:       config.idleTimeout,
+		MaxHeaderBytes:    32 << 10,
+	}
 	listener, err := net.Listen("tcp", config.listen)
 	if err != nil {
 		return err
@@ -103,7 +123,13 @@ func runAPI(command *cobra.Command, config apiConfig) error {
 func validateAllowedOrigins(origins []string) error {
 	for _, origin := range origins {
 		parsed, err := url.Parse(origin)
-		if err != nil || strings.Contains(origin, "*") || parsed.String() != origin || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" || parsed.User != nil || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+		if err != nil || strings.Contains(origin, "*") || parsed.String() != origin ||
+			(parsed.Scheme != "http" && parsed.Scheme != "https") ||
+			parsed.Host == "" ||
+			parsed.User != nil ||
+			parsed.Path != "" ||
+			parsed.RawQuery != "" ||
+			parsed.Fragment != "" {
 			return fmt.Errorf("invalid --allowed-origin %q: expected an exact http or https origin", origin)
 		}
 	}

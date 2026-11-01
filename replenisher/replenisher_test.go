@@ -33,7 +33,10 @@ func candidate(number int) db.Puzzle {
 }
 
 func TestRunResumesWithoutPublishingPartialBatch(t *testing.T) {
-	catalog := &fakeCatalog{seeds: []db.Puzzle{{BasePuzzleID: "seed", Puzzle: "seed", Difficulty: "expert"}}, existing: map[string]bool{}}
+	catalog := &fakeCatalog{
+		seeds:    []db.Puzzle{{BasePuzzleID: "seed", Puzzle: "seed", Difficulty: "expert"}},
+		existing: map[string]bool{},
+	}
 	state := filepath.Join(t.TempDir(), "state.json")
 	ctx, cancel := context.WithCancel(context.Background())
 	calls := 0
@@ -62,7 +65,10 @@ func TestRunResumesWithoutPublishingPartialBatch(t *testing.T) {
 }
 
 func TestRunRejectsExistingAndStagedDuplicates(t *testing.T) {
-	catalog := &fakeCatalog{seeds: []db.Puzzle{{BasePuzzleID: "seed", Puzzle: "seed", Difficulty: "expert"}}, existing: map[string]bool{"candidate-1": true}}
+	catalog := &fakeCatalog{
+		seeds:    []db.Puzzle{{BasePuzzleID: "seed", Puzzle: "seed", Difficulty: "expert"}},
+		existing: map[string]bool{"candidate-1": true},
+	}
 	calls := 0
 	builder := BuilderFunc(func(db.Puzzle, int64) (db.Puzzle, bool, error) {
 		calls++
@@ -71,9 +77,16 @@ func TestRunRejectsExistingAndStagedDuplicates(t *testing.T) {
 		}
 		return candidate(2), true, nil
 	})
-	config := Config{Difficulty: "expert", Count: 1, RandomSeed: 7, MaxClassifications: 3, StatePath: filepath.Join(t.TempDir(), "state.json")}
+	config := Config{
+		Difficulty:         "expert",
+		Count:              1,
+		RandomSeed:         7,
+		MaxClassifications: 3,
+		StatePath:          filepath.Join(t.TempDir(), "state.json"),
+	}
 	result, err := Run(context.Background(), catalog, builder, config)
-	if err != nil || result.Classifications != 3 || len(catalog.published) != 1 || catalog.published[0].Puzzle != "candidate-2" {
+	if err != nil || result.Classifications != 3 || len(catalog.published) != 1 ||
+		catalog.published[0].Puzzle != "candidate-2" {
 		t.Fatalf("result=%+v err=%v published=%+v", result, err, catalog.published)
 	}
 }

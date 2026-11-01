@@ -102,7 +102,14 @@ func wirePlan(plan *game.HintPlan) map[string]any {
 		for j, link := range step.Links {
 			links[j] = map[string]any{"from": link.From, "to": link.To, "kind": link.Kind}
 		}
-		steps[i] = map[string]any{"id": step.ID, "kind": step.Kind, "message": step.Message, "marks": marks, "nodes": nodes, "links": links}
+		steps[i] = map[string]any{
+			"id":      step.ID,
+			"kind":    step.Kind,
+			"message": step.Message,
+			"marks":   marks,
+			"nodes":   nodes,
+			"links":   links,
+		}
 		if len(step.Narration) > 0 {
 			narration := make([]map[string]any, len(step.Narration))
 			for j, chunk := range step.Narration {
@@ -124,12 +131,17 @@ func wirePlan(plan *game.HintPlan) map[string]any {
 		}
 	}
 	return map[string]any{
-		"plan_id":  plan.PlanID,
-		"kind":     plan.Kind,
-		"title":    plan.Title,
-		"strategy": map[string]any{"id": plan.Strategy.ID, "name": plan.Strategy.Name, "grade": plan.Strategy.Grade, "grade_name": plan.Strategy.GradeName},
-		"summary":  plan.Summary,
-		"steps":    steps,
+		"plan_id": plan.PlanID,
+		"kind":    plan.Kind,
+		"title":   plan.Title,
+		"strategy": map[string]any{
+			"id":         plan.Strategy.ID,
+			"name":       plan.Strategy.Name,
+			"grade":      plan.Strategy.Grade,
+			"grade_name": plan.Strategy.GradeName,
+		},
+		"summary": plan.Summary,
+		"steps":   steps,
 		"conclusion": wireEffect(game.HintEffect{
 			Placement:     plan.Conclusion.Placement,
 			Eliminations:  plan.Conclusion.Eliminations,
@@ -156,15 +168,36 @@ func wireTarget(target game.HintTarget) map[string]any {
 func wireEffect(effect game.HintEffect) map[string]any {
 	switch {
 	case effect.ClearValue != nil:
-		return map[string]any{"kind": "clear-value", "clear_value": map[string]int{"row": effect.ClearValue.Row + 1, "column": effect.ClearValue.Column + 1}}
+		return map[string]any{
+			"kind":        "clear-value",
+			"clear_value": map[string]int{"row": effect.ClearValue.Row + 1, "column": effect.ClearValue.Column + 1},
+		}
 	case effect.SetCandidates != nil:
-		return map[string]any{"kind": "set-candidates", "set_candidates": map[string]any{"row": effect.SetCandidates.Position.Row + 1, "column": effect.SetCandidates.Position.Column + 1, "values": effect.SetCandidates.Values.Values()}}
+		return map[string]any{
+			"kind": "set-candidates",
+			"set_candidates": map[string]any{
+				"row":    effect.SetCandidates.Position.Row + 1,
+				"column": effect.SetCandidates.Position.Column + 1,
+				"values": effect.SetCandidates.Values.Values(),
+			},
+		}
 	case effect.Placement != nil:
-		return map[string]any{"kind": "place-value", "placement": map[string]int{"row": effect.Placement.Position.Row + 1, "column": effect.Placement.Position.Column + 1, "value": effect.Placement.Value}}
+		return map[string]any{
+			"kind": "place-value",
+			"placement": map[string]int{
+				"row":    effect.Placement.Position.Row + 1,
+				"column": effect.Placement.Position.Column + 1,
+				"value":  effect.Placement.Value,
+			},
+		}
 	default:
 		items := make([]map[string]int, len(effect.Eliminations))
 		for i, ref := range effect.Eliminations {
-			items[i] = map[string]int{"row": ref.Position.Row + 1, "column": ref.Position.Column + 1, "value": ref.Value}
+			items[i] = map[string]int{
+				"row":    ref.Position.Row + 1,
+				"column": ref.Position.Column + 1,
+				"value":  ref.Value,
+			}
 		}
 		return map[string]any{"kind": "eliminate-candidates", "eliminations": items}
 	}

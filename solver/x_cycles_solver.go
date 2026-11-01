@@ -143,7 +143,12 @@ func (s *XCyclesSolver) addOneWay(adj map[core.Position][]xcEdge, from, to core.
 
 // dfsXCycle performs a DFS from startPos to find alternating chains that
 // return to startPos, producing useful eliminations.
-func (s *XCyclesSolver) dfsXCycle(board *core.Board, digit int, adj map[core.Position][]xcEdge, startPos core.Position) *Move {
+func (s *XCyclesSolver) dfsXCycle(
+	board *core.Board,
+	digit int,
+	adj map[core.Position][]xcEdge,
+	startPos core.Position,
+) *Move {
 	// We need chains of length >= 4 (at least 2 links after start).
 	// Chain alternates: the link from the previous cell determines the next
 	// required link type (strong after weak, weak after strong).
@@ -156,7 +161,8 @@ func (s *XCyclesSolver) dfsXCycle(board *core.Board, digit int, adj map[core.Pos
 
 		path := []core.Position{startPos, firstEdge.to}
 		linkKinds := []bool{firstEdge.strong}
-		if move := s.dfsChain(board, digit, adj, startPos, firstEdge.to, !firstEdge.strong, 1, visited, firstEdge.strong, path, linkKinds); move != nil {
+		if move := s.dfsChain(board, digit, adj, startPos, firstEdge.to, !firstEdge.strong, 1, visited, firstEdge.strong,
+			path, linkKinds); move != nil {
 			return move
 		}
 	}
@@ -165,7 +171,18 @@ func (s *XCyclesSolver) dfsXCycle(board *core.Board, digit int, adj map[core.Pos
 }
 
 // dfsChain recursively searches for an alternating chain back to startPos.
-func (s *XCyclesSolver) dfsChain(board *core.Board, digit int, adj map[core.Position][]xcEdge, startPos, currPos core.Position, nextMustStrong bool, depth int, visited map[core.Position]bool, firstLinkStrong bool, path []core.Position, linkKinds []bool) *Move {
+func (s *XCyclesSolver) dfsChain(
+	board *core.Board,
+	digit int,
+	adj map[core.Position][]xcEdge,
+	startPos, currPos core.Position,
+	nextMustStrong bool,
+	depth int,
+	visited map[core.Position]bool,
+	firstLinkStrong bool,
+	path []core.Position,
+	linkKinds []bool,
+) *Move {
 	// Limit chain length to prevent excessive computation.
 	if depth > 20 {
 		return nil
@@ -249,7 +266,8 @@ func (s *XCyclesSolver) dfsChain(board *core.Board, digit int, adj map[core.Posi
 		visited[edge.to] = true
 		nextPath := append(append([]core.Position(nil), path...), edge.to)
 		nextLinks := append(append([]bool(nil), linkKinds...), edge.strong)
-		if move := s.dfsChain(board, digit, adj, startPos, edge.to, !nextMustStrong, depth+1, visited, firstLinkStrong, nextPath, nextLinks); move != nil {
+		if move := s.dfsChain(board, digit, adj, startPos, edge.to, !nextMustStrong, depth+1, visited, firstLinkStrong,
+			nextPath, nextLinks); move != nil {
 			return move
 		}
 		delete(visited, edge.to)

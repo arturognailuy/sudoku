@@ -54,7 +54,9 @@ func Load(evidencePath, reportPath string) (Selection, error) {
 	if err := json.Unmarshal(reportData, &report); err != nil {
 		return Selection{}, fmt.Errorf("decode audit report: %w", err)
 	}
-	if report.SchemaVersion != 1 || report.ManifestHash != ManifestHash || report.RepositoryCommit != RepositoryCommit || report.SolverConfigDigest != SolverConfigDigest {
+	if report.SchemaVersion != 1 || report.ManifestHash != ManifestHash ||
+		report.RepositoryCommit != RepositoryCommit ||
+		report.SolverConfigDigest != SolverConfigDigest {
 		return Selection{}, fmt.Errorf("audit report does not match the frozen Evil cohort evidence")
 	}
 	file, err := os.Open(evidencePath)
@@ -70,8 +72,17 @@ func Load(evidencePath, reportPath string) (Selection, error) {
 	if got := hex.EncodeToString(hash.Sum(nil)); got != EvidenceHash {
 		return Selection{}, fmt.Errorf("audit evidence SHA-256 is %s, want %s", got, EvidenceHash)
 	}
-	if selection.ExploratoryPopulation != 34389 || selection.HeldOutPopulation != 8628 || selection.ExploratoryMembers != 1604 || selection.HeldOutMembers != 419 || len(selection.BasePuzzleIDs) != MemberCount {
-		return Selection{}, fmt.Errorf("audit evidence produced unexpected frozen counts: population %d/%d, members %d/%d", selection.ExploratoryPopulation, selection.HeldOutPopulation, selection.ExploratoryMembers, selection.HeldOutMembers)
+	if selection.ExploratoryPopulation != 34389 || selection.HeldOutPopulation != 8628 ||
+		selection.ExploratoryMembers != 1604 ||
+		selection.HeldOutMembers != 419 ||
+		len(selection.BasePuzzleIDs) != MemberCount {
+		return Selection{}, fmt.Errorf(
+			"audit evidence produced unexpected frozen counts: population %d/%d, members %d/%d",
+			selection.ExploratoryPopulation,
+			selection.HeldOutPopulation,
+			selection.ExploratoryMembers,
+			selection.HeldOutMembers,
+		)
 	}
 	return selection, nil
 }
@@ -123,7 +134,8 @@ func selectEvidence(reader io.Reader) (Selection, error) {
 }
 
 func eligible(e Evidence) bool {
-	return e.OriginalRating >= 7.0 && e.AdvancedMoveDensity >= 1.0/6.0 && e.EvilMoveCount >= 2 && e.AdvancedTechniqueDiversity >= 3
+	return e.OriginalRating >= 7.0 && e.AdvancedMoveDensity >= 1.0/6.0 && e.EvilMoveCount >= 2 &&
+		e.AdvancedTechniqueDiversity >= 3
 }
 
 func heldOut(puzzleHash string) (bool, error) {

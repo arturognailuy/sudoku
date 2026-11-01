@@ -124,7 +124,13 @@ func New(config Config) (*Sealer, error) {
 	if now == nil {
 		now = time.Now
 	}
-	return &Sealer{activeKeyID: config.ActiveKeyID, keys: keys, lifetime: config.Lifetime, random: random, now: now}, nil
+	return &Sealer{
+		activeKeyID: config.ActiveKeyID,
+		keys:        keys,
+		lifetime:    config.Lifetime,
+		random:      random,
+		now:         now,
+	}, nil
 }
 
 // Create serializes one game into a fresh revision-zero guest document.
@@ -183,7 +189,9 @@ func (sealer *Sealer) Seal(document Document) (string, error) {
 		return "", fmt.Errorf("create guest document nonce: %w", err)
 	}
 	sealed := aead.Seal(nil, nonce, plaintext, additionalData(FormatVersion, sealer.activeKeyID))
-	encoded, err := json.Marshal(envelope{Version: FormatVersion, KeyID: sealer.activeKeyID, Nonce: nonce, Ciphertext: sealed})
+	encoded, err := json.Marshal(
+		envelope{Version: FormatVersion, KeyID: sealer.activeKeyID, Nonce: nonce, Ciphertext: sealed},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -237,7 +245,12 @@ func (sealer *Sealer) Open(token string) (Document, error) {
 
 // Apply restores a guest game, applies one revision-checked action, and returns
 // a replacement token encrypted with the active key.
-func (sealer *Sealer) Apply(token string, expectedRevision int64, action game.Action, options game.Options) (Transition, error) {
+func (sealer *Sealer) Apply(
+	token string,
+	expectedRevision int64,
+	action game.Action,
+	options game.Options,
+) (Transition, error) {
 	document, err := sealer.Open(token)
 	if err != nil {
 		return Transition{}, err
@@ -272,7 +285,16 @@ func validateDocument(document Document, now time.Time, maxLifetime time.Duratio
 		return &Error{Code: ErrorUnsupportedVersion}
 	}
 	lifetime := document.ExpiresAt.Sub(document.IssuedAt)
-	if !validHex(document.ID, 16) || !validBasePuzzleID(document.BasePuzzleID) || !core.IsValidSudokuString(document.PresentedPuzzle) || document.Revision < 0 || !validDifficulty(document.ActualDifficulty) || document.Status != "" && !validGameStatus(document.Status) || document.IssuedAt.IsZero() || lifetime <= 0 || lifetime > maxLifetime || document.IssuedAt.After(now.Add(5*time.Minute)) || int64(len(document.EngineState)) > sessionfile.MaxSize {
+	if !validHex(document.ID, 16) || !validBasePuzzleID(document.BasePuzzleID) ||
+		!core.IsValidSudokuString(document.PresentedPuzzle) ||
+		document.Revision < 0 ||
+		!validDifficulty(document.ActualDifficulty) ||
+		document.Status != "" && !validGameStatus(document.Status) ||
+		document.IssuedAt.IsZero() ||
+		lifetime <= 0 ||
+		lifetime > maxLifetime ||
+		document.IssuedAt.After(now.Add(5*time.Minute)) ||
+		int64(len(document.EngineState)) > sessionfile.MaxSize {
 		return payloadError(nil)
 	}
 	if enforceExpiry && !now.Before(document.ExpiresAt) {
@@ -292,7 +314,8 @@ func validKeyID(value string) bool {
 		return false
 	}
 	for _, character := range value {
-		if !(character >= 'a' && character <= 'z' || character >= 'A' && character <= 'Z' || character >= '0' && character <= '9' || character == '-' || character == '_') {
+		if !(character >= 'a' && character <= 'z' || character >= 'A' && character <= 'Z' || character >= '0' &&
+			character <= '9' || character == '-' || character == '_') {
 			return false
 		}
 	}
@@ -312,7 +335,8 @@ func validBasePuzzleID(value string) bool {
 }
 
 func validGameStatus(value string) bool {
-	return value == string(game.StatusInProgress) || value == string(game.StatusInvalid) || value == string(game.StatusSolved)
+	return value == string(game.StatusInProgress) || value == string(game.StatusInvalid) ||
+		value == string(game.StatusSolved)
 }
 
 func validDifficulty(value string) bool {

@@ -99,14 +99,22 @@ func parse(data []byte, expectedDigest string, store solver.Store, validateCanon
 	}
 	currentDigest := solver.ConfigDigest(store)
 	if manifest.SolverConfigDigest != currentDigest {
-		return Release{}, fmt.Errorf("catalog solver configuration is %s, current configuration is %s", manifest.SolverConfigDigest, currentDigest)
+		return Release{}, fmt.Errorf(
+			"catalog solver configuration is %s, current configuration is %s",
+			manifest.SolverConfigDigest,
+			currentDigest,
+		)
 	}
 	seenPuzzles := make(map[string]struct{}, len(manifest.Puzzles))
 	for index, puzzle := range manifest.Puzzles {
-		if len(puzzle.Puzzle) != 81 || db.BasePuzzleID(puzzle.Puzzle) != puzzle.BasePuzzleID || (validateCanonical && core.CanonicalPuzzle(puzzle.Puzzle) != puzzle.Puzzle) {
+		if len(puzzle.Puzzle) != 81 || db.BasePuzzleID(puzzle.Puzzle) != puzzle.BasePuzzleID ||
+			(validateCanonical && core.CanonicalPuzzle(puzzle.Puzzle) != puzzle.Puzzle) {
 			return Release{}, fmt.Errorf("catalog puzzle %d is not canonical or has mismatched identity", index)
 		}
-		if !validDifficulty(puzzle.Difficulty) || puzzle.MaxTechnique == "" || puzzle.Source == "" || puzzle.SourceRef == "" || puzzle.License == "" || puzzle.Redistribution == "" {
+		if !validDifficulty(puzzle.Difficulty) || puzzle.MaxTechnique == "" || puzzle.Source == "" ||
+			puzzle.SourceRef == "" ||
+			puzzle.License == "" ||
+			puzzle.Redistribution == "" {
 			return Release{}, fmt.Errorf("catalog puzzle %d has incomplete immutable metadata", index)
 		}
 		if _, duplicate := seenPuzzles[puzzle.BasePuzzleID]; duplicate {
@@ -116,7 +124,12 @@ func parse(data []byte, expectedDigest string, store solver.Store, validateCanon
 	}
 	seenCohorts := make(map[string]struct{}, len(manifest.Cohorts))
 	for index, cohort := range manifest.Cohorts {
-		if cohort.Name == "" || !validDifficulty(cohort.Difficulty) || cohort.RuleVersion < 1 || cohort.ManifestHash == "" || cohort.RepositoryCommit == "" || cohort.SolverConfigDigest == "" || cohort.EvidenceHash == "" || len(cohort.Members) == 0 {
+		if cohort.Name == "" || !validDifficulty(cohort.Difficulty) || cohort.RuleVersion < 1 ||
+			cohort.ManifestHash == "" ||
+			cohort.RepositoryCommit == "" ||
+			cohort.SolverConfigDigest == "" ||
+			cohort.EvidenceHash == "" ||
+			len(cohort.Members) == 0 {
 			return Release{}, fmt.Errorf("catalog cohort %d has incomplete immutable metadata", index)
 		}
 		if _, duplicate := seenCohorts[cohort.Name]; duplicate {
@@ -138,13 +151,42 @@ func parse(data []byte, expectedDigest string, store solver.Store, validateCanon
 func (release Release) Apply(database *db.DB, dryRun bool) (db.CatalogBundleResult, error) {
 	puzzles := make([]db.Puzzle, len(release.Manifest.Puzzles))
 	for index, puzzle := range release.Manifest.Puzzles {
-		puzzles[index] = db.Puzzle{BasePuzzleID: puzzle.BasePuzzleID, Puzzle: puzzle.Puzzle, Difficulty: puzzle.Difficulty, Score: puzzle.Score, MaxTechnique: puzzle.MaxTechnique, Source: puzzle.Source, SourceRef: puzzle.SourceRef}
+		puzzles[index] = db.Puzzle{
+			BasePuzzleID: puzzle.BasePuzzleID,
+			Puzzle:       puzzle.Puzzle,
+			Difficulty:   puzzle.Difficulty,
+			Score:        puzzle.Score,
+			MaxTechnique: puzzle.MaxTechnique,
+			Source:       puzzle.Source,
+			SourceRef:    puzzle.SourceRef,
+		}
 	}
 	cohorts := make([]db.CatalogBundleCohort, len(release.Manifest.Cohorts))
 	for index, cohort := range release.Manifest.Cohorts {
-		cohorts[index] = db.CatalogBundleCohort{Definition: db.CohortDefinition{Name: cohort.Name, Difficulty: cohort.Difficulty, RuleVersion: cohort.RuleVersion, ManifestHash: cohort.ManifestHash, RepositoryCommit: cohort.RepositoryCommit, SolverConfigDigest: cohort.SolverConfigDigest, EvidenceHash: cohort.EvidenceHash, MemberCount: len(cohort.Members)}, Members: cohort.Members}
+		cohorts[index] = db.CatalogBundleCohort{
+			Definition: db.CohortDefinition{
+				Name:               cohort.Name,
+				Difficulty:         cohort.Difficulty,
+				RuleVersion:        cohort.RuleVersion,
+				ManifestHash:       cohort.ManifestHash,
+				RepositoryCommit:   cohort.RepositoryCommit,
+				SolverConfigDigest: cohort.SolverConfigDigest,
+				EvidenceHash:       cohort.EvidenceHash,
+				MemberCount:        len(cohort.Members),
+			},
+			Members: cohort.Members,
+		}
 	}
-	return database.ApplyCatalogBundle(db.CatalogBundleRelease{Version: release.Manifest.BundleVersion, ArtifactDigest: release.Digest, SolverConfigDigest: release.Manifest.SolverConfigDigest, Puzzles: puzzles, Cohorts: cohorts}, dryRun)
+	return database.ApplyCatalogBundle(
+		db.CatalogBundleRelease{
+			Version:            release.Manifest.BundleVersion,
+			ArtifactDigest:     release.Digest,
+			SolverConfigDigest: release.Manifest.SolverConfigDigest,
+			Puzzles:            puzzles,
+			Cohorts:            cohorts,
+		},
+		dryRun,
+	)
 }
 
 func validDifficulty(value string) bool {

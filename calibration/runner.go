@@ -184,7 +184,8 @@ func Run(manifestPath, outputDir string, store solver.Store) (Result, error) {
 	}
 	// The observation log is authoritative. Rebuild a missing or lagging
 	// checkpoint before resuming after an interruption.
-	if err := writeJSONAtomic(checkpointPath, checkpoint{Version: Version, ManifestHash: manifestHash, NextIndex: len(observations)}); err != nil {
+	if err := writeJSONAtomic(checkpointPath, checkpoint{Version: Version, ManifestHash: manifestHash,
+		NextIndex: len(observations)}); err != nil {
 		return Result{}, err
 	}
 
@@ -312,7 +313,14 @@ func validateManifest(manifest Manifest) error {
 	}
 	seenIDs := make(map[string]struct{}, len(manifest.Puzzles))
 	seenHashes := make(map[string]struct{}, len(manifest.Puzzles))
-	validDifficulties := map[string]bool{"": true, "easy": true, "medium": true, "hard": true, "expert": true, "evil": true}
+	validDifficulties := map[string]bool{
+		"":       true,
+		"easy":   true,
+		"medium": true,
+		"hard":   true,
+		"expert": true,
+		"evil":   true,
+	}
 	validCategories := map[string]bool{"external": true, "generated": true, "imported": true, "pathological": true}
 	validRedistribution := map[string]bool{"permitted": true, "restricted": true}
 	validSplits := map[string]bool{"exploratory": true, "held-out": true}
@@ -341,7 +349,8 @@ func validateManifest(manifest Manifest) error {
 		if !validCategories[puzzle.SourceCategory] {
 			return fmt.Errorf("puzzle %d (%s): invalid source_category %q", i, puzzle.ID, puzzle.SourceCategory)
 		}
-		for field, value := range map[string]string{"source_id": puzzle.SourceID, "license": puzzle.License, "collection_method": puzzle.CollectionMethod} {
+		for field, value := range map[string]string{"source_id": puzzle.SourceID, "license": puzzle.License,
+			"collection_method": puzzle.CollectionMethod} {
 			if strings.TrimSpace(value) == "" {
 				return fmt.Errorf("puzzle %d (%s): %s is required", i, puzzle.ID, field)
 			}
@@ -355,7 +364,8 @@ func validateManifest(manifest Manifest) error {
 		if !validDifficulties[puzzle.ExpectedDifficulty] {
 			return fmt.Errorf("puzzle %d (%s): invalid expected difficulty %q", i, puzzle.ID, puzzle.ExpectedDifficulty)
 		}
-		if puzzle.OriginalRating != nil && (strings.TrimSpace(puzzle.OriginalRating.System) == "" || strings.TrimSpace(puzzle.OriginalRating.Label) == "") {
+		if puzzle.OriginalRating != nil &&
+			(strings.TrimSpace(puzzle.OriginalRating.System) == "" || strings.TrimSpace(puzzle.OriginalRating.Label) == "") {
 			return fmt.Errorf("puzzle %d (%s): original_rating requires system and label", i, puzzle.ID)
 		}
 		if puzzle.SourceCategory == "generated" {
@@ -363,7 +373,14 @@ func validateManifest(manifest Manifest) error {
 			if generator == nil {
 				return fmt.Errorf("puzzle %d (%s): generated source requires generator metadata", i, puzzle.ID)
 			}
-			if !validDifficulties[generator.RequestedDifficulty] || generator.RequestedDifficulty == "" || strings.TrimSpace(generator.Configuration) == "" || generator.Attempt < 1 || generator.ElapsedMilliseconds < 0 || generator.ClueCount < 0 || generator.ClueCount > 81 || (generator.ClassificationOutcome != string(solver.ClassificationSolved) && generator.ClassificationOutcome != string(solver.ClassificationStrategyUnsolved)) {
+			if !validDifficulties[generator.RequestedDifficulty] || generator.RequestedDifficulty == "" ||
+				strings.TrimSpace(generator.Configuration) == "" ||
+				generator.Attempt < 1 ||
+				generator.ElapsedMilliseconds < 0 ||
+				generator.ClueCount < 0 ||
+				generator.ClueCount > 81 ||
+				(generator.ClassificationOutcome != string(solver.ClassificationSolved) &&
+					generator.ClassificationOutcome != string(solver.ClassificationStrategyUnsolved)) {
 				return fmt.Errorf("puzzle %d (%s): invalid generator metadata", i, puzzle.ID)
 			}
 		} else if puzzle.Generator != nil {
@@ -419,7 +436,9 @@ func readObservations(path string, manifest Manifest, manifestHash string) ([]Ob
 			return nil, fmt.Errorf("observation %d exceeds manifest length", index)
 		}
 		puzzle := manifest.Puzzles[index]
-		if observation.Version != Version || observation.Index != index || observation.ManifestHash != manifestHash || observation.ID != puzzle.ID || observation.PuzzleHash != hash([]byte(puzzle.Puzzle)) {
+		if observation.Version != Version || observation.Index != index || observation.ManifestHash != manifestHash ||
+			observation.ID != puzzle.ID ||
+			observation.PuzzleHash != hash([]byte(puzzle.Puzzle)) {
 			return nil, fmt.Errorf("observation %d does not match immutable manifest prefix", index)
 		}
 		observations = append(observations, observation)
@@ -442,7 +461,8 @@ func validateCheckpoint(path, manifestHash string, observed int) error {
 	if err := json.Unmarshal(data, &value); err != nil {
 		return fmt.Errorf("decode checkpoint: %w", err)
 	}
-	if value.Version != Version || value.ManifestHash != manifestHash || value.NextIndex < 0 || value.NextIndex > observed {
+	if value.Version != Version || value.ManifestHash != manifestHash || value.NextIndex < 0 ||
+		value.NextIndex > observed {
 		return errors.New("checkpoint does not match the immutable manifest and observation log")
 	}
 	return nil
@@ -473,7 +493,15 @@ func measure(index int, manifestHash string, puzzle Puzzle, store solver.Store) 
 }
 
 func classificationSignature(classification solver.Classification) string {
-	return fmt.Sprintf("%s\x00%s\x00%d\x00%s\x00%d\x00%s", classification.Outcome, classification.Difficulty, classification.Score, classification.MaxTechnique, len(classification.Moves), traceHash(classification.Moves))
+	return fmt.Sprintf(
+		"%s\x00%s\x00%d\x00%s\x00%d\x00%s",
+		classification.Outcome,
+		classification.Difficulty,
+		classification.Score,
+		classification.MaxTechnique,
+		len(classification.Moves),
+		traceHash(classification.Moves),
+	)
 }
 
 func traceHash(moves []solver.Move) string {
@@ -487,7 +515,14 @@ func traceHash(moves []solver.Move) string {
 	}
 	trace := make([]traceMove, len(moves))
 	for i, move := range moves {
-		trace[i] = traceMove{move.Cell.Position.Row, move.Cell.Position.Column, move.Cell.Value, move.Technique, move.Reason, move.EliminationOnly}
+		trace[i] = traceMove{
+			move.Cell.Position.Row,
+			move.Cell.Position.Column,
+			move.Cell.Value,
+			move.Technique,
+			move.Reason,
+			move.EliminationOnly,
+		}
 	}
 	data, _ := json.Marshal(trace)
 	return hash(data)
@@ -498,7 +533,8 @@ func deriveReport(manifest Manifest, manifestHash string, observations []Observa
 		Version: Version, ManifestName: manifest.Name, ManifestHash: manifestHash,
 		Observed: len(observations), Total: len(manifest.Puzzles), Complete: len(observations) == len(manifest.Puzzles),
 		ByOutcome: map[string]int{}, ByDifficulty: map[string]int{},
-		BySource: map[string]GroupReport{}, BySplit: map[string]GroupReport{}, MetricsByDifficulty: map[string]MetricReport{}, NeighboringScoreOverlap: map[string]OverlapReport{},
+		BySource: map[string]GroupReport{}, BySplit: map[string]GroupReport{},
+		MetricsByDifficulty: map[string]MetricReport{}, NeighboringScoreOverlap: map[string]OverlapReport{},
 		ExternalAgreement: map[string]map[string]map[string]int{}, GenerationMismatch: map[string]map[string]int{},
 		GenerationHitRate: map[string]RateReport{}, GenerationLatencyMS: map[string]NumericReport{}, GenerationRounds: map[string]NumericReport{},
 	}
@@ -529,7 +565,37 @@ func deriveReport(manifest Manifest, manifestHash string, observations []Observa
 		}
 		values.scores = append(values.scores, observation.Score)
 		values.moves = append(values.moves, observation.MoveCount)
-		values.clues = append(values.clues, strings.Count(puzzle.Puzzle, "1")+strings.Count(puzzle.Puzzle, "2")+strings.Count(puzzle.Puzzle, "3")+strings.Count(puzzle.Puzzle, "4")+strings.Count(puzzle.Puzzle, "5")+strings.Count(puzzle.Puzzle, "6")+strings.Count(puzzle.Puzzle, "7")+strings.Count(puzzle.Puzzle, "8")+strings.Count(puzzle.Puzzle, "9"))
+		values.clues = append(
+			values.clues,
+			strings.Count(
+				puzzle.Puzzle,
+				"1",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"2",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"3",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"4",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"5",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"6",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"7",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"8",
+			)+strings.Count(
+				puzzle.Puzzle,
+				"9",
+			),
+		)
 
 		if puzzle.SourceCategory == "external" && puzzle.OriginalRating != nil {
 			system := puzzle.OriginalRating.System
@@ -573,7 +639,12 @@ func deriveReport(manifest Manifest, manifestHash string, observations []Observa
 		report.BySplit[key] = group
 	}
 	for difficulty, values := range metrics {
-		report.MetricsByDifficulty[difficulty] = MetricReport{Observed: len(values.scores), Score: numericReport(values.scores), Moves: numericReport(values.moves), Clues: numericReport(values.clues)}
+		report.MetricsByDifficulty[difficulty] = MetricReport{
+			Observed: len(values.scores),
+			Score:    numericReport(values.scores),
+			Moves:    numericReport(values.moves),
+			Clues:    numericReport(values.clues),
+		}
 	}
 	tiers := []string{"easy", "medium", "hard", "expert", "evil"}
 	for i := 0; i < len(tiers)-1; i++ {
@@ -622,7 +693,13 @@ func numericReport(values []int) NumericReport {
 		}
 		return ordered[index]
 	}
-	return NumericReport{Count: len(ordered), Min: ordered[0], Median: at(0.5), P95: at(0.95), Max: ordered[len(ordered)-1]}
+	return NumericReport{
+		Count:  len(ordered),
+		Min:    ordered[0],
+		Median: at(0.5),
+		P95:    at(0.95),
+		Max:    ordered[len(ordered)-1],
+	}
 }
 
 func rateReport(numerator, denominator int) RateReport {
@@ -642,7 +719,18 @@ func rateReport(numerator, denominator int) RateReport {
 
 func markdownReport(report Report) string {
 	var builder strings.Builder
-	fmt.Fprintf(&builder, "# Difficulty Measurement Report\n\n- Manifest: `%s`\n- Hash: `%s`\n- Progress: %d/%d\n- Complete: %t\n- Reproducible classifications: %d/%d\n", report.ManifestName, report.ManifestHash, report.Observed, report.Total, report.Complete, report.Reproducible, report.Observed)
+	fmt.Fprintf(
+		&builder,
+		("# Difficulty Measurement Report\n\n- Manifest: `%s`\n- Hash: `%s`\n- Progress: %d/%d\n" +
+			"- Complete: %t\n- Reproducible classifications: %d/%d\n"),
+		report.ManifestName,
+		report.ManifestHash,
+		report.Observed,
+		report.Total,
+		report.Complete,
+		report.Reproducible,
+		report.Observed,
+	)
 	if report.Expected > 0 {
 		fmt.Fprintf(&builder, "- Expected matches: %d/%d\n", report.Matched, report.Expected)
 	}
@@ -652,23 +740,62 @@ func markdownReport(report Report) string {
 	fmt.Fprint(&builder, "\n## Source Groups\n\n")
 	for _, key := range sortedKeys(report.BySource) {
 		group := report.BySource[key]
-		fmt.Fprintf(&builder, "- %s: %d observed, %d solved, %d strategy-unsolved (%.1f%%, 95%% CI %.1f–%.1f%%)\n", key, group.Observed, group.Solved, group.StrategyUnsolved, 100*group.StrategyUnsolvedRate.Rate, 100*group.StrategyUnsolvedRate.Lower95, 100*group.StrategyUnsolvedRate.Upper95)
+		fmt.Fprintf(
+			&builder,
+			"- %s: %d observed, %d solved, %d strategy-unsolved (%.1f%%, 95%% CI %.1f–%.1f%%)\n",
+			key,
+			group.Observed,
+			group.Solved,
+			group.StrategyUnsolved,
+			100*group.StrategyUnsolvedRate.Rate,
+			100*group.StrategyUnsolvedRate.Lower95,
+			100*group.StrategyUnsolvedRate.Upper95,
+		)
 	}
 	fmt.Fprint(&builder, "\n## Split Groups\n\n")
 	for _, key := range sortedKeys(report.BySplit) {
 		group := report.BySplit[key]
-		fmt.Fprintf(&builder, "- %s: %d observed, %d solved, %d strategy-unsolved (%.1f%%, 95%% CI %.1f–%.1f%%)\n", key, group.Observed, group.Solved, group.StrategyUnsolved, 100*group.StrategyUnsolvedRate.Rate, 100*group.StrategyUnsolvedRate.Lower95, 100*group.StrategyUnsolvedRate.Upper95)
+		fmt.Fprintf(
+			&builder,
+			"- %s: %d observed, %d solved, %d strategy-unsolved (%.1f%%, 95%% CI %.1f–%.1f%%)\n",
+			key,
+			group.Observed,
+			group.Solved,
+			group.StrategyUnsolved,
+			100*group.StrategyUnsolvedRate.Rate,
+			100*group.StrategyUnsolvedRate.Lower95,
+			100*group.StrategyUnsolvedRate.Upper95,
+		)
 	}
-	fmt.Fprint(&builder, "\n## Tier Distributions\n\n| Tier | n | Score min/median/p95/max | Moves min/median/p95/max | Clues min/median/p95/max |\n|---|---:|---|---|---|\n")
+	fmt.Fprint(
+		&builder,
+		("\n## Tier Distributions\n\n| Tier | n | Score min/median/p95/max | Moves " +
+			"min/median/p95/max | Clues min/median/p95/max |\n|---|---:|---|---|---|\n"),
+	)
 	for _, key := range sortedKeys(report.MetricsByDifficulty) {
 		metric := report.MetricsByDifficulty[key]
-		fmt.Fprintf(&builder, "| %s | %d | %s | %s | %s |\n", key, metric.Observed, formatNumeric(metric.Score), formatNumeric(metric.Moves), formatNumeric(metric.Clues))
+		fmt.Fprintf(
+			&builder,
+			"| %s | %d | %s | %s | %s |\n",
+			key,
+			metric.Observed,
+			formatNumeric(metric.Score),
+			formatNumeric(metric.Moves),
+			formatNumeric(metric.Clues),
+		)
 	}
 	fmt.Fprint(&builder, "\n## Neighboring-Tier Score-Range Overlap\n\n")
 	for _, key := range sortedKeys(report.NeighboringScoreOverlap) {
 		overlap := report.NeighboringScoreOverlap[key]
 		if overlap.Overlaps {
-			fmt.Fprintf(&builder, "- %s / %s: overlap %d–%d\n", overlap.LowerTier, overlap.UpperTier, overlap.Lower, overlap.Upper)
+			fmt.Fprintf(
+				&builder,
+				"- %s / %s: overlap %d–%d\n",
+				overlap.LowerTier,
+				overlap.UpperTier,
+				overlap.Lower,
+				overlap.Upper,
+			)
 		} else {
 			fmt.Fprintf(&builder, "- %s / %s: no observed range overlap\n", overlap.LowerTier, overlap.UpperTier)
 		}
@@ -683,9 +810,31 @@ func markdownReport(report Report) string {
 	fmt.Fprint(&builder, "\n## Generation Measurements\n\n")
 	for _, target := range sortedKeys(report.GenerationMismatch) {
 		hit := report.GenerationHitRate[target]
-		fmt.Fprintf(&builder, "- %s: hits %d/%d (%.1f%%, 95%% CI %.1f–%.1f%%); observed {%s}; latency ms %s; rounds %s\n", target, hit.Numerator, hit.Denominator, 100*hit.Rate, 100*hit.Lower95, 100*hit.Upper95, formatCounts(report.GenerationMismatch[target]), formatNumeric(report.GenerationLatencyMS[target]), formatNumeric(report.GenerationRounds[target]))
+		fmt.Fprintf(
+			&builder,
+			"- %s: hits %d/%d (%.1f%%, 95%% CI %.1f–%.1f%%); observed {%s}; latency ms %s; rounds %s\n",
+			target,
+			hit.Numerator,
+			hit.Denominator,
+			100*hit.Rate,
+			100*hit.Lower95,
+			100*hit.Upper95,
+			formatCounts(report.GenerationMismatch[target]),
+			formatNumeric(report.GenerationLatencyMS[target]),
+			formatNumeric(report.GenerationRounds[target]),
+		)
 	}
-	fmt.Fprint(&builder, "\n## Method and Limits\n\n- Every puzzle was classified twice; only exact outcome, score, maximum-technique, move-count, and trace agreement was recorded.\n- Numeric summaries use deterministic nearest-rank percentiles. Rate intervals are Wilson 95% confidence intervals.\n- External source scales remain separate and do not validate or redefine canonical strategy grades.\n- Generated samples test generator behavior, not external source agreement. Random seeds are absent because the public generator boundary does not expose them.\n- Pilot strata are deliberately small. The report identifies expansion targets and does not justify policy changes by itself.\n")
+	fmt.Fprint(
+		&builder,
+		("\n## Method and Limits\n\n- Every puzzle was classified twice; only exact outcome, " +
+			"score, maximum-technique, move-count, and trace agreement was recorded.\n- Numeric " +
+			"summaries use deterministic nearest-rank percentiles. Rate intervals are Wilson 95% " +
+			"confidence intervals.\n- External source scales remain separate and do not validate " +
+			"or redefine canonical strategy grades.\n- Generated samples test generator behavior, " +
+			"not external source agreement. Random seeds are absent because the public generator " +
+			"boundary does not expose them.\n- Pilot strata are deliberately small. The report " +
+			"identifies expansion targets and does not justify policy changes by itself.\n"),
+	)
 	return builder.String()
 }
 

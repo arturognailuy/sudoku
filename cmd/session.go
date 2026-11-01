@@ -27,10 +27,12 @@ func createSession(request sessionRequest, output, errorOutput io.Writer) (game.
 			fmt.Fprintf(output, "Generating a random %s Sudoku problem...\n", capitalize(request.level))
 		}
 	}
-	service, err := playsession.New(playsession.Config{Solver: &solverStore, OpenCatalog: func(path string) (*db.DB, error) {
-		catalog, _, err := openCatalogDatabase(path)
-		return catalog, err
-	}})
+	service, err := playsession.New(
+		playsession.Config{Solver: &solverStore, OpenCatalog: func(path string) (*db.DB, error) {
+			catalog, _, err := openCatalogDatabase(path)
+			return catalog, err
+		}},
+	)
 	if err != nil {
 		return game.Game{}, "", err
 	}
@@ -46,9 +48,18 @@ func createSession(request sessionRequest, output, errorOutput io.Writer) (game.
 		case playsession.NoticeMultipleSolutions:
 			fmt.Fprintf(errorOutput, "The input has more than one solution: %s\n", request.input)
 		case playsession.NoticeCatalogFallback:
-			fmt.Fprintf(output, "Exact-grade catalog unavailable (%v). Falling back to bounded generation.\n", notice.Cause)
+			fmt.Fprintf(
+				output,
+				"Exact-grade catalog unavailable (%v). Falling back to bounded generation.\n",
+				notice.Cause,
+			)
 		case playsession.NoticeDifficultyChanged:
-			fmt.Fprintf(output, "Requested difficulty: %s. Generated puzzle difficulty: %s. Enjoy!\n", capitalize(notice.RequestedDifficulty), capitalize(notice.ActualDifficulty))
+			fmt.Fprintf(
+				output,
+				"Requested difficulty: %s. Generated puzzle difficulty: %s. Enjoy!\n",
+				capitalize(notice.RequestedDifficulty),
+				capitalize(notice.ActualDifficulty),
+			)
 		case playsession.NoticePersistenceFailed:
 			fmt.Fprintf(errorOutput, "Warning: unable to %s: %v\n", notice.Operation, notice.Cause)
 		}
@@ -103,7 +114,14 @@ func newCompletionTracker(current game.Game, path string, existingRunID ...strin
 		}
 		runID = generated
 		if err := puzzleDB.Close(); err != nil {
-			return playrun.NewLinked(key, runID, completionRecorder{path: path, runID: runID}), fmt.Errorf("close play-run database: %w", err)
+			return playrun.NewLinked(
+					key,
+					runID,
+					completionRecorder{path: path, runID: runID},
+				), fmt.Errorf(
+					"close play-run database: %w",
+					err,
+				)
 		}
 	}
 	if runID == "" {
@@ -112,7 +130,10 @@ func newCompletionTracker(current game.Game, path string, existingRunID ...strin
 	return playrun.NewLinked(key, runID, completionRecorder{path: path, runID: runID}), nil
 }
 
-func createTrackedSession(request sessionRequest, output, errorOutput io.Writer) (game.Game, string, *playrun.Tracker, error) {
+func createTrackedSession(
+	request sessionRequest,
+	output, errorOutput io.Writer,
+) (game.Game, string, *playrun.Tracker, error) {
 	if request.dbPath == "" {
 		catalog, resolvedDBPath, err := openCatalogDatabase("")
 		if err != nil {

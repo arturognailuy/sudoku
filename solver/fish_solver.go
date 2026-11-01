@@ -33,8 +33,9 @@ func NewXWingSolver() *FishSolver {
 		Base: Base{
 			Key:         "x-wing",
 			DisplayName: "X-Wing",
-			Description: "Finds a candidate confined to the same two columns in two rows (or same two rows in two columns), enabling eliminations that reveal a single candidate.",
-			Weight:      WeightXWing,
+			Description: ("Finds a candidate confined to the same two columns in two rows (or same two rows in " +
+				"two columns), enabling eliminations that reveal a single candidate."),
+			Weight: WeightXWing,
 		},
 		size: 2,
 	}
@@ -46,8 +47,9 @@ func NewSwordfishSolver() *FishSolver {
 		Base: Base{
 			Key:         "swordfish",
 			DisplayName: "Swordfish",
-			Description: "Finds a candidate confined to the same three columns in three rows (or same three rows in three columns), enabling eliminations that reveal a single candidate.",
-			Weight:      WeightSwordfish,
+			Description: ("Finds a candidate confined to the same three columns in three rows (or same three " +
+				"rows in three columns), enabling eliminations that reveal a single candidate."),
+			Weight: WeightSwordfish,
 		},
 		size: 3,
 	}
@@ -59,8 +61,9 @@ func NewJellyfishSolver() *FishSolver {
 		Base: Base{
 			Key:         "jellyfish",
 			DisplayName: "Jellyfish",
-			Description: "Finds a candidate confined to the same four columns in four rows (or same four rows in four columns), enabling eliminations that reveal a single candidate.",
-			Weight:      WeightJellyfish,
+			Description: ("Finds a candidate confined to the same four columns in four rows (or same four rows " +
+				"in four columns), enabling eliminations that reveal a single candidate."),
+			Weight: WeightJellyfish,
 		},
 		size: 4,
 	}
@@ -132,7 +135,15 @@ func (s *FishSolver) findFish(board *core.Board, rowBased bool) *Move {
 }
 
 // fishCombinationsSearch generates combinations of base lines and checks for fish patterns.
-func (s *FishSolver) fishCombinationsSearch(board *core.Board, eligible []fishLineInfo, indices []int, start int, depth int, digit int, rowBased bool) *Move {
+func (s *FishSolver) fishCombinationsSearch(
+	board *core.Board,
+	eligible []fishLineInfo,
+	indices []int,
+	start int,
+	depth int,
+	digit int,
+	rowBased bool,
+) *Move {
 	if depth == s.size {
 		// Compute the union of cross positions.
 		crossSet := make(map[int]bool)
@@ -243,7 +254,13 @@ func fishEvidence(eligible []fishLineInfo, indices, crossLines []int, digit int,
 }
 
 // formatReason creates a human-readable explanation for a fish placement move.
-func (s *FishSolver) formatReason(digit int, baseLines, crossLines []int, rowBased bool, value int, pos core.Position) string {
+func (s *FishSolver) formatReason(
+	digit int,
+	baseLines, crossLines []int,
+	rowBased bool,
+	value int,
+	pos core.Position,
+) string {
 	var baseName, crossName string
 	if rowBased {
 		baseName = "rows"

@@ -173,7 +173,10 @@ func measure(index int, puzzle calibration.Puzzle, store solver.Store) (Evidence
 	board.FromString(puzzle.Puzzle)
 	classification := solver.ClassifyPuzzle(store, board)
 	repeated := solver.ClassifyPuzzle(store, board)
-	if classification.Outcome != repeated.Outcome || classification.Difficulty != repeated.Difficulty || classification.Score != repeated.Score || classification.MaxTechnique != repeated.MaxTechnique || traceHash(classification.Moves) != traceHash(repeated.Moves) {
+	if classification.Outcome != repeated.Outcome || classification.Difficulty != repeated.Difficulty ||
+		classification.Score != repeated.Score ||
+		classification.MaxTechnique != repeated.MaxTechnique ||
+		traceHash(classification.Moves) != traceHash(repeated.Moves) {
 		return Evidence{}, fmt.Errorf("puzzle %d (%s): repeated classification was not identical", index, puzzle.ID)
 	}
 	counts := map[string]int{}
@@ -201,11 +204,32 @@ func measure(index int, puzzle calibration.Puzzle, store solver.Store) (Evidence
 	if len(classification.Moves) > 0 {
 		density = float64(advanced) / float64(len(classification.Moves))
 	}
-	return Evidence{SchemaVersion: SchemaVersion, Index: index, ID: puzzle.ID, PuzzleHash: puzzle.PuzzleHash, SourceID: puzzle.SourceID, Split: puzzle.Split,
-		OriginalRatingSystem: puzzle.OriginalRating.System, OriginalRating: rating, Outcome: classification.Outcome, Difficulty: classification.Difficulty,
-		Score: classification.Score, MaxTechnique: classification.MaxTechnique, ClueCount: 81 - strings.Count(puzzle.Puzzle, "."), MoveCount: len(classification.Moves),
-		AdvancedMoveCount: advanced, AdvancedTechniqueDiversity: len(advancedTechniques), AdvancedMoveDensity: density, EvilMoveCount: evil,
-		EvilTechniqueDiversity: len(evilTechniques), LongestAdvancedRun: longest, TechniqueCounts: counts, TraceHash: traceHash(classification.Moves)}, nil
+	return Evidence{
+		SchemaVersion:              SchemaVersion,
+		Index:                      index,
+		ID:                         puzzle.ID,
+		PuzzleHash:                 puzzle.PuzzleHash,
+		SourceID:                   puzzle.SourceID,
+		Split:                      puzzle.Split,
+		OriginalRatingSystem:       puzzle.OriginalRating.System,
+		OriginalRating:             rating,
+		Outcome:                    classification.Outcome,
+		Difficulty:                 classification.Difficulty,
+		Score:                      classification.Score,
+		MaxTechnique:               classification.MaxTechnique,
+		ClueCount:                  81 - strings.Count(puzzle.Puzzle, "."),
+		MoveCount:                  len(classification.Moves),
+		AdvancedMoveCount:          advanced,
+		AdvancedTechniqueDiversity: len(advancedTechniques),
+		AdvancedMoveDensity:        density,
+		EvilMoveCount:              evil,
+		EvilTechniqueDiversity: len(
+			evilTechniques,
+		),
+		LongestAdvancedRun: longest,
+		TechniqueCounts:    counts,
+		TraceHash:          traceHash(classification.Moves),
+	}, nil
 }
 
 func traceHash(moves []solver.Move) string {
@@ -219,7 +243,14 @@ func traceHash(moves []solver.Move) string {
 	}
 	trace := make([]traceMove, len(moves))
 	for i, m := range moves {
-		trace[i] = traceMove{m.Cell.Position.Row, m.Cell.Position.Column, m.Cell.Value, m.Technique, m.Reason, m.EliminationOnly}
+		trace[i] = traceMove{
+			m.Cell.Position.Row,
+			m.Cell.Position.Column,
+			m.Cell.Value,
+			m.Technique,
+			m.Reason,
+			m.EliminationOnly,
+		}
 	}
 	data, _ := json.Marshal(trace)
 	sum := sha256.Sum256(data)
@@ -227,7 +258,23 @@ func traceHash(moves []solver.Move) string {
 }
 
 func deriveReport(manifest calibration.Manifest, manifestHash, commit, digest string, rows []Evidence) Report {
-	r := Report{SchemaVersion: SchemaVersion, ManifestName: manifest.Name, ManifestHash: manifestHash, RepositoryCommit: commit, SolverConfigDigest: digest, GoVersion: runtime.Version(), OS: runtime.GOOS, Architecture: runtime.GOARCH, Total: len(rows), ByOutcome: map[string]int{}, ByDifficulty: map[string]int{}, MissingData: map[string]int{"original_rating": 0, "difficulty": 0, "max_technique": 0}, MetricsByDifficulty: map[string]map[string]NumericSummary{}, RatingCorrelations: map[string]Correlation{}, RatingQuartileAgreement: map[string]map[string]int{}}
+	r := Report{
+		SchemaVersion:           SchemaVersion,
+		ManifestName:            manifest.Name,
+		ManifestHash:            manifestHash,
+		RepositoryCommit:        commit,
+		SolverConfigDigest:      digest,
+		GoVersion:               runtime.Version(),
+		OS:                      runtime.GOOS,
+		Architecture:            runtime.GOARCH,
+		Total:                   len(rows),
+		ByOutcome:               map[string]int{},
+		ByDifficulty:            map[string]int{},
+		MissingData:             map[string]int{"original_rating": 0, "difficulty": 0, "max_technique": 0},
+		MetricsByDifficulty:     map[string]map[string]NumericSummary{},
+		RatingCorrelations:      map[string]Correlation{},
+		RatingQuartileAgreement: map[string]map[string]int{},
+	}
 	type series struct{ rating, score, evil, advanced, density, moves, clues []float64 }
 	groups := map[string]*series{"all": {}}
 	for _, row := range rows {
@@ -256,7 +303,15 @@ func deriveReport(manifest calibration.Manifest, manifestHash, commit, digest st
 		}
 	}
 	for key, g := range groups {
-		r.MetricsByDifficulty[key] = map[string]NumericSummary{"original_rating": summary(g.rating), "score": summary(g.score), "evil_move_count": summary(g.evil), "advanced_technique_diversity": summary(g.advanced), "advanced_move_density": summary(g.density), "move_count": summary(g.moves), "clue_count": summary(g.clues)}
+		r.MetricsByDifficulty[key] = map[string]NumericSummary{
+			"original_rating":              summary(g.rating),
+			"score":                        summary(g.score),
+			"evil_move_count":              summary(g.evil),
+			"advanced_technique_diversity": summary(g.advanced),
+			"advanced_move_density":        summary(g.density),
+			"move_count":                   summary(g.moves),
+			"clue_count":                   summary(g.clues),
+		}
 		r.RatingCorrelations[key+"_score"] = correlation(g.rating, g.score)
 		r.RatingCorrelations[key+"_evil_move_count"] = correlation(g.rating, g.evil)
 		r.RatingCorrelations[key+"_advanced_diversity"] = correlation(g.rating, g.advanced)
@@ -284,7 +339,15 @@ func summary(values []float64) NumericSummary {
 	}
 	sorted := append([]float64(nil), values...)
 	sort.Float64s(sorted)
-	return NumericSummary{len(sorted), sorted[0], percentileSorted(sorted, .25), percentileSorted(sorted, .5), percentileSorted(sorted, .75), percentileSorted(sorted, .95), sorted[len(sorted)-1]}
+	return NumericSummary{
+		len(sorted),
+		sorted[0],
+		percentileSorted(sorted, .25),
+		percentileSorted(sorted, .5),
+		percentileSorted(sorted, .75),
+		percentileSorted(sorted, .95),
+		sorted[len(sorted)-1],
+	}
 }
 func percentile(values []float64, p float64) float64 {
 	v := append([]float64(nil), values...)
@@ -393,7 +456,20 @@ func writeJSON(path string, value any) error {
 }
 func markdown(r Report) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# Full-Catalog Difficulty Audit\n\n- Manifest: `%s`\n- Manifest SHA-256: `%s`\n- Repository commit: `%s`\n- Solver configuration: `%s`\n- Runtime: `%s %s/%s`\n- Records: %d\n\n## Outcomes\n\n", r.ManifestName, r.ManifestHash, r.RepositoryCommit, r.SolverConfigDigest, r.GoVersion, r.OS, r.Architecture, r.Total)
+	fmt.Fprintf(
+		&b,
+		("# Full-Catalog Difficulty Audit\n\n- Manifest: `%s`\n- Manifest SHA-256: `%s`\n- " +
+			"Repository commit: `%s`\n- Solver configuration: `%s`\n- Runtime: `%s %s/%s`\n- " +
+			"Records: %d\n\n## Outcomes\n\n"),
+		r.ManifestName,
+		r.ManifestHash,
+		r.RepositoryCommit,
+		r.SolverConfigDigest,
+		r.GoVersion,
+		r.OS,
+		r.Architecture,
+		r.Total,
+	)
 	for _, k := range sortedIntKeys(r.ByOutcome) {
 		fmt.Fprintf(&b, "- %s: %d\n", k, r.ByOutcome[k])
 	}
@@ -401,12 +477,17 @@ func markdown(r Report) string {
 	for _, k := range sortedIntKeys(r.ByDifficulty) {
 		fmt.Fprintf(&b, "- %s: %d\n", k, r.ByDifficulty[k])
 	}
-	b.WriteString("\n## Independent-rating correlations\n\n| Scope / metric | n | Pearson | Spearman |\n|---|---:|---:|---:|\n")
+	b.WriteString(
+		"\n## Independent-rating correlations\n\n| Scope / metric | n | Pearson | Spearman |\n|---|---:|---:|---:|\n",
+	)
 	for _, k := range sortedCorrelationKeys(r.RatingCorrelations) {
 		c := r.RatingCorrelations[k]
 		fmt.Fprintf(&b, "| %s | %d | %.6f | %.6f |\n", k, c.Count, c.Pearson, c.Spearman)
 	}
-	b.WriteString("\n`evidence.jsonl` contains the immutable per-puzzle feature vectors; `report.json` contains complete distributions and cross-model quartile counts.\n")
+	b.WriteString(
+		("\n`evidence.jsonl` contains the immutable per-puzzle feature vectors; `report.json` " +
+			"contains complete distributions and cross-model quartile counts.\n"),
+	)
 	return b.String()
 }
 func sortedIntKeys(m map[string]int) []string {

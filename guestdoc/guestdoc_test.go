@@ -30,7 +30,8 @@ func TestCreateOpenAndApplyGuestDocument(t *testing.T) {
 		t.Fatalf("created document = %+v", created)
 	}
 	opened, err := sealer.Open(token)
-	if err != nil || opened.ID != created.ID || opened.BasePuzzleID != basePuzzleID || opened.PresentedPuzzle != testPuzzle {
+	if err != nil || opened.ID != created.ID || opened.BasePuzzleID != basePuzzleID ||
+		opened.PresentedPuzzle != testPuzzle {
 		t.Fatalf("opened document = %+v, %v", opened, err)
 	}
 
@@ -38,18 +39,23 @@ func TestCreateOpenAndApplyGuestDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if transition.Document.Revision != 1 || transition.Token == token || transition.Snapshot.Values[0][0] != 4 || transition.Result.Action != game.ActionSetValue {
+	if transition.Document.Revision != 1 || transition.Token == token || transition.Snapshot.Values[0][0] != 4 ||
+		transition.Result.Action != game.ActionSetValue {
 		t.Fatalf("transition = %+v", transition)
 	}
 	reopened, err := sealer.Open(transition.Token)
-	if err != nil || reopened.Revision != 1 || reopened.IssuedAt != created.IssuedAt || reopened.ExpiresAt != created.ExpiresAt {
+	if err != nil || reopened.Revision != 1 || reopened.IssuedAt != created.IssuedAt ||
+		reopened.ExpiresAt != created.ExpiresAt {
 		t.Fatalf("replacement document = %+v, %v", reopened, err)
 	}
 	restored, err := game.Restore(reopened.EngineState, options)
 	if err != nil || restored.Snapshot().Values[0][0] != 4 {
 		t.Fatalf("restored guest game = %+v, %v", restored.Snapshot(), err)
 	}
-	if _, err := sealer.Apply(transition.Token, 0, game.Undo{}, options); !errors.Is(err, &Error{Code: ErrorRevisionConflict}) {
+	if _, err := sealer.Apply(transition.Token, 0, game.Undo{}, options); !errors.Is(
+		err,
+		&Error{Code: ErrorRevisionConflict},
+	) {
 		t.Fatalf("stale revision error = %v", err)
 	}
 }
@@ -64,7 +70,8 @@ func TestGuestDocumentRejectsTamperingExpiryAndUnknownKeys(t *testing.T) {
 	}
 
 	tampered := token[:len(token)-1] + differentLastCharacter(token[len(token)-1:])
-	if _, err := sealer.Open(tampered); !errors.Is(err, &Error{Code: ErrorAuthentication}) && !errors.Is(err, &Error{Code: ErrorMalformed}) {
+	if _, err := sealer.Open(tampered); !errors.Is(err, &Error{Code: ErrorAuthentication}) &&
+		!errors.Is(err, &Error{Code: ErrorMalformed}) {
 		t.Fatalf("tampered document error = %v", err)
 	}
 
@@ -88,7 +95,12 @@ func TestGuestKeyRotationDecryptsOldAndResealsWithActiveKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	rotated := newTestSealer(t, now, map[string][]byte{"old": testKey(1), "new": testKey(2)}, "new")
-	transition, err := rotated.Apply(token, 0, game.SetCandidates{Position: core.NewPosition(0, 0), Values: []int{4, 5}}, options)
+	transition, err := rotated.Apply(
+		token,
+		0,
+		game.SetCandidates{Position: core.NewPosition(0, 0), Values: []int{4, 5}},
+		options,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -12,7 +12,8 @@ func familyHintReason(move *solver.Move) *HintReason {
 	evidence := move.Evidence
 	switch move.Technique {
 	case "naked-pair", "naked-triple", "naked-quad":
-		if evidence.Unit == nil || len(evidence.Premises) < 2 || (len(evidence.Eliminations) == 0 && !move.IsPlacement()) {
+		if evidence.Unit == nil || len(evidence.Premises) < 2 ||
+			(len(evidence.Eliminations) == 0 && !move.IsPlacement()) {
 			return nil
 		}
 		cells := make([]core.Position, len(evidence.Premises))
@@ -28,7 +29,8 @@ func familyHintReason(move *solver.Move) *HintReason {
 			Unit: *evidence.Unit, ReservedDigits: digits, PremiseCells: cells, ActionTargets: targets,
 		}}
 	case "hidden-pair", "hidden-triple", "hidden-quad":
-		if evidence.Unit == nil || len(evidence.Premises) < 2 || (len(evidence.Eliminations) == 0 && !move.IsPlacement()) {
+		if evidence.Unit == nil || len(evidence.Premises) < 2 ||
+			(len(evidence.Eliminations) == 0 && !move.IsPlacement()) {
 			return nil
 		}
 		cells := make([]core.Position, len(evidence.Premises))
@@ -40,11 +42,15 @@ func familyHintReason(move *solver.Move) *HintReason {
 		if len(targets) == 0 && move.IsPlacement() {
 			targets = append(targets, solver.CandidateRef{Position: move.Cell.Position, Value: move.Cell.Value})
 		}
-		return &HintReason{Kind: HintReasonHiddenSubsetConfinement, HiddenSubsetConfinement: &HiddenSubsetConfinementReason{
-			Unit: *evidence.Unit, ConfinedDigits: digits, PremiseCells: cells, ActionTargets: targets,
-		}}
+		return &HintReason{
+			Kind: HintReasonHiddenSubsetConfinement,
+			HiddenSubsetConfinement: &HiddenSubsetConfinementReason{
+				Unit: *evidence.Unit, ConfinedDigits: digits, PremiseCells: cells, ActionTargets: targets,
+			},
+		}
 	case "pointing-pair":
-		if len(evidence.Units) != 2 || len(evidence.Premises) < 2 || (len(evidence.Eliminations) == 0 && !move.IsPlacement()) {
+		if len(evidence.Units) != 2 || len(evidence.Premises) < 2 ||
+			(len(evidence.Eliminations) == 0 && !move.IsPlacement()) {
 			return nil
 		}
 		digit := evidence.Premises[0].Values[0]
@@ -59,9 +65,12 @@ func familyHintReason(move *solver.Move) *HintReason {
 		if len(targets) == 0 && move.IsPlacement() {
 			targets = append(targets, solver.CandidateRef{Position: move.Cell.Position, Value: move.Cell.Value})
 		}
-		return &HintReason{Kind: HintReasonIntersectionConfinement, IntersectionConfinement: &IntersectionConfinementReason{
-			Digit: digit, SourceUnit: evidence.Units[0], IntersectingUnit: evidence.Units[1], PremiseCandidates: premises, ActionTargets: targets,
-		}}
+		return &HintReason{
+			Kind: HintReasonIntersectionConfinement,
+			IntersectionConfinement: &IntersectionConfinementReason{
+				Digit: digit, SourceUnit: evidence.Units[0], IntersectingUnit: evidence.Units[1], PremiseCandidates: premises, ActionTargets: targets,
+			},
+		}
 	case "x-wing", "swordfish", "jellyfish":
 		size := map[string]int{"x-wing": 2, "swordfish": 3, "jellyfish": 4}[move.Technique]
 		if len(evidence.Units) != size*2 || len(evidence.Premises) == 0 || len(evidence.Eliminations) == 0 {
@@ -79,7 +88,8 @@ func familyHintReason(move *solver.Move) *HintReason {
 			patterns = append(patterns, solver.CandidateRef{Position: premise.Position, Value: digit})
 		}
 		return &HintReason{Kind: HintReasonFishConfinement, FishConfinement: &FishConfinementReason{
-			Digit: digit, BaseUnits: append([]solver.UnitRef(nil), evidence.Units[:size]...), CoverUnits: append([]solver.UnitRef(nil), evidence.Units[size:]...),
+			Digit: digit, BaseUnits: append([]solver.UnitRef(nil), evidence.Units[:size]...),
+			CoverUnits:        append([]solver.UnitRef(nil), evidence.Units[size:]...),
 			PatternCandidates: patterns, ActionTargets: append([]solver.CandidateRef(nil), evidence.Eliminations...),
 		}}
 	case "xy-chain":
@@ -91,7 +101,9 @@ func familyHintReason(move *solver.Move) *HintReason {
 			return nil
 		}
 		return &HintReason{Kind: HintReasonImplicationChain, ImplicationChain: &ImplicationChainReason{
-			BivalueGroups: append([]solver.CandidateGroup(nil), evidence.Chain...), Links: append([]solver.CandidateLink(nil), evidence.Links...), EndpointDigit: endpoint[0],
+			BivalueGroups: append(
+				[]solver.CandidateGroup(nil),
+				evidence.Chain...), Links: append([]solver.CandidateLink(nil), evidence.Links...), EndpointDigit: endpoint[0],
 			ActionTargets: append([]solver.CandidateRef(nil), evidence.Eliminations...),
 		}}
 	default:

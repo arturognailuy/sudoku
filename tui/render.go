@@ -49,7 +49,14 @@ func render(m Model) string {
 	}
 
 	title := center(m.width, styles.title.Render("SUDOKU"), styles.canvas)
-	status := fmt.Sprintf("%s  •  %s  •  Mistakes: %d  •  r%dc%d", mode, statusLabel(m.snapshot.Status), m.snapshot.Mistakes, m.row+1, m.column+1)
+	status := fmt.Sprintf(
+		"%s  •  %s  •  Mistakes: %d  •  r%dc%d",
+		mode,
+		statusLabel(m.snapshot.Status),
+		m.snapshot.Mistakes,
+		m.row+1,
+		m.column+1,
+	)
 	if digit := activeDigit(m); digit != 0 {
 		status += fmt.Sprintf("  •  Digit: %d", digit)
 		if digitIsComplete(m, digit) {
@@ -91,11 +98,24 @@ func render(m Model) string {
 
 	switch m.modal {
 	case quitModal:
-		parts = append(parts, center(m.width, styles.modal.Render("Unsaved changes. Quit without saving?  y / N"), styles.canvas))
+		parts = append(
+			parts,
+			center(m.width, styles.modal.Render("Unsaved changes. Quit without saving?  y / N"), styles.canvas),
+		)
 	case resetModal:
-		parts = append(parts, center(m.width, styles.modal.Render("Reset the puzzle and clear history?  y / N"), styles.canvas))
+		parts = append(
+			parts,
+			center(m.width, styles.modal.Render("Reset the puzzle and clear history?  y / N"), styles.canvas),
+		)
 	case saveModal:
-		parts = append(parts, center(m.width, styles.modal.Render(fmt.Sprintf("Save session path: %s_\nEnter saves  •  Esc cancels", m.savePath)), styles.canvas))
+		parts = append(
+			parts,
+			center(
+				m.width,
+				styles.modal.Render(fmt.Sprintf("Save session path: %s_\nEnter saves  •  Esc cancels", m.savePath)),
+				styles.canvas,
+			),
+		)
 	case helpModal, recoveryModal:
 		parts = append(parts, styles.canvas.Render(strings.Repeat(" ", m.width)))
 	default:
@@ -187,7 +207,13 @@ func renderCell(m Model, styles renderStyles, row, column, noteRow int) string {
 	candidates := m.snapshot.Candidates[row][column]
 	showCandidates := m.candidateVisible[row][column]
 	if (!showCandidates || candidates.IsEmpty()) && !hasHintCandidate(m, row, column) {
-		return contextualStyle(m, styles, row, column, hintCellStyle(m, styles, row, column, styles.empty)).Render("     ")
+		return contextualStyle(
+			m,
+			styles,
+			row,
+			column,
+			hintCellStyle(m, styles, row, column, styles.empty),
+		).Render("     ")
 	}
 
 	var out strings.Builder
@@ -270,7 +296,9 @@ func hintCandidateRole(m Model, row, column, digit int) (game.HintRole, bool) {
 	var selected game.HintRole
 	for _, mark := range activeHintMarks(m) {
 		target := mark.Target
-		if target.Kind != game.HintTargetCandidate || target.Position == nil || target.Position.Row != row || target.Position.Column != column || target.Value != digit {
+		if target.Kind != game.HintTargetCandidate || target.Position == nil || target.Position.Row != row ||
+			target.Position.Column != column ||
+			target.Value != digit {
 			continue
 		}
 		if hintRolePriority(mark.Role) >= hintRolePriority(selected) {
@@ -284,7 +312,8 @@ func hintCellStyle(m Model, styles renderStyles, row, column int, base lipgloss.
 	role := game.HintRole("")
 	for _, mark := range activeHintMarks(m) {
 		target := mark.Target
-		matches := target.Kind == game.HintTargetCell && target.Position != nil && target.Position.Row == row && target.Position.Column == column
+		matches := target.Kind == game.HintTargetCell && target.Position != nil && target.Position.Row == row &&
+			target.Position.Column == column
 		matches = matches || target.Kind == game.HintTargetRow && target.Index == row
 		matches = matches || target.Kind == game.HintTargetColumn && target.Index == column
 		matches = matches || target.Kind == game.HintTargetBox && target.Index == (row/3)*3+column/3
@@ -363,7 +392,10 @@ func renderRecovery(m Model, styles renderStyles) string {
 		if label == "" {
 			label = "Sudoku game"
 		}
-		lines = append(lines, fmt.Sprintf("%s%s — %s", marker, choice.Record.UpdatedAt.Local().Format("2006-01-02 15:04"), label))
+		lines = append(
+			lines,
+			fmt.Sprintf("%s%s — %s", marker, choice.Record.UpdatedAt.Local().Format("2006-01-02 15:04"), label),
+		)
 	}
 	return styles.modal.Render(strings.Join(lines, "\n"))
 }
@@ -456,10 +488,40 @@ func stylesFor(name themeName) renderStyles {
 func paletteFor(name themeName) palette {
 	switch name {
 	case lightTheme:
-		return palette{name: name, background: "#F7F4ED", text: "#25313C", muted: "#52606B", accent: "#087F8C", given: "#17202A", player: "#096B72", invalid: "#B42318", digitMatch: "#7A3E00", focusBackground: "#F6C453", peerBackground: "#E8F2F3", border: "#9AA6AF", strongBorder: "#40515F", panelBorder: "#087F8C"}
+		return palette{
+			name:            name,
+			background:      "#F7F4ED",
+			text:            "#25313C",
+			muted:           "#52606B",
+			accent:          "#087F8C",
+			given:           "#17202A",
+			player:          "#096B72",
+			invalid:         "#B42318",
+			digitMatch:      "#7A3E00",
+			focusBackground: "#F6C453",
+			peerBackground:  "#E8F2F3",
+			border:          "#9AA6AF",
+			strongBorder:    "#40515F",
+			panelBorder:     "#087F8C",
+		}
 	case noColorTheme:
 		return palette{name: name}
 	default:
-		return palette{name: name, background: "#101820", text: "#E7EDF2", muted: "#81909D", accent: "#63D2D5", given: "#F4F7FA", player: "#63D2D5", invalid: "#FF6B6B", digitMatch: "#FFD166", focusBackground: "#755B18", peerBackground: "#1B3038", border: "#40515F", strongBorder: "#AAB7C2", panelBorder: "#63D2D5"}
+		return palette{
+			name:            name,
+			background:      "#101820",
+			text:            "#E7EDF2",
+			muted:           "#81909D",
+			accent:          "#63D2D5",
+			given:           "#F4F7FA",
+			player:          "#63D2D5",
+			invalid:         "#FF6B6B",
+			digitMatch:      "#FFD166",
+			focusBackground: "#755B18",
+			peerBackground:  "#1B3038",
+			border:          "#40515F",
+			strongBorder:    "#AAB7C2",
+			panelBorder:     "#63D2D5",
+		}
 	}
 }

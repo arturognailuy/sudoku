@@ -43,8 +43,9 @@ func NewXYChainSolver() *XYChainSolver {
 		Base: Base{
 			Key:         "xy-chain",
 			DisplayName: "XY-Chain",
-			Description: "Chains of bi-value cells connected by shared candidates — eliminates the common endpoint digit from cells seeing both ends.",
-			Weight:      WeightXYChain,
+			Description: ("Chains of bi-value cells connected by shared candidates — eliminates the common " +
+				"endpoint digit from cells seeing both ends."),
+			Weight: WeightXYChain,
 		},
 	}
 }
@@ -147,7 +148,18 @@ func (s *XYChainSolver) Apply(board *core.Board) *Move {
 
 // dfsChainSearch recursively follows the chain, looking for endpoints where
 // the exit digit matches startDigit.
-func (s *XYChainSolver) dfsChainSearch(board *core.Board, biCells []xyChainCell, adj [][]xyLink, visited []bool, startIdx int, startDigit int, currentExitDigit int, currentIdx int, depth int, chain []int) *Move {
+func (s *XYChainSolver) dfsChainSearch(
+	board *core.Board,
+	biCells []xyChainCell,
+	adj [][]xyLink,
+	visited []bool,
+	startIdx int,
+	startDigit int,
+	currentExitDigit int,
+	currentIdx int,
+	depth int,
+	chain []int,
+) *Move {
 	// Limit chain depth to prevent excessive computation.
 	if depth > 15 {
 		return nil
@@ -203,7 +215,13 @@ func (s *XYChainSolver) dfsChainSearch(board *core.Board, biCells []xyChainCell,
 }
 
 // eliminateChainEndpoints eliminates digit from cells seeing both chain endpoints.
-func (s *XYChainSolver) eliminateChainEndpoints(board *core.Board, biCells []xyChainCell, chain []int, startPos, endPos core.Position, digit int) *Move {
+func (s *XYChainSolver) eliminateChainEndpoints(
+	board *core.Board,
+	biCells []xyChainCell,
+	chain []int,
+	startPos, endPos core.Position,
+	digit int,
+) *Move {
 	var move *Move
 	eliminated := false
 	evidence := xyChainEvidence(biCells, chain)
@@ -228,8 +246,12 @@ func (s *XYChainSolver) eliminateChainEndpoints(board *core.Board, biCells []xyC
 						Technique: s.Key,
 						Reason: fmt.Sprintf(
 							"XY-Chain: chain from %s to %s proves %d in one endpoint — %d eliminated from %s, leaving %d",
-							startPos.ToString(), endPos.ToString(), digit,
-							digit, pos.ToString(), value,
+							startPos.ToString(),
+							endPos.ToString(),
+							digit,
+							digit,
+							pos.ToString(),
+							value,
 						),
 						Evidence: evidence,
 					}

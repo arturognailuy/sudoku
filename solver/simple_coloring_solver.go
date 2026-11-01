@@ -41,8 +41,9 @@ func NewSimpleColoringSolver() *SimpleColoringSolver {
 		Base: Base{
 			Key:         "simple-coloring",
 			DisplayName: "Simple Coloring",
-			Description: "Tracks conjugate pair chains for a digit, assigning alternating colors. Eliminates the digit from cells that see both colors or from an invalid color group.",
-			Weight:      WeightSimpleColoring,
+			Description: ("Tracks conjugate pair chains for a digit, assigning alternating colors. Eliminates " +
+				"the digit from cells that see both colors or from an invalid color group."),
+			Weight: WeightSimpleColoring,
 		},
 	}
 }
@@ -155,7 +156,9 @@ func (s *SimpleColoringSolver) colorDigit(board *core.Board, digit int) *Move {
 							Technique: s.Key,
 							Reason: fmt.Sprintf(
 								"Simple Coloring (Rule 1): %d — two same-colored cells conflict, leaving %d as the only candidate for %s",
-								digit, value, pos.ToString(),
+								digit,
+								value,
+								pos.ToString(),
 							),
 							Evidence: evidence,
 						}
@@ -233,7 +236,13 @@ func (s *SimpleColoringSolver) hasInternalConflict(cells []core.Position) bool {
 }
 
 // applyRule2 eliminates the digit from uncolored cells that see both colors.
-func (s *SimpleColoringSolver) applyRule2(board *core.Board, digit int, color0, color1 []core.Position, colored map[core.Position]int, adj map[core.Position][]core.Position) *Move {
+func (s *SimpleColoringSolver) applyRule2(
+	board *core.Board,
+	digit int,
+	color0, color1 []core.Position,
+	colored map[core.Position]int,
+	adj map[core.Position][]core.Position,
+) *Move {
 	var move *Move
 	eliminated := false
 	evidence := coloringEvidence(digit, color0, color1, adj)

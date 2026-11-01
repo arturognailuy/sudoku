@@ -21,7 +21,8 @@ func TestParseImportRecordRetainsSudokuExchangeRating(t *testing.T) {
 
 func TestParseImportRecordRejectsNonFiniteSudokuExchangeRating(t *testing.T) {
 	for _, rating := range []string{"NaN", "+Inf", "-Inf"} {
-		if _, _, _, err := parseImportRecord("00015097c6c3 "+sudokuExchangePuzzle+" "+rating, "sudoku-exchange"); err == nil || !strings.Contains(err.Error(), "rating") {
+		if _, _, _, err := parseImportRecord("00015097c6c3 "+sudokuExchangePuzzle+" "+rating, "sudoku-exchange"); err == nil ||
+			!strings.Contains(err.Error(), "rating") {
 			t.Fatalf("rating %q error = %v, want invalid rating", rating, err)
 		}
 	}
@@ -33,14 +34,16 @@ func TestSudokuExchangeAnalysisManifestPreservesSourceIdentityAndRating(t *testi
 		{puzzle: sudokuExchangePuzzle, sourceRef: "sha1:00015097c6c3", originalRating: 7.2},
 		{err: errTestInvalidRecord},
 	})
-	if manifest.Version != calibration.Version || manifest.Name != "sudoku-exchange/sha256:"+fileHash || len(manifest.Puzzles) != 1 {
+	if manifest.Version != calibration.Version || manifest.Name != "sudoku-exchange/sha256:"+fileHash ||
+		len(manifest.Puzzles) != 1 {
 		t.Fatalf("unexpected manifest header: %+v", manifest)
 	}
 	puzzle := manifest.Puzzles[0]
 	if puzzle.ID != "sha1:00015097c6c3" || puzzle.SourceID != "sudoku-exchange:sha256:"+fileHash+"#sha1:00015097c6c3" {
 		t.Fatalf("unexpected source identity: %+v", puzzle)
 	}
-	if puzzle.OriginalRating == nil || puzzle.OriginalRating.System != "Sukaku Explainer" || puzzle.OriginalRating.Label != "7.2" {
+	if puzzle.OriginalRating == nil || puzzle.OriginalRating.System != "Sukaku Explainer" ||
+		puzzle.OriginalRating.Label != "7.2" {
 		t.Fatalf("unexpected original rating: %+v", puzzle.OriginalRating)
 	}
 	if puzzle.Split != "exploratory" || puzzle.License != "public-domain" || puzzle.Redistribution != "permitted" {

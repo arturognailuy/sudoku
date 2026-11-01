@@ -95,7 +95,15 @@ func NewBuilder(store solver.Store, difficulty string) Builder {
 		if !classification.Solved || classification.Difficulty != difficulty {
 			return db.Puzzle{}, false, nil
 		}
-		sourceRef, _ := json.Marshal(map[string]any{"seed_base_puzzle_id": seed.BasePuzzleID, "policy": policyName, "random_seed": randomSeed, "added_row": position.Row, "added_column": position.Column})
+		sourceRef, _ := json.Marshal(
+			map[string]any{
+				"seed_base_puzzle_id": seed.BasePuzzleID,
+				"policy":              policyName,
+				"random_seed":         randomSeed,
+				"added_row":           position.Row,
+				"added_column":        position.Column,
+			},
+		)
 		return db.Puzzle{Puzzle: canonical, Difficulty: classification.Difficulty, Score: classification.Score,
 			MaxTechnique: classification.MaxTechnique, Source: "replenished", SourceRef: string(sourceRef)}, true, nil
 	})
@@ -132,7 +140,11 @@ func Run(ctx context.Context, catalog Catalog, builder Builder, config Config) (
 	for len(state.Candidates) < config.Count && state.Classifications < config.MaxClassifications {
 		select {
 		case <-ctx.Done():
-			return Result{Classifications: state.Classifications, Accepted: len(state.Candidates), Resumed: resumed}, ctx.Err()
+			return Result{
+				Classifications: state.Classifications,
+				Accepted:        len(state.Candidates),
+				Resumed:         resumed,
+			}, ctx.Err()
 		default:
 		}
 		attemptSeed := config.RandomSeed + int64(state.Classifications)*1_000_003
@@ -163,7 +175,11 @@ func Run(ctx context.Context, catalog Catalog, builder Builder, config Config) (
 		}
 	}
 	if len(state.Candidates) != config.Count {
-		return Result{Classifications: state.Classifications, Accepted: len(state.Candidates), Resumed: resumed}, ErrBudgetExhausted
+		return Result{
+			Classifications: state.Classifications,
+			Accepted:        len(state.Candidates),
+			Resumed:         resumed,
+		}, ErrBudgetExhausted
 	}
 	published, err := catalog.PublishPuzzleBatch(state.Candidates)
 	if err != nil {
@@ -173,7 +189,12 @@ func Run(ctx context.Context, catalog Catalog, builder Builder, config Config) (
 	if err := saveState(config.StatePath, state); err != nil {
 		return Result{}, err
 	}
-	return Result{Classifications: state.Classifications, Accepted: len(state.Candidates), Published: published, Resumed: resumed}, nil
+	return Result{
+		Classifications: state.Classifications,
+		Accepted:        len(state.Candidates),
+		Published:       published,
+		Resumed:         resumed,
+	}, nil
 }
 
 func loadState(config Config) (State, bool, error) {

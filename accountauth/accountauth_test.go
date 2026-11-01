@@ -43,16 +43,25 @@ func TestCompleteCreatesDigestOnlySessionAndReusesProviderIdentity(t *testing.T)
 	defer database.Close()
 	now := time.Date(2026, 10, 4, 17, 0, 0, 0, time.UTC)
 	login := &fakeLoginCompleter{result: oidcauth.Result{
-		Claims:   oidcauth.Claims{Issuer: oidcauth.GoogleIssuer, Subject: "google-subject", Email: "first@example.test", EmailVerified: true, Name: "First"},
+		Claims: oidcauth.Claims{
+			Issuer:        oidcauth.GoogleIssuer,
+			Subject:       "google-subject",
+			Email:         "first@example.test",
+			EmailVerified: true,
+			Name:          "First",
+		},
 		ReturnTo: "/sudoku/games",
 	}}
-	firstRandom := append(append(bytes.Repeat([]byte{1}, identifierBytes), bytes.Repeat([]byte{2}, identifierBytes)...), bytes.Repeat([]byte{3}, verifierBytes)...)
+	firstRandom := append(
+		append(bytes.Repeat([]byte{1}, identifierBytes), bytes.Repeat([]byte{2}, identifierBytes)...),
+		bytes.Repeat([]byte{3}, verifierBytes)...)
 	first := newTestService(t, database, login, &now, firstRandom)
 	firstResult, err := first.Complete(context.Background(), "state", "code", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if firstResult.User.ProfileEmail != "first@example.test" || firstResult.ReturnTo != "/sudoku/games" || firstResult.Verifier == "" {
+	if firstResult.User.ProfileEmail != "first@example.test" || firstResult.ReturnTo != "/sudoku/games" ||
+		firstResult.Verifier == "" {
 		t.Fatalf("first login = %+v", firstResult)
 	}
 	decodedVerifier, err := base64.RawURLEncoding.DecodeString(firstResult.Verifier)
@@ -71,13 +80,16 @@ func TestCompleteCreatesDigestOnlySessionAndReusesProviderIdentity(t *testing.T)
 	login.result.Claims.Email = "second@example.test"
 	login.result.Claims.Name = "Second"
 	now = now.Add(time.Minute)
-	secondRandom := append(append(bytes.Repeat([]byte{4}, identifierBytes), bytes.Repeat([]byte{5}, identifierBytes)...), bytes.Repeat([]byte{6}, verifierBytes)...)
+	secondRandom := append(
+		append(bytes.Repeat([]byte{4}, identifierBytes), bytes.Repeat([]byte{5}, identifierBytes)...),
+		bytes.Repeat([]byte{6}, verifierBytes)...)
 	second := newTestService(t, database, login, &now, secondRandom)
 	secondResult, err := second.Complete(context.Background(), "state-2", "code-2", firstResult.Verifier)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if secondResult.User.ID != firstResult.User.ID || secondResult.User.ProfileEmail != "second@example.test" || secondResult.User.DisplayName != "Second" {
+	if secondResult.User.ID != firstResult.User.ID || secondResult.User.ProfileEmail != "second@example.test" ||
+		secondResult.User.DisplayName != "Second" {
 		t.Fatalf("rotated login = %+v", secondResult)
 	}
 	if old, err := first.Authenticate(firstResult.Verifier); err != nil || old != nil {
@@ -85,10 +97,15 @@ func TestCompleteCreatesDigestOnlySessionAndReusesProviderIdentity(t *testing.T)
 	}
 	now = now.Add(30 * time.Minute)
 	current, err := second.Authenticate(secondResult.Verifier)
-	if err != nil || current == nil || current.RotatedFromID != firstResult.SessionID || current.UserID != firstResult.User.ID || !current.IdleExpiresAt.Equal(now.Add(time.Hour)) {
+	if err != nil || current == nil || current.RotatedFromID != firstResult.SessionID ||
+		current.UserID != firstResult.User.ID ||
+		!current.IdleExpiresAt.Equal(now.Add(time.Hour)) {
 		t.Fatalf("current session = %+v, %v", current, err)
 	}
-	if resolved, err := database.UserByExternalIdentity(oidcauth.GoogleIssuer, "google-subject"); err != nil || resolved == nil || resolved.ID != firstResult.User.ID || resolved.ProfileEmail != "second@example.test" {
+	if resolved, err := database.UserByExternalIdentity(oidcauth.GoogleIssuer, "google-subject"); err != nil ||
+		resolved == nil ||
+		resolved.ID != firstResult.User.ID ||
+		resolved.ProfileEmail != "second@example.test" {
 		t.Fatalf("resolved identity = %+v, %v", resolved, err)
 	}
 }
@@ -104,7 +121,13 @@ func TestCompleteDoesNotPersistUnverifiedProfileEmail(t *testing.T) {
 		Issuer: oidcauth.GoogleIssuer, Subject: "subject", Email: "unverified@example.test", EmailVerified: false, Name: "Profile",
 	}}}
 	random := bytes.Repeat([]byte{7}, 2*identifierBytes+verifierBytes)
-	result, err := newTestService(t, database, login, &now, random).Complete(context.Background(), "state", "code", "not-a-valid-cookie")
+	result, err := newTestService(
+		t,
+		database,
+		login,
+		&now,
+		random,
+	).Complete(context.Background(), "state", "code", "not-a-valid-cookie")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +143,9 @@ func TestAuthenticateAndLogoutRejectMalformedAndRevokeCurrentSession(t *testing.
 	}
 	defer database.Close()
 	now := time.Now().UTC()
-	login := &fakeLoginCompleter{result: oidcauth.Result{Claims: oidcauth.Claims{Issuer: oidcauth.GoogleIssuer, Subject: "subject"}}}
+	login := &fakeLoginCompleter{
+		result: oidcauth.Result{Claims: oidcauth.Claims{Issuer: oidcauth.GoogleIssuer, Subject: "subject"}},
+	}
 	service := newTestService(t, database, login, &now, bytes.Repeat([]byte{8}, 2*identifierBytes+verifierBytes))
 	if session, err := service.Authenticate("malformed"); err != nil || session != nil {
 		t.Fatalf("malformed authentication = %+v, %v", session, err)
@@ -149,7 +174,8 @@ func TestCompleteLeavesNoDurableStateWhenProviderFails(t *testing.T) {
 	now := time.Now().UTC()
 	login := &fakeLoginCompleter{err: errors.New("provider failed")}
 	service := newTestService(t, database, login, &now, bytes.Repeat([]byte{9}, 2*identifierBytes+verifierBytes))
-	if _, err := service.Complete(context.Background(), "state", "code", ""); err == nil || !strings.Contains(err.Error(), "provider failed") {
+	if _, err := service.Complete(context.Background(), "state", "code", ""); err == nil ||
+		!strings.Contains(err.Error(), "provider failed") {
 		t.Fatalf("error = %v", err)
 	}
 	if user, err := database.UserByExternalIdentity(oidcauth.GoogleIssuer, "subject"); err != nil || user != nil {

@@ -41,7 +41,17 @@ func (p *provider) AuthorizationURL(state, nonce, _ string) string {
 }
 func (p *provider) Exchange(context.Context, string, string) (oidcauth.Claims, error) {
 	now := time.Now().UTC()
-	return oidcauth.Claims{Issuer: oidcauth.GoogleIssuer, Subject: "e2e", Audience: []string{"e2e-client"}, Nonce: p.nonce, Email: "player@example.test", EmailVerified: true, Name: "Player", IssuedAt: now.Add(-time.Minute), ExpiresAt: now.Add(time.Hour)}, nil
+	return oidcauth.Claims{
+		Issuer:        oidcauth.GoogleIssuer,
+		Subject:       "e2e",
+		Audience:      []string{"e2e-client"},
+		Nonce:         p.nonce,
+		Email:         "player@example.test",
+		EmailVerified: true,
+		Name:          "Player",
+		IssuedAt:      now.Add(-time.Minute),
+		ExpiresAt:     now.Add(time.Hour),
+	}, nil
 }
 
 func main() {
@@ -81,11 +91,22 @@ func main() {
 	for i := range key {
 		key[i] = 7
 	}
-	documents, err := guestdoc.New(guestdoc.Config{ActiveKeyID: "e2e", Keys: map[string][]byte{"e2e": key}, Lifetime: time.Hour})
+	documents, err := guestdoc.New(
+		guestdoc.Config{ActiveKeyID: "e2e", Keys: map[string][]byte{"e2e": key}, Lifetime: time.Hour},
+	)
 	must(err)
-	login, err := oidcauth.New(oidcauth.Config{Provider: &provider{}, Issuer: oidcauth.GoogleIssuer, ClientID: "e2e-client", ReturnPathPrefix: "/"})
+	login, err := oidcauth.New(
+		oidcauth.Config{
+			Provider:         &provider{},
+			Issuer:           oidcauth.GoogleIssuer,
+			ClientID:         "e2e-client",
+			ReturnPathPrefix: "/",
+		},
+	)
 	must(err)
-	authentication, err := accountauth.New(accountauth.Config{Login: login, Store: database, IdleLifetime: time.Hour, AbsoluteLifetime: 2 * time.Hour})
+	authentication, err := accountauth.New(
+		accountauth.Config{Login: login, Store: database, IdleLifetime: time.Hour, AbsoluteLifetime: 2 * time.Hour},
+	)
 	must(err)
 	games, err := accountgame.New(accountgame.Config{Store: database, Options: options})
 	must(err)
@@ -108,7 +129,11 @@ func main() {
 		classification := solver.ClassifyPuzzle(store, board)
 		return current, db.BasePuzzleID(puzzle), webapi.Difficulty(classification.Difficulty), nil
 	}
-	guest := &webapi.GuestRuntime{Documents: documents, Options: options, Create: func(_, _ string) (game.Game, string, webapi.Difficulty, error) { return create() }}
+	guest := &webapi.GuestRuntime{
+		Documents: documents,
+		Options:   options,
+		Create:    func(_, _ string) (game.Game, string, webapi.Difficulty, error) { return create() },
+	}
 	runtime := &webapi.AccountRuntime{
 		Guest: guest, OIDC: login, Auth: authentication, Games: games, Claims: claims, Store: database,
 		CookiePath: "/", CSRFKey: append([]byte(nil), key...),
@@ -120,7 +145,11 @@ func main() {
 	server := webapi.NewServer()
 	server.SetGuestRuntime(guest)
 	server.SetAccountRuntime(runtime)
-	httpServer := &http.Server{Addr: *listen, Handler: webapi.NewHandler(server, []string{*origin}), ReadHeaderTimeout: 5 * time.Second}
+	httpServer := &http.Server{
+		Addr:              *listen,
+		Handler:           webapi.NewHandler(server, []string{*origin}),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			panic(err)

@@ -12,7 +12,21 @@ func TestCatalogBundleApplyIsAtomicAdditiveAndIdempotent(t *testing.T) {
 	}
 	defer database.Close()
 	puzzle := strings.Repeat(".", 81)
-	first := CatalogBundleRelease{Version: 1, ArtifactDigest: strings.Repeat("a", 64), SolverConfigDigest: "solver", Puzzles: []Puzzle{{Puzzle: puzzle, Difficulty: "easy", Score: 4, MaxTechnique: "Naked Single", Source: "official", SourceRef: "release-1"}}}
+	first := CatalogBundleRelease{
+		Version:            1,
+		ArtifactDigest:     strings.Repeat("a", 64),
+		SolverConfigDigest: "solver",
+		Puzzles: []Puzzle{
+			{
+				Puzzle:       puzzle,
+				Difficulty:   "easy",
+				Score:        4,
+				MaxTechnique: "Naked Single",
+				Source:       "official",
+				SourceRef:    "release-1",
+			},
+		},
+	}
 	preview, err := database.ApplyCatalogBundle(first, true)
 	if err != nil || preview.Status != "would-apply" || preview.PuzzlesAdded != 1 || preview.ProvenanceAdded != 1 {
 		t.Fatalf("preview = %+v, %v", preview, err)
@@ -33,7 +47,21 @@ func TestCatalogBundleApplyIsAtomicAdditiveAndIdempotent(t *testing.T) {
 	if err != nil || selected == nil || selected.PlayCount != 1 {
 		t.Fatalf("selected = %+v, %v", selected, err)
 	}
-	second := CatalogBundleRelease{Version: 2, ArtifactDigest: strings.Repeat("b", 64), SolverConfigDigest: "solver", Puzzles: []Puzzle{{Puzzle: puzzle, Difficulty: "easy", Score: 4, MaxTechnique: "Naked Single", Source: "official", SourceRef: "release-2"}}}
+	second := CatalogBundleRelease{
+		Version:            2,
+		ArtifactDigest:     strings.Repeat("b", 64),
+		SolverConfigDigest: "solver",
+		Puzzles: []Puzzle{
+			{
+				Puzzle:       puzzle,
+				Difficulty:   "easy",
+				Score:        4,
+				MaxTechnique: "Naked Single",
+				Source:       "official",
+				SourceRef:    "release-2",
+			},
+		},
+	}
 	upgraded, err := database.ApplyCatalogBundle(second, false)
 	if err != nil || upgraded.Status != "applied" || upgraded.PuzzlesAdded != 0 || upgraded.ProvenanceAdded != 1 {
 		t.Fatalf("upgrade = %+v, %v", upgraded, err)
@@ -55,14 +83,34 @@ func TestCatalogBundleConflictRollsBackWholeRelease(t *testing.T) {
 	}
 	defer database.Close()
 	firstPuzzle := strings.Repeat(".", 81)
-	if _, err := database.InsertPuzzle(Puzzle{Puzzle: firstPuzzle, Difficulty: "easy", Score: 1, MaxTechnique: "Naked Single", Source: "existing"}); err != nil {
+	if _, err := database.InsertPuzzle(Puzzle{Puzzle: firstPuzzle, Difficulty: "easy", Score: 1,
+		MaxTechnique: "Naked Single", Source: "existing"}); err != nil {
 		t.Fatal(err)
 	}
 	secondPuzzle := "1" + strings.Repeat(".", 80)
-	release := CatalogBundleRelease{Version: 1, ArtifactDigest: strings.Repeat("c", 64), SolverConfigDigest: "solver", Puzzles: []Puzzle{
-		{Puzzle: secondPuzzle, Difficulty: "easy", Score: 1, MaxTechnique: "Naked Single", Source: "official", SourceRef: "new"},
-		{Puzzle: firstPuzzle, Difficulty: "hard", Score: 99, MaxTechnique: "X-Wing", Source: "official", SourceRef: "conflict"},
-	}}
+	release := CatalogBundleRelease{
+		Version:            1,
+		ArtifactDigest:     strings.Repeat("c", 64),
+		SolverConfigDigest: "solver",
+		Puzzles: []Puzzle{
+			{
+				Puzzle:       secondPuzzle,
+				Difficulty:   "easy",
+				Score:        1,
+				MaxTechnique: "Naked Single",
+				Source:       "official",
+				SourceRef:    "new",
+			},
+			{
+				Puzzle:       firstPuzzle,
+				Difficulty:   "hard",
+				Score:        99,
+				MaxTechnique: "X-Wing",
+				Source:       "official",
+				SourceRef:    "conflict",
+			},
+		},
+	}
 	if _, err := database.ApplyCatalogBundle(release, false); err == nil {
 		t.Fatal("conflicting immutable metadata was accepted")
 	}

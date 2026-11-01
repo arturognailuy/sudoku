@@ -17,17 +17,22 @@ func TestEmbeddedCatalogBundleIsBoundAndCurrent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if release.Manifest.FormatVersion != 1 || release.Manifest.BundleVersion != 2 || release.Manifest.SolverConfigDigest != solver.ConfigDigest(solver.NewStore()) {
+	if release.Manifest.FormatVersion != 1 || release.Manifest.BundleVersion != 2 ||
+		release.Manifest.SolverConfigDigest != solver.ConfigDigest(solver.NewStore()) {
 		t.Fatalf("unexpected embedded release: %+v", release)
 	}
 	counts := map[string]int{}
 	for _, puzzle := range release.Manifest.Puzzles {
 		counts[puzzle.Difficulty]++
 	}
-	if len(release.Manifest.Puzzles) != 3047 || counts["easy"] != 256 || counts["medium"] != 256 || counts["hard"] != 256 || counts["expert"] != 256 || counts["evil"] != evilcohort.MemberCount {
+	if len(release.Manifest.Puzzles) != 3047 || counts["easy"] != 256 || counts["medium"] != 256 ||
+		counts["hard"] != 256 ||
+		counts["expert"] != 256 ||
+		counts["evil"] != evilcohort.MemberCount {
 		t.Fatalf("unexpected official catalog counts: total=%d counts=%v", len(release.Manifest.Puzzles), counts)
 	}
-	if len(release.Manifest.Cohorts) != 1 || release.Manifest.Cohorts[0].Name != evilcohort.Name || len(release.Manifest.Cohorts[0].Members) != evilcohort.MemberCount {
+	if len(release.Manifest.Cohorts) != 1 || release.Manifest.Cohorts[0].Name != evilcohort.Name ||
+		len(release.Manifest.Cohorts[0].Members) != evilcohort.MemberCount {
 		t.Fatalf("unexpected official cohort: %+v", release.Manifest.Cohorts)
 	}
 }

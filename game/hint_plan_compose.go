@@ -98,14 +98,20 @@ func cellsArgument(name string, positions []core.Position) message.Argument {
 }
 
 func candidateArgument(name string, ref solver.CandidateRef) message.Argument {
-	value := message.Candidate{Cell: message.Cell{Row: ref.Position.Row + 1, Column: ref.Position.Column + 1}, Digit: ref.Value}
+	value := message.Candidate{
+		Cell:  message.Cell{Row: ref.Position.Row + 1, Column: ref.Position.Column + 1},
+		Digit: ref.Value,
+	}
 	return message.Argument{Name: name, Kind: message.ArgumentCandidate, Candidate: &value}
 }
 
 func candidatesArgument(name string, refs []solver.CandidateRef) message.Argument {
 	values := make([]message.Candidate, len(refs))
 	for i, ref := range refs {
-		values[i] = message.Candidate{Cell: message.Cell{Row: ref.Position.Row + 1, Column: ref.Position.Column + 1}, Digit: ref.Value}
+		values[i] = message.Candidate{
+			Cell:  message.Cell{Row: ref.Position.Row + 1, Column: ref.Position.Column + 1},
+			Digit: ref.Value,
+		}
 	}
 	return message.Argument{Name: name, Kind: message.ArgumentCandidates, Candidates: values}
 }
@@ -128,8 +134,33 @@ func composeValueCorrectionPlan(snapshot Snapshot, position core.Position) *Hint
 		Title:   hintDescriptor("hint.value-correction.title"),
 		Summary: hintDescriptor("hint.value-correction.summary", cellArgument("cell", position)),
 		Steps: []HintStep{
-			{ID: "find-wrong-value", Kind: HintStepObserve, Message: observe, Narration: []HintNarrationChunk{narrationID("hint.narration.look-at"), narrationTarget(cellTarget(position)), narrationID("hint.narration.value-conflict")}, Marks: []HintMark{{Target: cellTarget(position), Role: HintRoleProblem}}, Nodes: []HintNode{}, Links: []HintLink{}},
-			{ID: "clear-wrong-value", Kind: HintStepApply, Message: conclude, Narration: []HintNarrationChunk{narrationID("hint.narration.clear-value"), narrationTarget(cellTarget(position)), narrationID("hint.narration.clear-value-tail")}, Marks: []HintMark{{Target: cellTarget(position), Role: HintRoleConclusion}}, Nodes: []HintNode{}, Links: []HintLink{}, Effect: &HintEffect{ClearValue: &positionCopy}},
+			{
+				ID:      "find-wrong-value",
+				Kind:    HintStepObserve,
+				Message: observe,
+				Narration: []HintNarrationChunk{
+					narrationID("hint.narration.look-at"),
+					narrationTarget(cellTarget(position)),
+					narrationID("hint.narration.value-conflict"),
+				},
+				Marks: []HintMark{{Target: cellTarget(position), Role: HintRoleProblem}},
+				Nodes: []HintNode{},
+				Links: []HintLink{},
+			},
+			{
+				ID:      "clear-wrong-value",
+				Kind:    HintStepApply,
+				Message: conclude,
+				Narration: []HintNarrationChunk{
+					narrationID("hint.narration.clear-value"),
+					narrationTarget(cellTarget(position)),
+					narrationID("hint.narration.clear-value-tail"),
+				},
+				Marks:  []HintMark{{Target: cellTarget(position), Role: HintRoleConclusion}},
+				Nodes:  []HintNode{},
+				Links:  []HintLink{},
+				Effect: &HintEffect{ClearValue: &positionCopy},
+			},
 		},
 		Conclusion: conclusion,
 	}
@@ -137,14 +168,30 @@ func composeValueCorrectionPlan(snapshot Snapshot, position core.Position) *Hint
 	return plan
 }
 
-func composeCandidateCorrectionPlan(snapshot Snapshot, position core.Position, current, legal core.CandidateSet) *HintPlan {
+func composeCandidateCorrectionPlan(
+	snapshot Snapshot,
+	position core.Position,
+	current, legal core.CandidateSet,
+) *HintPlan {
 	replacement := &CandidateReplacement{Position: position, Values: legal}
 	var problemMarks, correctionMarks []HintMark
 	for _, value := range (current &^ legal).Values() {
-		problemMarks = append(problemMarks, HintMark{Target: candidateTarget(solver.CandidateRef{Position: position, Value: value}), Role: HintRoleExtra})
+		problemMarks = append(
+			problemMarks,
+			HintMark{
+				Target: candidateTarget(solver.CandidateRef{Position: position, Value: value}),
+				Role:   HintRoleExtra,
+			},
+		)
 	}
 	for _, value := range legal.Values() {
-		correctionMarks = append(correctionMarks, HintMark{Target: candidateTarget(solver.CandidateRef{Position: position, Value: value}), Role: HintRoleConclusion})
+		correctionMarks = append(
+			correctionMarks,
+			HintMark{
+				Target: candidateTarget(solver.CandidateRef{Position: position, Value: value}),
+				Role:   HintRoleConclusion,
+			},
+		)
 	}
 	observe := hintDescriptor("hint.candidate-correction.observe", cellArgument("cell", position))
 	compare := hintDescriptor("hint.candidate-correction.compare")
@@ -154,9 +201,42 @@ func composeCandidateCorrectionPlan(snapshot Snapshot, position core.Position, c
 		Title:   hintDescriptor("hint.candidate-correction.title"),
 		Summary: hintDescriptor("hint.candidate-correction.summary", cellArgument("cell", position)),
 		Steps: []HintStep{
-			{ID: "find-candidate-problem", Kind: HintStepObserve, Message: observe, Narration: []HintNarrationChunk{narrationID("hint.narration.look-at"), narrationTarget(cellTarget(position)), narrationID("hint.narration.candidate-inconsistent")}, Marks: append([]HintMark{{Target: cellTarget(position), Role: HintRoleProblem}}, problemMarks...), Nodes: []HintNode{}, Links: []HintLink{}},
-			{ID: "compare-candidate-cell", Kind: HintStepExplain, Message: compare, Narration: []HintNarrationChunk{narrationMessage(compare)}, Marks: problemMarks, Nodes: []HintNode{}, Links: []HintLink{}},
-			{ID: "set-candidate-cell", Kind: HintStepApply, Message: conclude, Narration: []HintNarrationChunk{narrationID("hint.narration.reset-candidates"), narrationTarget(cellTarget(position)), narrationID("hint.narration.reset-candidates-tail")}, Marks: correctionMarks, Nodes: []HintNode{}, Links: []HintLink{}, Effect: &HintEffect{SetCandidates: replacement}},
+			{
+				ID:      "find-candidate-problem",
+				Kind:    HintStepObserve,
+				Message: observe,
+				Narration: []HintNarrationChunk{
+					narrationID("hint.narration.look-at"),
+					narrationTarget(cellTarget(position)),
+					narrationID("hint.narration.candidate-inconsistent"),
+				},
+				Marks: append([]HintMark{{Target: cellTarget(position), Role: HintRoleProblem}}, problemMarks...),
+				Nodes: []HintNode{},
+				Links: []HintLink{},
+			},
+			{
+				ID:        "compare-candidate-cell",
+				Kind:      HintStepExplain,
+				Message:   compare,
+				Narration: []HintNarrationChunk{narrationMessage(compare)},
+				Marks:     problemMarks,
+				Nodes:     []HintNode{},
+				Links:     []HintLink{},
+			},
+			{
+				ID:      "set-candidate-cell",
+				Kind:    HintStepApply,
+				Message: conclude,
+				Narration: []HintNarrationChunk{
+					narrationID("hint.narration.reset-candidates"),
+					narrationTarget(cellTarget(position)),
+					narrationID("hint.narration.reset-candidates-tail"),
+				},
+				Marks:  correctionMarks,
+				Nodes:  []HintNode{},
+				Links:  []HintLink{},
+				Effect: &HintEffect{SetCandidates: replacement},
+			},
 		},
 		Conclusion: HintConclusion{SetCandidates: replacement},
 	}
@@ -236,7 +316,11 @@ func composeHintPlan(snapshot Snapshot, strategy solver.Solver, move *solver.Mov
 			plan.Steps[index].Links = []HintLink{}
 		}
 	}
-	plan.Summary = hintDescriptor("hint.strategy.summary", countArgument("steps", len(plan.Steps)), strategyArgument("strategy", move.Technique))
+	plan.Summary = hintDescriptor(
+		"hint.strategy.summary",
+		countArgument("steps", len(plan.Steps)),
+		strategyArgument("strategy", move.Technique),
+	)
 	plan.PlanID = deterministicPlanID(snapshot, *plan)
 	return plan
 }

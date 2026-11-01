@@ -269,7 +269,16 @@ func translateAction(body ActionRequest) (game.Action, int64, error) {
 func apiStatus(v game.Status) GameStatus { return GameStatus(v) }
 func digits(set core.CandidateSet) []int { return set.Values() }
 func apiSnapshot(v game.Snapshot) Snapshot {
-	o := Snapshot{Status: apiStatus(v.Status), Mistakes: v.Mistakes, CanUndo: v.CanUndo, CanRedo: v.CanRedo, Givens: make(ValueGrid, 9), Values: make(ValueGrid, 9), Invalid: make(BooleanGrid, 9), Candidates: make(DigitSetGrid, 9)}
+	o := Snapshot{
+		Status:     apiStatus(v.Status),
+		Mistakes:   v.Mistakes,
+		CanUndo:    v.CanUndo,
+		CanRedo:    v.CanRedo,
+		Givens:     make(ValueGrid, 9),
+		Values:     make(ValueGrid, 9),
+		Invalid:    make(BooleanGrid, 9),
+		Candidates: make(DigitSetGrid, 9),
+	}
 	for r := 0; r < 9; r++ {
 		o.Givens[r] = make(ValueRow, 9)
 		o.Values[r] = make(ValueRow, 9)
@@ -285,9 +294,24 @@ func apiSnapshot(v game.Snapshot) Snapshot {
 	return o
 }
 func apiResult(v game.Result) ActionResult {
-	o := ActionResult{Action: ActionKind(v.Action), Status: apiStatus(v.Status), CanUndo: v.CanUndo, CanRedo: v.CanRedo, Changes: make([]CellChange, len(v.Changes))}
+	o := ActionResult{
+		Action:  ActionKind(v.Action),
+		Status:  apiStatus(v.Status),
+		CanUndo: v.CanUndo,
+		CanRedo: v.CanRedo,
+		Changes: make([]CellChange, len(v.Changes)),
+	}
 	for i, c := range v.Changes {
-		o.Changes[i] = CellChange{Row: c.Position.Row + 1, Column: c.Position.Column + 1, Before: c.Before, After: c.After, InvalidBefore: c.InvalidBefore, InvalidAfter: c.InvalidAfter, CandidatesBefore: digits(c.CandidatesBefore), CandidatesAfter: digits(c.CandidatesAfter)}
+		o.Changes[i] = CellChange{
+			Row:              c.Position.Row + 1,
+			Column:           c.Position.Column + 1,
+			Before:           c.Before,
+			After:            c.After,
+			InvalidBefore:    c.InvalidBefore,
+			InvalidAfter:     c.InvalidAfter,
+			CandidatesBefore: digits(c.CandidatesBefore),
+			CandidatesAfter:  digits(c.CandidatesAfter),
+		}
 	}
 	if v.Hint != nil {
 		hint := apiHintPlan(v.Hint)
@@ -319,7 +343,14 @@ func apiHintPlan(plan *game.HintPlan) HintPlan {
 		for j, link := range step.Links {
 			links[j] = HintLink{From: link.From, To: link.To, Kind: HintLinkKind(link.Kind)}
 		}
-		steps[i] = HintStep{Id: step.ID, Kind: HintStepKind(step.Kind), Message: apiMessageDescriptor(step.Message), Marks: marks, Nodes: nodes, Links: links}
+		steps[i] = HintStep{
+			Id:      step.ID,
+			Kind:    HintStepKind(step.Kind),
+			Message: apiMessageDescriptor(step.Message),
+			Marks:   marks,
+			Nodes:   nodes,
+			Links:   links,
+		}
 		if step.HasValidNarration() {
 			narration := make([]HintNarrationChunk, len(step.Narration))
 			valid := true
@@ -341,15 +372,27 @@ func apiHintPlan(plan *game.HintPlan) HintPlan {
 		}
 	}
 	out := HintPlan{
-		PlanId:     plan.PlanID,
-		Kind:       HintPlanKind(plan.Kind),
-		Title:      apiMessageDescriptor(plan.Title),
-		Summary:    apiMessageDescriptor(plan.Summary),
-		Steps:      steps,
-		Conclusion: apiHintEffect(game.HintEffect{Placement: plan.Conclusion.Placement, Eliminations: plan.Conclusion.Eliminations, ClearValue: plan.Conclusion.ClearValue, SetCandidates: plan.Conclusion.SetCandidates}),
+		PlanId:  plan.PlanID,
+		Kind:    HintPlanKind(plan.Kind),
+		Title:   apiMessageDescriptor(plan.Title),
+		Summary: apiMessageDescriptor(plan.Summary),
+		Steps:   steps,
+		Conclusion: apiHintEffect(
+			game.HintEffect{
+				Placement:     plan.Conclusion.Placement,
+				Eliminations:  plan.Conclusion.Eliminations,
+				ClearValue:    plan.Conclusion.ClearValue,
+				SetCandidates: plan.Conclusion.SetCandidates,
+			},
+		),
 	}
 	if plan.Strategy.ID != "" {
-		out.Strategy = &HintStrategy{Id: plan.Strategy.ID, Name: apiMessageDescriptor(plan.Strategy.Name), Grade: Difficulty(plan.Strategy.Grade), GradeName: apiMessageDescriptor(plan.Strategy.GradeName)}
+		out.Strategy = &HintStrategy{
+			Id:        plan.Strategy.ID,
+			Name:      apiMessageDescriptor(plan.Strategy.Name),
+			Grade:     Difficulty(plan.Strategy.Grade),
+			GradeName: apiMessageDescriptor(plan.Strategy.GradeName),
+		}
 	}
 	if plan.Reason != nil && plan.Reason.Validate() == nil {
 		reason := apiHintReason(*plan.Reason)
@@ -378,54 +421,93 @@ func mustAPIMessageArgument(argument usermessage.Argument) MessageArgument {
 	var err error
 	switch argument.Kind {
 	case usermessage.ArgumentText:
-		err = out.FromMessageTextArgument(MessageTextArgument{Name: argument.Name, Kind: string(argument.Kind), Text: *argument.Text})
+		err = out.FromMessageTextArgument(
+			MessageTextArgument{Name: argument.Name, Kind: string(argument.Kind), Text: *argument.Text},
+		)
 	case usermessage.ArgumentInteger:
-		err = out.FromMessageIntegerArgument(MessageIntegerArgument{Name: argument.Name, Kind: string(argument.Kind), Integer: *argument.Integer})
+		err = out.FromMessageIntegerArgument(
+			MessageIntegerArgument{Name: argument.Name, Kind: string(argument.Kind), Integer: *argument.Integer},
+		)
 	case usermessage.ArgumentDigit:
-		err = out.FromMessageDigitArgument(MessageDigitArgument{Name: argument.Name, Kind: string(argument.Kind), Digit: Digit(*argument.Digit)})
+		err = out.FromMessageDigitArgument(
+			MessageDigitArgument{Name: argument.Name, Kind: string(argument.Kind), Digit: Digit(*argument.Digit)},
+		)
 	case usermessage.ArgumentCell:
-		err = out.FromMessageCellArgument(MessageCellArgument{Name: argument.Name, Kind: string(argument.Kind), Cell: CellPosition{Row: argument.Cell.Row, Column: argument.Cell.Column}})
+		err = out.FromMessageCellArgument(
+			MessageCellArgument{
+				Name: argument.Name,
+				Kind: string(argument.Kind),
+				Cell: CellPosition{Row: argument.Cell.Row, Column: argument.Cell.Column},
+			},
+		)
 	case usermessage.ArgumentCandidate:
 		value := MessageCandidateArgument{Name: argument.Name, Kind: string(argument.Kind)}
 		value.Candidate.Cell = CellPosition{Row: argument.Candidate.Cell.Row, Column: argument.Candidate.Cell.Column}
 		value.Candidate.Digit = Digit(argument.Candidate.Digit)
 		err = out.FromMessageCandidateArgument(value)
 	case usermessage.ArgumentRow:
-		err = out.FromMessageRowArgument(MessageRowArgument{Name: argument.Name, Kind: string(argument.Kind), Row: *argument.Row})
+		err = out.FromMessageRowArgument(
+			MessageRowArgument{Name: argument.Name, Kind: string(argument.Kind), Row: *argument.Row},
+		)
 	case usermessage.ArgumentColumn:
-		err = out.FromMessageColumnArgument(MessageColumnArgument{Name: argument.Name, Kind: string(argument.Kind), Column: *argument.Column})
+		err = out.FromMessageColumnArgument(
+			MessageColumnArgument{Name: argument.Name, Kind: string(argument.Kind), Column: *argument.Column},
+		)
 	case usermessage.ArgumentBox:
-		err = out.FromMessageBoxArgument(MessageBoxArgument{Name: argument.Name, Kind: string(argument.Kind), Box: *argument.Box})
+		err = out.FromMessageBoxArgument(
+			MessageBoxArgument{Name: argument.Name, Kind: string(argument.Kind), Box: *argument.Box},
+		)
 	case usermessage.ArgumentDifficulty:
-		err = out.FromMessageDifficultyArgument(MessageDifficultyArgument{Name: argument.Name, Kind: string(argument.Kind), Difficulty: Difficulty(*argument.Difficulty)})
+		err = out.FromMessageDifficultyArgument(
+			MessageDifficultyArgument{
+				Name:       argument.Name,
+				Kind:       string(argument.Kind),
+				Difficulty: Difficulty(*argument.Difficulty),
+			},
+		)
 	case usermessage.ArgumentStrategy:
-		err = out.FromMessageStrategyArgument(MessageStrategyArgument{Name: argument.Name, Kind: string(argument.Kind), Strategy: *argument.Strategy})
+		err = out.FromMessageStrategyArgument(
+			MessageStrategyArgument{Name: argument.Name, Kind: string(argument.Kind), Strategy: *argument.Strategy},
+		)
 	case usermessage.ArgumentCount:
-		err = out.FromMessageCountArgument(MessageCountArgument{Name: argument.Name, Kind: string(argument.Kind), Count: *argument.Count})
+		err = out.FromMessageCountArgument(
+			MessageCountArgument{Name: argument.Name, Kind: string(argument.Kind), Count: *argument.Count},
+		)
 	case usermessage.ArgumentDigits:
 		values := make([]Digit, len(argument.Digits))
 		for i, value := range argument.Digits {
 			values[i] = Digit(value)
 		}
-		err = out.FromMessageDigitsArgument(MessageDigitsArgument{Name: argument.Name, Kind: string(argument.Kind), Digits: values})
+		err = out.FromMessageDigitsArgument(
+			MessageDigitsArgument{Name: argument.Name, Kind: string(argument.Kind), Digits: values},
+		)
 	case usermessage.ArgumentCells:
 		values := make([]CellPosition, len(argument.Cells))
 		for i, value := range argument.Cells {
 			values[i] = CellPosition{Row: value.Row, Column: value.Column}
 		}
-		err = out.FromMessageCellsArgument(MessageCellsArgument{Name: argument.Name, Kind: string(argument.Kind), Cells: values})
+		err = out.FromMessageCellsArgument(
+			MessageCellsArgument{Name: argument.Name, Kind: string(argument.Kind), Cells: values},
+		)
 	case usermessage.ArgumentCandidates:
 		values := make([]HintCandidate, len(argument.Candidates))
 		for i, value := range argument.Candidates {
-			values[i] = HintCandidate{Cell: CellPosition{Row: value.Cell.Row, Column: value.Cell.Column}, Digit: Digit(value.Digit)}
+			values[i] = HintCandidate{
+				Cell:  CellPosition{Row: value.Cell.Row, Column: value.Cell.Column},
+				Digit: Digit(value.Digit),
+			}
 		}
-		err = out.FromMessageCandidatesArgument(MessageCandidatesArgument{Name: argument.Name, Kind: string(argument.Kind), Candidates: values})
+		err = out.FromMessageCandidatesArgument(
+			MessageCandidatesArgument{Name: argument.Name, Kind: string(argument.Kind), Candidates: values},
+		)
 	case usermessage.ArgumentUnits:
 		values := make([]HintUnit, len(argument.Units))
 		for i, value := range argument.Units {
 			values[i] = HintUnit{Kind: HintUnitKind(value.Kind), Index: value.Index}
 		}
-		err = out.FromMessageUnitsArgument(MessageUnitsArgument{Name: argument.Name, Kind: string(argument.Kind), Units: values})
+		err = out.FromMessageUnitsArgument(
+			MessageUnitsArgument{Name: argument.Name, Kind: string(argument.Kind), Units: values},
+		)
 	default:
 		panic(fmt.Sprintf("unsupported canonical message argument kind %q", argument.Kind))
 	}
@@ -439,7 +521,10 @@ func apiHintReason(reason game.HintReason) HintReason {
 	var out HintReason
 	var err error
 	candidate := func(ref solver.CandidateRef) HintCandidate {
-		return HintCandidate{Cell: CellPosition{Row: ref.Position.Row + 1, Column: ref.Position.Column + 1}, Digit: Digit(ref.Value)}
+		return HintCandidate{
+			Cell:  CellPosition{Row: ref.Position.Row + 1, Column: ref.Position.Column + 1},
+			Digit: Digit(ref.Value),
+		}
 	}
 	candidates := func(refs []solver.CandidateRef) []HintCandidate {
 		values := make([]HintCandidate, len(refs))
@@ -466,7 +551,15 @@ func apiHintReason(reason game.HintReason) HintReason {
 		for i, digit := range value.ReservedDigits {
 			digits[i] = Digit(digit)
 		}
-		err = out.FromSubsetReservationReason(SubsetReservationReason{Kind: string(reason.Kind), Unit: units([]solver.UnitRef{value.Unit})[0], ReservedDigits: digits, PremiseCells: cells, ActionTargets: candidates(value.ActionTargets)})
+		err = out.FromSubsetReservationReason(
+			SubsetReservationReason{
+				Kind:           string(reason.Kind),
+				Unit:           units([]solver.UnitRef{value.Unit})[0],
+				ReservedDigits: digits,
+				PremiseCells:   cells,
+				ActionTargets:  candidates(value.ActionTargets),
+			},
+		)
 	case game.HintReasonHiddenSubsetConfinement:
 		value := reason.HiddenSubsetConfinement
 		digits := make([]Digit, len(value.ConfinedDigits))
@@ -477,13 +570,39 @@ func apiHintReason(reason game.HintReason) HintReason {
 		for index, position := range value.PremiseCells {
 			cells[index] = CellPosition{Row: position.Row + 1, Column: position.Column + 1}
 		}
-		err = out.FromHiddenSubsetConfinementReason(HiddenSubsetConfinementReason{Kind: string(reason.Kind), Unit: units([]solver.UnitRef{value.Unit})[0], ConfinedDigits: digits, PremiseCells: cells, ActionTargets: candidates(value.ActionTargets)})
+		err = out.FromHiddenSubsetConfinementReason(
+			HiddenSubsetConfinementReason{
+				Kind:           string(reason.Kind),
+				Unit:           units([]solver.UnitRef{value.Unit})[0],
+				ConfinedDigits: digits,
+				PremiseCells:   cells,
+				ActionTargets:  candidates(value.ActionTargets),
+			},
+		)
 	case game.HintReasonIntersectionConfinement:
 		value := reason.IntersectionConfinement
-		err = out.FromIntersectionConfinementReason(IntersectionConfinementReason{Kind: string(reason.Kind), Digit: Digit(value.Digit), SourceUnit: units([]solver.UnitRef{value.SourceUnit})[0], IntersectingUnit: units([]solver.UnitRef{value.IntersectingUnit})[0], PremiseCandidates: candidates(value.PremiseCandidates), ActionTargets: candidates(value.ActionTargets)})
+		err = out.FromIntersectionConfinementReason(
+			IntersectionConfinementReason{
+				Kind:              string(reason.Kind),
+				Digit:             Digit(value.Digit),
+				SourceUnit:        units([]solver.UnitRef{value.SourceUnit})[0],
+				IntersectingUnit:  units([]solver.UnitRef{value.IntersectingUnit})[0],
+				PremiseCandidates: candidates(value.PremiseCandidates),
+				ActionTargets:     candidates(value.ActionTargets),
+			},
+		)
 	case game.HintReasonFishConfinement:
 		value := reason.FishConfinement
-		err = out.FromFishConfinementReason(FishConfinementReason{Kind: string(reason.Kind), Digit: Digit(value.Digit), BaseUnits: units(value.BaseUnits), CoverUnits: units(value.CoverUnits), PatternCandidates: candidates(value.PatternCandidates), ActionTargets: candidates(value.ActionTargets)})
+		err = out.FromFishConfinementReason(
+			FishConfinementReason{
+				Kind:              string(reason.Kind),
+				Digit:             Digit(value.Digit),
+				BaseUnits:         units(value.BaseUnits),
+				CoverUnits:        units(value.CoverUnits),
+				PatternCandidates: candidates(value.PatternCandidates),
+				ActionTargets:     candidates(value.ActionTargets),
+			},
+		)
 	case game.HintReasonImplicationChain:
 		value := reason.ImplicationChain
 		groups := make([]HintCandidateGroup, len(value.BivalueGroups))
@@ -492,13 +611,28 @@ func apiHintReason(reason game.HintReason) HintReason {
 			for j, digit := range group.Values {
 				digits[j] = Digit(digit)
 			}
-			groups[i] = HintCandidateGroup{Cell: CellPosition{Row: group.Position.Row + 1, Column: group.Position.Column + 1}, Digits: digits}
+			groups[i] = HintCandidateGroup{
+				Cell:   CellPosition{Row: group.Position.Row + 1, Column: group.Position.Column + 1},
+				Digits: digits,
+			}
 		}
 		links := make([]HintCandidateLink, len(value.Links))
 		for i, link := range value.Links {
-			links[i] = HintCandidateLink{From: candidate(link.From), To: candidate(link.To), Kind: HintLinkKind(link.Kind)}
+			links[i] = HintCandidateLink{
+				From: candidate(link.From),
+				To:   candidate(link.To),
+				Kind: HintLinkKind(link.Kind),
+			}
 		}
-		err = out.FromImplicationChainReason(ImplicationChainReason{Kind: string(reason.Kind), BivalueGroups: groups, Links: links, EndpointDigit: Digit(value.EndpointDigit), ActionTargets: candidates(value.ActionTargets)})
+		err = out.FromImplicationChainReason(
+			ImplicationChainReason{
+				Kind:          string(reason.Kind),
+				BivalueGroups: groups,
+				Links:         links,
+				EndpointDigit: Digit(value.EndpointDigit),
+				ActionTargets: candidates(value.ActionTargets),
+			},
+		)
 	default:
 		panic(fmt.Sprintf("unsupported hint reason kind %q", reason.Kind))
 	}
@@ -556,15 +690,24 @@ func apiHintEffect(effect game.HintEffect) HintEffect {
 			Column int      `json:"column"`
 			Row    int      `json:"row"`
 			Values DigitSet `json:"values"`
-		}{Column: effect.SetCandidates.Position.Column + 1, Row: effect.SetCandidates.Position.Row + 1, Values: digits(effect.SetCandidates.Values)}
+		}{Column: effect.SetCandidates.Position.Column + 1, Row: effect.SetCandidates.Position.Row + 1,
+			Values: digits(effect.SetCandidates.Values)}
 	case effect.Placement != nil:
 		out.Kind = HintEffectKindPlaceValue
-		out.Placement = &HintPlacement{Row: effect.Placement.Position.Row + 1, Column: effect.Placement.Position.Column + 1, Value: effect.Placement.Value}
+		out.Placement = &HintPlacement{
+			Row:    effect.Placement.Position.Row + 1,
+			Column: effect.Placement.Position.Column + 1,
+			Value:  effect.Placement.Value,
+		}
 	default:
 		out.Kind = HintEffectKindEliminateCandidates
 		eliminations := make([]HintElimination, len(effect.Eliminations))
 		for i, elimination := range effect.Eliminations {
-			eliminations[i] = HintElimination{Row: elimination.Position.Row + 1, Column: elimination.Position.Column + 1, Value: elimination.Value}
+			eliminations[i] = HintElimination{
+				Row:    elimination.Position.Row + 1,
+				Column: elimination.Position.Column + 1,
+				Value:  elimination.Value,
+			}
 		}
 		out.Eliminations = &eliminations
 	}

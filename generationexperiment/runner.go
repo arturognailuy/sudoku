@@ -159,7 +159,8 @@ func Run(manifestPath, outputDir string, executor Executor) (Result, error) {
 	if err := validateCheckpoint(checkpointPath, manifestHash, len(observations)); err != nil {
 		return Result{}, err
 	}
-	if err := writeJSONAtomic(checkpointPath, checkpoint{Version: Version, ManifestHash: manifestHash, NextIndex: len(observations)}); err != nil {
+	if err := writeJSONAtomic(checkpointPath, checkpoint{Version: Version, ManifestHash: manifestHash,
+		NextIndex: len(observations)}); err != nil {
 		return Result{}, err
 	}
 
@@ -288,7 +289,13 @@ func validateManifest(manifest Manifest) error {
 	return nil
 }
 
-func makeObservation(index int, manifestHash string, job Job, execution Execution, seeds, results map[string]struct{}) (Observation, error) {
+func makeObservation(
+	index int,
+	manifestHash string,
+	job Job,
+	execution Execution,
+	seeds, results map[string]struct{},
+) (Observation, error) {
 	validOutcome := map[string]bool{
 		"exact-grade": true, "wrong-grade": true, "strategy-unsolved": true,
 		"invalid": true, "non-unique": true, "timed-out": true,
@@ -296,13 +303,15 @@ func makeObservation(index int, manifestHash string, job Job, execution Executio
 	if !validOutcome[execution.Outcome] {
 		return Observation{}, fmt.Errorf("invalid outcome %q", execution.Outcome)
 	}
-	if execution.DurationMS < 0 || execution.DurationMS > job.Budget.MaxDurationMS || execution.Classifications < 0 || execution.Classifications > job.Budget.MaxClassifications {
+	if execution.DurationMS < 0 || execution.DurationMS > job.Budget.MaxDurationMS || execution.Classifications < 0 ||
+		execution.Classifications > job.Budget.MaxClassifications {
 		return Observation{}, errors.New("execution metrics violate the job budget")
 	}
 	if execution.Outcome == "exact-grade" && execution.Difficulty != job.Sample.TargetDifficulty {
 		return Observation{}, errors.New("exact-grade result does not match target difficulty")
 	}
-	if execution.Outcome == "wrong-grade" && (execution.Difficulty == "" || execution.Difficulty == job.Sample.TargetDifficulty) {
+	if execution.Outcome == "wrong-grade" &&
+		(execution.Difficulty == "" || execution.Difficulty == job.Sample.TargetDifficulty) {
 		return Observation{}, errors.New("wrong-grade result must carry a different assigned difficulty")
 	}
 
@@ -351,7 +360,8 @@ func readObservations(path string, manifest Manifest, manifestHash string) ([]Ob
 			return nil, fmt.Errorf("observation %d does not match the active manifest", index)
 		}
 		sample := manifest.Samples[index/len(arms)]
-		if observation.SampleID != sample.ID || observation.Arm != arms[index%len(arms)] || observation.SeedID != sample.SeedID {
+		if observation.SampleID != sample.ID || observation.Arm != arms[index%len(arms)] ||
+			observation.SeedID != sample.SeedID {
 			return nil, fmt.Errorf("observation %d does not match its manifest job", index)
 		}
 		observations = append(observations, observation)

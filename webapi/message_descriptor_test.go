@@ -9,7 +9,11 @@ import (
 )
 
 func TestAPIHintPlanUsesStableNameDescriptors(t *testing.T) {
-	name := usermessage.Descriptor{ID: "strategy.naked-single.name", Arguments: []usermessage.Argument{}, Text: "Naked Single"}
+	name := usermessage.Descriptor{
+		ID:        "strategy.naked-single.name",
+		Arguments: []usermessage.Argument{},
+		Text:      "Naked Single",
+	}
 	gradeName := usermessage.Descriptor{ID: "difficulty.easy.name", Arguments: []usermessage.Argument{}, Text: "Easy"}
 	plan := apiHintPlan(&game.HintPlan{
 		PlanID:  "plan",
@@ -23,16 +27,25 @@ func TestAPIHintPlanUsesStableNameDescriptors(t *testing.T) {
 			GradeName: gradeName,
 		},
 	})
-	if plan.Title.Id != "strategy.naked-single.name" || plan.Title.Text != "Naked Single" || len(plan.Title.Arguments) != 0 {
+	if plan.Title.Id != "strategy.naked-single.name" || plan.Title.Text != "Naked Single" ||
+		len(plan.Title.Arguments) != 0 {
 		t.Fatalf("title = %#v", plan.Title)
 	}
-	if plan.Strategy == nil || plan.Strategy.Name.Id != plan.Title.Id || plan.Strategy.Name.Text != plan.Title.Text || len(plan.Strategy.Name.Arguments) != 0 || plan.Strategy.Grade != Easy || plan.Strategy.GradeName.Id != "difficulty.easy.name" || plan.Strategy.GradeName.Text != "Easy" {
+	if plan.Strategy == nil || plan.Strategy.Name.Id != plan.Title.Id || plan.Strategy.Name.Text != plan.Title.Text ||
+		len(plan.Strategy.Name.Arguments) != 0 ||
+		plan.Strategy.Grade != Easy ||
+		plan.Strategy.GradeName.Id != "difficulty.easy.name" ||
+		plan.Strategy.GradeName.Text != "Easy" {
 		t.Fatalf("strategy = %#v", plan.Strategy)
 	}
 }
 
 func TestAPIHintPlanOmitsMalformedReasonAndKeepsFallback(t *testing.T) {
-	descriptor := usermessage.Descriptor{ID: "test.summary", Arguments: []usermessage.Argument{}, Text: "Safe complete fallback."}
+	descriptor := usermessage.Descriptor{
+		ID:        "test.summary",
+		Arguments: []usermessage.Argument{},
+		Text:      "Safe complete fallback.",
+	}
 	plan := apiHintPlan(&game.HintPlan{
 		PlanID: "plan", Kind: game.HintKindStrategy, Title: descriptor, Summary: descriptor,
 		Reason: &game.HintReason{Kind: game.HintReasonFishConfinement},
@@ -58,7 +71,8 @@ func TestAPIHintPlanUsesCorrectionTitleDescriptors(t *testing.T) {
 			Title:   usermessage.Descriptor{ID: testCase.id, Arguments: []usermessage.Argument{}, Text: testCase.text},
 			Summary: usermessage.Descriptor{ID: "test.summary", Arguments: []usermessage.Argument{}, Text: "summary"},
 		})
-		if plan.Title.Id != testCase.id || plan.Title.Text != testCase.text || len(plan.Title.Arguments) != 0 || plan.Strategy != nil {
+		if plan.Title.Id != testCase.id || plan.Title.Text != testCase.text || len(plan.Title.Arguments) != 0 ||
+			plan.Strategy != nil {
 			t.Fatalf("%s title/strategy = %#v/%#v", testCase.kind, plan.Title, plan.Strategy)
 		}
 	}
@@ -75,7 +89,8 @@ func TestAPIErrorsUseCanonicalDescriptors(t *testing.T) {
 	}
 	for _, code := range codes {
 		detail := apiError(code).Error
-		if detail.Message.Id != "error."+string(code) || detail.Message.Text == "" || len(detail.Message.Arguments) != 0 {
+		if detail.Message.Id != "error."+string(code) || detail.Message.Text == "" ||
+			len(detail.Message.Arguments) != 0 {
 			t.Fatalf("error %q = %#v", code, detail.Message)
 		}
 	}
@@ -88,7 +103,11 @@ func TestAPIMessageDescriptorPreservesClosedArgumentKinds(t *testing.T) {
 		{Name: "integer", Kind: usermessage.ArgumentInteger, Integer: &integer},
 		{Name: "digit", Kind: usermessage.ArgumentDigit, Digit: &digit},
 		{Name: "cell", Kind: usermessage.ArgumentCell, Cell: &usermessage.Cell{Row: 4, Column: 5}},
-		{Name: "candidate", Kind: usermessage.ArgumentCandidate, Candidate: &usermessage.Candidate{Cell: usermessage.Cell{Row: 6, Column: 7}, Digit: 8}},
+		{
+			Name:      "candidate",
+			Kind:      usermessage.ArgumentCandidate,
+			Candidate: &usermessage.Candidate{Cell: usermessage.Cell{Row: 6, Column: 7}, Digit: 8},
+		},
 		{Name: "row", Kind: usermessage.ArgumentRow, Row: &row},
 		{Name: "column", Kind: usermessage.ArgumentColumn, Column: &column},
 		{Name: "box", Kind: usermessage.ArgumentBox, Box: &box},
@@ -96,8 +115,16 @@ func TestAPIMessageDescriptorPreservesClosedArgumentKinds(t *testing.T) {
 		{Name: "strategy", Kind: usermessage.ArgumentStrategy, Strategy: &strategy},
 		{Name: "count", Kind: usermessage.ArgumentCount, Count: &count},
 		{Name: "digits", Kind: usermessage.ArgumentDigits, Digits: []int{2, 7}},
-		{Name: "cells", Kind: usermessage.ArgumentCells, Cells: []usermessage.Cell{{Row: 4, Column: 2}, {Row: 4, Column: 7}}},
-		{Name: "candidates", Kind: usermessage.ArgumentCandidates, Candidates: []usermessage.Candidate{{Cell: usermessage.Cell{Row: 4, Column: 9}, Digit: 2}}},
+		{
+			Name:  "cells",
+			Kind:  usermessage.ArgumentCells,
+			Cells: []usermessage.Cell{{Row: 4, Column: 2}, {Row: 4, Column: 7}},
+		},
+		{
+			Name:       "candidates",
+			Kind:       usermessage.ArgumentCandidates,
+			Candidates: []usermessage.Candidate{{Cell: usermessage.Cell{Row: 4, Column: 9}, Digit: 2}},
+		},
 		{Name: "units", Kind: usermessage.ArgumentUnits, Units: []usermessage.Unit{{Kind: "row", Index: 4}}},
 	}}
 	if err := descriptor.Validate(); err != nil {

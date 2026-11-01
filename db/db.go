@@ -84,7 +84,8 @@ func (db *DB) migrate() (err error) {
 	}
 	if legacy || current {
 		var version int
-		if scanErr := conn.QueryRowContext(context.Background(), `SELECT version FROM schema_metadata WHERE singleton = 1`).Scan(&version); scanErr != nil {
+		if scanErr := conn.QueryRowContext(context.Background(),
+			`SELECT version FROM schema_metadata WHERE singleton = 1`).Scan(&version); scanErr != nil {
 			return ErrRebuildRequired
 		}
 		if version == 3 && current {
@@ -308,11 +309,13 @@ func migrateVersion3To4(conn *sql.Conn) error {
 		return fmt.Errorf("close account games for version 4: %w", err)
 	}
 	for _, item := range updates {
-		if _, err := conn.ExecContext(context.Background(), `UPDATE account_games SET status = ? WHERE account_game_id = ?`, item.status, item.id); err != nil {
+		if _, err := conn.ExecContext(context.Background(),
+			`UPDATE account_games SET status = ? WHERE account_game_id = ?`, item.status, item.id); err != nil {
 			return fmt.Errorf("backfill account game status for version 4: %w", err)
 		}
 	}
-	if _, err := conn.ExecContext(context.Background(), `UPDATE schema_metadata SET version = 4 WHERE singleton = 1 AND version = 3`); err != nil {
+	if _, err := conn.ExecContext(context.Background(),
+		`UPDATE schema_metadata SET version = 4 WHERE singleton = 1 AND version = 3`); err != nil {
 		return fmt.Errorf("finish catalog schema version 4: %w", err)
 	}
 	return nil
@@ -343,7 +346,9 @@ func Rebuild(path string) (err error) {
 			_, _ = dedicated.ExecContext(context.Background(), `ROLLBACK`)
 		}
 	}()
-	for _, table := range []string{"guest_claims", "account_games", "web_sessions", "application_sessions", "external_identities", "users", "play_runs", "serving_cohort_members", "serving_cohorts", "puzzle_provenance", "base_puzzles", "catalog_bundle_releases", "puzzles", "schema_metadata"} {
+	for _, table := range []string{"guest_claims", "account_games", "web_sessions", "application_sessions",
+		"external_identities", "users", "play_runs", "serving_cohort_members", "serving_cohorts", "puzzle_provenance",
+		"base_puzzles", "catalog_bundle_releases", "puzzles", "schema_metadata"} {
 		if _, err = dedicated.ExecContext(context.Background(), `DROP TABLE IF EXISTS `+table); err != nil {
 			return fmt.Errorf("drop %s: %w", table, err)
 		}
@@ -380,7 +385,8 @@ func RebuildWebState(path string) (err error) {
 		}
 	}()
 	var version int
-	if err = dedicated.QueryRowContext(context.Background(), `SELECT version FROM schema_metadata WHERE singleton = 1`).Scan(&version); err != nil {
+	if err = dedicated.QueryRowContext(context.Background(),
+		`SELECT version FROM schema_metadata WHERE singleton = 1`).Scan(&version); err != nil {
 		return fmt.Errorf("read schema version: %w", err)
 	}
 	if version != 5 {
@@ -407,7 +413,8 @@ func tableExists(queryer interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }, table string) (bool, error) {
 	var count int
-	if err := queryer.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, table).Scan(&count); err != nil {
+	if err := queryer.QueryRowContext(context.Background(),
+		`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, table).Scan(&count); err != nil {
 		return false, fmt.Errorf("inspect table %s: %w", table, err)
 	}
 	return count == 1, nil
@@ -444,5 +451,10 @@ func sqliteDataSource(path string) string {
 	if strings.Contains(path, "?") {
 		separator = "&"
 	}
-	return fmt.Sprintf("%s%s_pragma=busy_timeout%%3d%d&_pragma=foreign_keys%%3don", filepath.Clean(path), separator, busyTimeoutMilliseconds)
+	return fmt.Sprintf(
+		"%s%s_pragma=busy_timeout%%3d%d&_pragma=foreign_keys%%3don",
+		filepath.Clean(path),
+		separator,
+		busyTimeoutMilliseconds,
+	)
 }

@@ -52,7 +52,8 @@ func (tracker *Tracker) Apply(current *game.Game, action game.Action) (game.Resu
 // Observe records an already accepted transition. It is useful when a frontend
 // must commit its own persistence before completion statistics.
 func (tracker *Tracker) Observe(before game.Status, result game.Result) {
-	if tracker == nil || tracker.recorded || before == game.StatusSolved || result.Action == game.ActionSolve || result.Status != game.StatusSolved {
+	if tracker == nil || tracker.recorded || before == game.StatusSolved || result.Action == game.ActionSolve ||
+		result.Status != game.StatusSolved {
 		return
 	}
 	ok, recordErr := tracker.recorder.RecordCompletion(tracker.puzzle)
@@ -61,7 +62,9 @@ func (tracker *Tracker) Observe(before game.Status, result game.Result) {
 		return
 	}
 	if !ok {
-		tracker.warning = fmt.Errorf("completion statistics were not saved: puzzle is absent from the selected database")
+		tracker.warning = fmt.Errorf(
+			"completion statistics were not saved: puzzle is absent from the selected database",
+		)
 		return
 	}
 	tracker.recorded = true

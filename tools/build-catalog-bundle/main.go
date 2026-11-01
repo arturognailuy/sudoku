@@ -46,7 +46,8 @@ func main() {
 	reportPath := flag.String("report", "", "frozen full-catalog report.json path")
 	outputPath := flag.String("output", "catalogbundle/catalog.json", "output manifest path")
 	flag.Parse()
-	if *sourcePath == "" || *easySourcePath == "" || *mediumSourcePath == "" || *evidencePath == "" || *reportPath == "" {
+	if *sourcePath == "" || *easySourcePath == "" || *mediumSourcePath == "" || *evidencePath == "" ||
+		*reportPath == "" {
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -133,7 +134,14 @@ func run(sourcePath, easySourcePath, mediumSourcePath, evidencePath, reportPath,
 		{easySourcePath, easyDigest, "easy", "sudoku-exchange-easy@" + sourceCommit},
 		{mediumSourcePath, mediumDigest, "medium", "sudoku-exchange-medium@" + sourceCommit},
 	} {
-		selected, err := selectClassifiedSource(selection.path, selection.digest, selection.source, selection.grade, perGrade, seenPuzzles)
+		selected, err := selectClassifiedSource(
+			selection.path,
+			selection.digest,
+			selection.source,
+			selection.grade,
+			perGrade,
+			seenPuzzles,
+		)
 		if err != nil {
 			return err
 		}
@@ -174,11 +182,22 @@ func run(sourcePath, easySourcePath, mediumSourcePath, evidencePath, reportPath,
 		return fmt.Errorf("write catalog manifest: %w", err)
 	}
 	artifact := sha256.Sum256(data)
-	fmt.Printf("wrote %d puzzles (%d each Easy-Medium-Hard-Expert, %d Evil) to %s\nsha256 %s\n", len(puzzles), perGrade, evilcohort.MemberCount, outputPath, hex.EncodeToString(artifact[:]))
+	fmt.Printf(
+		"wrote %d puzzles (%d each Easy-Medium-Hard-Expert, %d Evil) to %s\nsha256 %s\n",
+		len(puzzles),
+		perGrade,
+		evilcohort.MemberCount,
+		outputPath,
+		hex.EncodeToString(artifact[:]),
+	)
 	return nil
 }
 
-func selectClassifiedSource(path, digest, sourceName, grade string, count int, seen map[string]struct{}) ([]catalogbundle.Puzzle, error) {
+func selectClassifiedSource(
+	path, digest, sourceName, grade string,
+	count int,
+	seen map[string]struct{},
+) ([]catalogbundle.Puzzle, error) {
 	records, err := loadSource(path, digest)
 	if err != nil {
 		return nil, err

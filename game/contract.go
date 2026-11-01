@@ -310,7 +310,8 @@ func (game *Game) applyHintPlan(plan *HintPlan) error {
 	changed := false
 	for _, elimination := range plan.Conclusion.Eliminations {
 		position := elimination.Position
-		if !position.IsValid() || elimination.Value < 1 || elimination.Value > 9 || game.Get(position) != 0 || game.problemBoard.Get(position) != 0 {
+		if !position.IsValid() || elimination.Value < 1 || elimination.Value > 9 || game.Get(position) != 0 ||
+			game.problemBoard.Get(position) != 0 {
 			return &EngineError{Code: ErrorStaleHint, Position: &position, Detail: "hint elimination no longer applies"}
 		}
 		current := nextCandidates[position.Row][position.Column]
@@ -392,10 +393,18 @@ func (game *Game) setCandidates(position core.Position, values []int) error {
 func (game *Game) validateCandidateCell(position core.Position) error {
 	positionCopy := position
 	if game.problemBoard.Get(position) != 0 {
-		return &EngineError{Code: ErrorImmutableCell, Position: &positionCopy, Detail: "cannot edit candidates on a problem cell"}
+		return &EngineError{
+			Code:     ErrorImmutableCell,
+			Position: &positionCopy,
+			Detail:   "cannot edit candidates on a problem cell",
+		}
 	}
 	if game.Get(position) != 0 {
-		return &EngineError{Code: ErrorNoteNotAllowed, Position: &positionCopy, Detail: "candidates are allowed only on empty cells"}
+		return &EngineError{
+			Code:     ErrorNoteNotAllowed,
+			Position: &positionCopy,
+			Detail:   "candidates are allowed only on empty cells",
+		}
 	}
 	return nil
 }

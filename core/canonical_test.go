@@ -24,7 +24,15 @@ func TestCanonicalPuzzleCollapsesSudokuSymmetries(t *testing.T) {
 
 	for _, transform := range transforms {
 		t.Run(transform.name, func(t *testing.T) {
-			got := CanonicalPuzzle(transformPuzzle(canonicalTestPuzzle, transform.rows, transform.columns, transform.transpose, transform.digits))
+			got := CanonicalPuzzle(
+				transformPuzzle(
+					canonicalTestPuzzle,
+					transform.rows,
+					transform.columns,
+					transform.transpose,
+					transform.digits,
+				),
+			)
 			if got != want {
 				t.Fatalf("canonical puzzle differs\n got: %s\nwant: %s", got, want)
 			}

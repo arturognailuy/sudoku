@@ -31,7 +31,8 @@ func TestTrackerRecordsOnlyFirstPlayerCompletion(t *testing.T) {
 	current := nearlySolvedGame(t)
 	recorder := &fakeRecorder{found: true}
 	tracker := New("normalized", recorder)
-	if result, err := tracker.Apply(&current, game.SetValue{Position: core.NewPosition(0, 0), Value: 1}); err != nil || result.Status != game.StatusSolved {
+	if result, err := tracker.Apply(&current, game.SetValue{Position: core.NewPosition(0, 0), Value: 1}); err != nil ||
+		result.Status != game.StatusSolved {
 		t.Fatalf("complete = %+v, %v", result, err)
 	}
 	if _, err := tracker.Apply(&current, game.Undo{}); err != nil {

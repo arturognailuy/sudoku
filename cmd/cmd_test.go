@@ -127,7 +127,13 @@ func TestBatchGenerateUsesInjectedGenerator(t *testing.T) {
 
 	report := batchGenerateWith(puzzleDB, 3, "easy", 2*time.Second, 3, 1, generate)
 	if calls != 3 || report.generated != 3 || report.stored != 1 || report.duplicates != 2 {
-		t.Fatalf("unexpected report: calls=%d generated=%d stored=%d duplicates=%d", calls, report.generated, report.stored, report.duplicates)
+		t.Fatalf(
+			"unexpected report: calls=%d generated=%d stored=%d duplicates=%d",
+			calls,
+			report.generated,
+			report.stored,
+			report.duplicates,
+		)
 	}
 }
 
@@ -169,7 +175,13 @@ func TestBatchGenerateParallelUsesInjectedGenerator(t *testing.T) {
 
 	report := batchGenerateWith(puzzleDB, 8, "easy", time.Second, 2, 3, generate)
 	if calls.Load() != 8 || report.generated != 8 || report.stored != 1 || report.duplicates != 7 {
-		t.Fatalf("unexpected report: calls=%d generated=%d stored=%d duplicates=%d", calls.Load(), report.generated, report.stored, report.duplicates)
+		t.Fatalf(
+			"unexpected report: calls=%d generated=%d stored=%d duplicates=%d",
+			calls.Load(),
+			report.generated,
+			report.stored,
+			report.duplicates,
+		)
 	}
 }
 
@@ -336,7 +348,10 @@ func TestCreateOwnedSessionPreparesMediumPuzzleWithoutHalfCreatingPlayRun(t *tes
 	}
 	defer database.Close()
 	const mediumPuzzle = ".5..4....4.1.....3.8753.1.48............8..7..7...1.497.39....5..84.2937945....2."
-	current, baseID, runID, difficulty, err := createOwnedSession(database, sessionRequest{input: mediumPuzzle, dbPath: dbPath})
+	current, baseID, runID, difficulty, err := createOwnedSession(
+		database,
+		sessionRequest{input: mediumPuzzle, dbPath: dbPath},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,7 +370,11 @@ func TestCreateOwnedSessionPreparesMediumPuzzleWithoutHalfCreatingPlayRun(t *tes
 
 func TestTrackedSessionLinksPresentedBoardToStableBasePuzzle(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "catalog.db")
-	current, _, tracker, err := createTrackedSession(sessionRequest{input: testKnownPuzzle, dbPath: dbPath}, io.Discard, io.Discard)
+	current, _, tracker, err := createTrackedSession(
+		sessionRequest{input: testKnownPuzzle, dbPath: dbPath},
+		io.Discard,
+		io.Discard,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -373,7 +392,8 @@ func TestTrackedSessionLinksPresentedBoardToStableBasePuzzle(t *testing.T) {
 	}
 	presented := current.ProblemBoard()
 	canonical := core.CanonicalPuzzle(presented.ToString())
-	if run.BasePuzzleID != db.BasePuzzleID(canonical) || run.PresentedPuzzle != presented.ToString() || run.Status != "active" {
+	if run.BasePuzzleID != db.BasePuzzleID(canonical) || run.PresentedPuzzle != presented.ToString() ||
+		run.Status != "active" {
 		t.Fatalf("play run does not preserve presentation and stable identity: %+v", run)
 	}
 }
@@ -386,7 +406,8 @@ func TestCreateSessionRejectsInvalidSources(t *testing.T) {
 	}{
 		{name: "invalid puzzle", request: sessionRequest{input: "123"}, want: "not a valid Sudoku problem"},
 		{name: "invalid difficulty", request: sessionRequest{level: "impossible"}, want: "invalid difficulty level"},
-		{name: "missing resume", request: sessionRequest{resume: filepath.Join(t.TempDir(), "missing.json")}, want: "unable to read saved session"},
+		{name: "missing resume", request: sessionRequest{resume: filepath.Join(t.TempDir(), "missing.json")},
+			want: "unable to read saved session"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, _, err := createSession(test.request, os.Stdout, os.Stderr)
@@ -427,9 +448,11 @@ func TestDefaultDBPathUsesNativeApplicationDataLocations(t *testing.T) {
 		want       string
 	}{
 		{name: "linux fallback", goos: "linux", want: filepath.Join("/home/player", ".local", "share", "sudoku", "puzzles.db")},
-		{name: "linux xdg", goos: "linux", env: map[string]string{"XDG_DATA_HOME": "/data"}, want: filepath.Join("/data", "sudoku", "puzzles.db")},
+		{name: "linux xdg", goos: "linux", env: map[string]string{"XDG_DATA_HOME": "/data"}, want: filepath.Join("/data",
+			"sudoku", "puzzles.db")},
 		{name: "macOS", goos: "darwin", want: filepath.Join("/home/player", "Library", "Application Support", "Sudoku", "puzzles.db")},
-		{name: "Windows", goos: "windows", env: map[string]string{"LOCALAPPDATA": "/local"}, want: filepath.Join("/local", "Sudoku", "puzzles.db")},
+		{name: "Windows", goos: "windows", env: map[string]string{"LOCALAPPDATA": "/local"},
+			want: filepath.Join("/local", "Sudoku", "puzzles.db")},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			getenv := func(key string) string { return test.env[key] }

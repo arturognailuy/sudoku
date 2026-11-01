@@ -125,7 +125,8 @@ func TestBusyTimeoutIsBoundedAndRecovers(t *testing.T) {
 		t.Fatal(rollbackErr)
 	}
 	var plays, completions int
-	if err := contender.conn.QueryRow(`SELECT play_count, completion_count FROM base_puzzles WHERE canonical_puzzle='shared'`).Scan(&plays, &completions); err != nil {
+	if err := contender.conn.QueryRow(`SELECT play_count, completion_count FROM base_puzzles WHERE canonical_puzzle='shared'`).Scan(&plays,
+		&completions); err != nil {
 		t.Fatal(err)
 	}
 	if plays != 2 || completions != 3 {
@@ -187,7 +188,8 @@ func TestMixedHandleWorkloadPreservesCountersSnapshotsAndIntegrity(t *testing.T)
 				}
 				return
 			}
-			if ok, completionErr := database.RecordCompletion(fmt.Sprintf("puzzle-%d", worker%6)); completionErr != nil || !ok {
+			if ok, completionErr := database.RecordCompletion(fmt.Sprintf("puzzle-%d", worker%6)); completionErr != nil ||
+				!ok {
 				errors <- fmt.Errorf("completion: %v", completionErr)
 			}
 		}(worker)
@@ -213,7 +215,8 @@ func TestMixedHandleWorkloadPreservesCountersSnapshotsAndIntegrity(t *testing.T)
 	}
 	defer reopened.Close()
 	var rows, acquisitions, completions int
-	if err := reopened.conn.QueryRow(`SELECT COUNT(*), SUM(play_count), SUM(completion_count) FROM base_puzzles`).Scan(&rows, &acquisitions, &completions); err != nil {
+	if err := reopened.conn.QueryRow(`SELECT COUNT(*), SUM(play_count), SUM(completion_count) FROM base_puzzles`).Scan(&rows,
+		&acquisitions, &completions); err != nil {
 		t.Fatal(err)
 	}
 	if rows != 6 || acquisitions != 8 || completions != 8 {

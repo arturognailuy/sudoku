@@ -199,7 +199,10 @@ func TestApplySetCandidatesIsAtomicAndUndoable(t *testing.T) {
 	}
 
 	before := game.Snapshot()
-	if _, err := game.Apply(SetCandidates{Position: position, Values: []int{2, 2}}); !errors.Is(err, &EngineError{Code: ErrorInvalidCell}) {
+	if _, err := game.Apply(SetCandidates{Position: position, Values: []int{2, 2}}); !errors.Is(
+		err,
+		&EngineError{Code: ErrorInvalidCell},
+	) {
 		t.Fatalf("duplicate notes returned %v", err)
 	}
 	if after := game.Snapshot(); after != before {
@@ -252,7 +255,8 @@ func TestApplyHintAndReset(t *testing.T) {
 	if result.Hint.PlanID != plan.PlanID || result.Hint.Summary.Text == "" || result.Hint.Conclusion.Placement == nil {
 		t.Fatalf("hint metadata does not describe the applied plan: %+v", result)
 	}
-	if result.Hint.Conclusion.Placement.Position != result.Changes[0].Position || result.Hint.Conclusion.Placement.Value != result.Changes[0].After {
+	if result.Hint.Conclusion.Placement.Position != result.Changes[0].Position ||
+		result.Hint.Conclusion.Placement.Value != result.Changes[0].After {
 		t.Fatalf("hint conclusion does not match the applied change: %+v", result)
 	}
 
@@ -322,10 +326,13 @@ func TestRestartBeginsCleanAttemptOnSamePuzzle(t *testing.T) {
 		t.Fatal(err)
 	}
 	snapshot := game.Snapshot()
-	if result.Action != ActionRestart || snapshot.Status != StatusInProgress || snapshot.Mistakes != 0 || snapshot.CanUndo || snapshot.CanRedo {
+	if result.Action != ActionRestart || snapshot.Status != StatusInProgress || snapshot.Mistakes != 0 ||
+		snapshot.CanUndo ||
+		snapshot.CanRedo {
 		t.Fatalf("restart result = %+v, snapshot = %+v", result, snapshot)
 	}
-	if snapshot.Values != snapshot.Givens || snapshot.Invalid != [9][9]bool{} || snapshot.Candidates != legalCandidateGrid(&game.playBoard) {
+	if snapshot.Values != snapshot.Givens || snapshot.Invalid != [9][9]bool{} ||
+		snapshot.Candidates != legalCandidateGrid(&game.playBoard) {
 		t.Fatal("restart did not restore the board and initial legal candidates")
 	}
 }

@@ -50,7 +50,13 @@ func (db *DB) InsertPlayRun(run PlayRun) error {
 	if run.Status != "active" {
 		return fmt.Errorf("new play run status must be active")
 	}
-	_, err := db.conn.Exec(`INSERT INTO play_runs (play_run_id, base_puzzle_id, presented_puzzle, status) VALUES (?, ?, ?, ?)`, run.ID, run.BasePuzzleID, run.PresentedPuzzle, run.Status)
+	_, err := db.conn.Exec(
+		`INSERT INTO play_runs (play_run_id, base_puzzle_id, presented_puzzle, status) VALUES (?, ?, ?, ?)`,
+		run.ID,
+		run.BasePuzzleID,
+		run.PresentedPuzzle,
+		run.Status,
+	)
 	if err != nil {
 		return fmt.Errorf("insert play run: %w", err)
 	}
@@ -62,7 +68,11 @@ func (db *DB) UpdatePlayRunStatus(id, status string) (bool, error) {
 	if status != "active" && status != "completed" && status != "abandoned" {
 		return false, fmt.Errorf("invalid play run status %q", status)
 	}
-	result, err := db.conn.Exec(`UPDATE play_runs SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE play_run_id = ?`, status, id)
+	result, err := db.conn.Exec(
+		`UPDATE play_runs SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE play_run_id = ?`,
+		status,
+		id,
+	)
 	if err != nil {
 		return false, fmt.Errorf("update play run: %w", err)
 	}
@@ -111,7 +121,8 @@ func (db *DB) CompletePlayRun(id string) (bool, error) {
 // PlayRunByID reads one play run without conflating it with its base puzzle.
 func (db *DB) PlayRunByID(id string) (*PlayRun, error) {
 	var run PlayRun
-	err := db.conn.QueryRow(`SELECT play_run_id, base_puzzle_id, presented_puzzle, status FROM play_runs WHERE play_run_id = ?`, id).Scan(&run.ID, &run.BasePuzzleID, &run.PresentedPuzzle, &run.Status)
+	err := db.conn.QueryRow(`SELECT play_run_id, base_puzzle_id, presented_puzzle, status FROM play_runs WHERE play_run_id = ?`, id).
+		Scan(&run.ID, &run.BasePuzzleID, &run.PresentedPuzzle, &run.Status)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

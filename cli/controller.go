@@ -194,7 +194,12 @@ func formatNarrationTarget(target game.HintTarget, compact bool) string {
 			return fmt.Sprintf("r%dc%d", target.Position.Row+1, target.Position.Column+1)
 		}
 		if target.Kind == game.HintTargetCandidate {
-			return fmt.Sprintf("candidate %d at row %d, column %d", target.Value, target.Position.Row+1, target.Position.Column+1)
+			return fmt.Sprintf(
+				"candidate %d at row %d, column %d",
+				target.Value,
+				target.Position.Row+1,
+				target.Position.Column+1,
+			)
 		}
 		return fmt.Sprintf("row %d, column %d", target.Position.Row+1, target.Position.Column+1)
 	}
@@ -223,7 +228,8 @@ func formatHintNarration(step game.HintStep, compact bool) string {
 	return result.String()
 }
 
-const candidateHintLimitation = "Hint: This deduction updates candidates that the compact CLI does not display. Use `sudoku tui` for the full teaching steps."
+const candidateHintLimitation = ("Hint: This deduction updates candidates that the compact CLI does not display. Use " +
+	"`sudoku tui` for the full teaching steps.")
 
 func formatCLIHint(plan game.HintPlan) string {
 	placement := plan.Conclusion.Placement
@@ -236,7 +242,13 @@ func formatCLIHint(plan game.HintPlan) string {
 		reason = formatHintNarration(plan.Steps[len(plan.Steps)-1], false)
 	}
 	fmt.Fprintf(&result, "Hint: %s\n", reason)
-	fmt.Fprintf(&result, "Placement: row %d, column %d = %d.\n", placement.Position.Row+1, placement.Position.Column+1, placement.Value)
+	fmt.Fprintf(
+		&result,
+		"Placement: row %d, column %d = %d.\n",
+		placement.Position.Row+1,
+		placement.Position.Column+1,
+		placement.Value,
+	)
 	return result.String()
 }
 

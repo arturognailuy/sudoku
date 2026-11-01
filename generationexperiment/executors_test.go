@@ -15,9 +15,24 @@ func TestMutationDirectionUsesClassificationFeedback(t *testing.T) {
 		classification solver.Classification
 		wantRemove     bool
 	}{
-		{name: "raise grade by removing a clue", target: "hard", classification: solver.Classification{Solved: true, Difficulty: "easy"}, wantRemove: true},
-		{name: "lower grade by restoring a clue", target: "hard", classification: solver.Classification{Solved: true, Difficulty: "evil"}, wantRemove: false},
-		{name: "repair stalled trace by restoring a clue", target: "evil", classification: solver.Classification{}, wantRemove: false},
+		{
+			name:           "raise grade by removing a clue",
+			target:         "hard",
+			classification: solver.Classification{Solved: true, Difficulty: "easy"},
+			wantRemove:     true,
+		},
+		{
+			name:           "lower grade by restoring a clue",
+			target:         "hard",
+			classification: solver.Classification{Solved: true, Difficulty: "evil"},
+			wantRemove:     false,
+		},
+		{
+			name:           "repair stalled trace by restoring a clue",
+			target:         "evil",
+			classification: solver.Classification{},
+			wantRemove:     false,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -57,7 +72,14 @@ func TestExecutionFromClassificationPreservesTimeout(t *testing.T) {
 	board := core.NewEmptyBoard()
 	board.FromString(hardSeed)
 	job := Job{Sample: Sample{TargetDifficulty: "hard"}}
-	execution := executionFromClassification(job, board, solver.Classification{Solved: true, Difficulty: "hard"}, 10, 1, true)
+	execution := executionFromClassification(
+		job,
+		board,
+		solver.Classification{Solved: true, Difficulty: "hard"},
+		10,
+		1,
+		true,
+	)
 	if execution.Outcome != "timed-out" {
 		t.Fatalf("outcome = %q, want timed-out", execution.Outcome)
 	}

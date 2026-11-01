@@ -137,7 +137,12 @@ func (s *WWingSolver) Apply(board *core.Board) *Move {
 // tryWWing checks if cellA and cellB (both bi-value with {linkDigit, elimDigit})
 // are connected by a strong link on linkDigit, and if so, eliminates elimDigit
 // from cells that see both.
-func (s *WWingSolver) tryWWing(board *core.Board, cellA, cellB core.Position, linkDigit, elimDigit int, pairs []wwingConjugatePair) *Move {
+func (s *WWingSolver) tryWWing(
+	board *core.Board,
+	cellA, cellB core.Position,
+	linkDigit, elimDigit int,
+	pairs []wwingConjugatePair,
+) *Move {
 	for _, cp := range pairs {
 		// One end of the conjugate pair must see cellA, the other must see cellB.
 		// The conjugate pair cells themselves must not be cellA or cellB.
@@ -180,10 +185,16 @@ func (s *WWingSolver) tryWWing(board *core.Board, cellA, cellB core.Position, li
 							Technique: s.Key,
 							Reason: fmt.Sprintf(
 								"W-Wing: %s and %s both have {%d,%d}, connected by strong link on %d via %s-%s — %d eliminated from %s, leaving %d",
-								cellA.ToString(), cellB.ToString(),
-								linkDigit, elimDigit, linkDigit,
-								aEnd.ToString(), bEnd.ToString(),
-								elimDigit, pos.ToString(), value,
+								cellA.ToString(),
+								cellB.ToString(),
+								linkDigit,
+								elimDigit,
+								linkDigit,
+								aEnd.ToString(),
+								bEnd.ToString(),
+								elimDigit,
+								pos.ToString(),
+								value,
 							),
 						}
 					}
@@ -213,9 +224,13 @@ func (s *WWingSolver) tryWWing(board *core.Board, cellA, cellB core.Position, li
 				Technique:       s.Key,
 				Reason: fmt.Sprintf(
 					"W-Wing: %s and %s both have {%d,%d}, connected by strong link on %d via %s-%s — %d eliminated from cells seeing both",
-					cellA.ToString(), cellB.ToString(),
-					linkDigit, elimDigit, linkDigit,
-					aEnd.ToString(), bEnd.ToString(),
+					cellA.ToString(),
+					cellB.ToString(),
+					linkDigit,
+					elimDigit,
+					linkDigit,
+					aEnd.ToString(),
+					bEnd.ToString(),
 					elimDigit,
 				),
 				Evidence: evidence,
