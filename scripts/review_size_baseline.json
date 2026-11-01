@@ -1,0 +1,695 @@
+{
+  "version": 1,
+  "limits": {
+    "file_lines": 1000,
+    "line_length": 140
+  },
+  "findings": [
+    {
+      "path": "accountauth/accountauth_test.go",
+      "file_lines": null,
+      "long_line_count": 6,
+      "widest_line": 214,
+      "widest_line_number": 91
+    },
+    {
+      "path": "accountgame/accountgame.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 156,
+      "widest_line_number": 104
+    },
+    {
+      "path": "accountgame/accountgame_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 195,
+      "widest_line_number": 59
+    },
+    {
+      "path": "calibration/runner.go",
+      "file_lines": null,
+      "long_line_count": 17,
+      "widest_line": 687,
+      "widest_line_number": 688
+    },
+    {
+      "path": "calibration/runner_test.go",
+      "file_lines": null,
+      "long_line_count": 6,
+      "widest_line": 207,
+      "widest_line_number": 176
+    },
+    {
+      "path": "catalogbundle/bundle.go",
+      "file_lines": null,
+      "long_line_count": 7,
+      "widest_line": 376,
+      "widest_line_number": 145
+    },
+    {
+      "path": "catalogbundle/bundle_test.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 191,
+      "widest_line_number": 27
+    },
+    {
+      "path": "cli/controller.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 158,
+      "widest_line_number": 226
+    },
+    {
+      "path": "cmd/api.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 263,
+      "widest_line_number": 76
+    },
+    {
+      "path": "cmd/api_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 211,
+      "widest_line_number": 16
+    },
+    {
+      "path": "cmd/calibrate.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 201,
+      "widest_line_number": 25
+    },
+    {
+      "path": "cmd/catalog.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 301,
+      "widest_line_number": 96
+    },
+    {
+      "path": "cmd/cmd_test.go",
+      "file_lines": null,
+      "long_line_count": 4,
+      "widest_line": 144,
+      "widest_line_number": 172
+    },
+    {
+      "path": "cmd/database.go",
+      "file_lines": null,
+      "long_line_count": 7,
+      "widest_line": 266,
+      "widest_line_number": 57
+    },
+    {
+      "path": "cmd/difficulty_audit.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 162,
+      "widest_line_number": 20
+    },
+    {
+      "path": "cmd/experiment.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 198,
+      "widest_line_number": 35
+    },
+    {
+      "path": "cmd/generate.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 155,
+      "widest_line_number": 112
+    },
+    {
+      "path": "cmd/import_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 164,
+      "widest_line_number": 24
+    },
+    {
+      "path": "cmd/play.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 163,
+      "widest_line_number": 18
+    },
+    {
+      "path": "cmd/private_permissions_windows_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 166,
+      "widest_line_number": 16
+    },
+    {
+      "path": "cmd/replenish.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 145,
+      "widest_line_number": 37
+    },
+    {
+      "path": "cmd/session.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 170,
+      "widest_line_number": 51
+    },
+    {
+      "path": "cmd/tui.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 183,
+      "widest_line_number": 71
+    },
+    {
+      "path": "cmd/web_runtime.go",
+      "file_lines": null,
+      "long_line_count": 8,
+      "widest_line": 295,
+      "widest_line_number": 196
+    },
+    {
+      "path": "cmd/web_runtime_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 258,
+      "widest_line_number": 77
+    },
+    {
+      "path": "db/accounts.go",
+      "file_lines": null,
+      "long_line_count": 34,
+      "widest_line": 264,
+      "widest_line_number": 266
+    },
+    {
+      "path": "db/accounts_test.go",
+      "file_lines": null,
+      "long_line_count": 11,
+      "widest_line": 231,
+      "widest_line_number": 94
+    },
+    {
+      "path": "db/catalog.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 197,
+      "widest_line_number": 114
+    },
+    {
+      "path": "db/catalog_bundle.go",
+      "file_lines": null,
+      "long_line_count": 11,
+      "widest_line": 423,
+      "widest_line_number": 127
+    },
+    {
+      "path": "db/catalog_bundle_test.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 255,
+      "widest_line_number": 36
+    },
+    {
+      "path": "db/concurrency_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 165,
+      "widest_line_number": 216
+    },
+    {
+      "path": "db/db.go",
+      "file_lines": null,
+      "long_line_count": 6,
+      "widest_line": 290,
+      "widest_line_number": 346
+    },
+    {
+      "path": "db/db_test.go",
+      "file_lines": null,
+      "long_line_count": 19,
+      "widest_line": 210,
+      "widest_line_number": 545
+    },
+    {
+      "path": "db/puzzle.go",
+      "file_lines": null,
+      "long_line_count": 12,
+      "widest_line": 230,
+      "widest_line_number": 93
+    },
+    {
+      "path": "db/web_rebuild_test.go",
+      "file_lines": null,
+      "long_line_count": 4,
+      "widest_line": 209,
+      "widest_line_number": 29
+    },
+    {
+      "path": "difficultyaudit/audit.go",
+      "file_lines": null,
+      "long_line_count": 10,
+      "widest_line": 559,
+      "widest_line_number": 230
+    },
+    {
+      "path": "difficultyaudit/audit_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 178,
+      "widest_line_number": 21
+    },
+    {
+      "path": "evilcohort/cohort.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 235,
+      "widest_line_number": 74
+    },
+    {
+      "path": "game/contract.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 143,
+      "widest_line_number": 313
+    },
+    {
+      "path": "game/contract_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 146,
+      "widest_line_number": 255
+    },
+    {
+      "path": "game/hint_plan.go",
+      "file_lines": null,
+      "long_line_count": 6,
+      "widest_line": 283,
+      "widest_line_number": 295
+    },
+    {
+      "path": "game/hint_plan_compose.go",
+      "file_lines": null,
+      "long_line_count": 8,
+      "widest_line": 399,
+      "widest_line_number": 132
+    },
+    {
+      "path": "game/hint_plan_reason.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 165,
+      "widest_line_number": 94
+    },
+    {
+      "path": "game/hint_plan_reason_basics.go",
+      "file_lines": null,
+      "long_line_count": 95,
+      "widest_line": 281,
+      "widest_line_number": 161
+    },
+    {
+      "path": "game/hint_plan_reason_chains.go",
+      "file_lines": null,
+      "long_line_count": 50,
+      "widest_line": 412,
+      "widest_line_number": 323
+    },
+    {
+      "path": "game/hint_plan_reason_patterns.go",
+      "file_lines": null,
+      "long_line_count": 102,
+      "widest_line": 438,
+      "widest_line_number": 42
+    },
+    {
+      "path": "game/hint_plan_reason_uniqueness.go",
+      "file_lines": null,
+      "long_line_count": 77,
+      "widest_line": 382,
+      "widest_line_number": 393
+    },
+    {
+      "path": "game/hint_plan_test.go",
+      "file_lines": 1204,
+      "long_line_count": 46,
+      "widest_line": 300,
+      "widest_line_number": 1005
+    },
+    {
+      "path": "game/hint_plan_visual.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 169,
+      "widest_line_number": 185
+    },
+    {
+      "path": "game/hint_strategy_coverage_test.go",
+      "file_lines": null,
+      "long_line_count": 9,
+      "widest_line": 200,
+      "widest_line_number": 255
+    },
+    {
+      "path": "game/serialization.go",
+      "file_lines": null,
+      "long_line_count": 5,
+      "widest_line": 177,
+      "widest_line_number": 219
+    },
+    {
+      "path": "game/serialization_test.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 226,
+      "widest_line_number": 89
+    },
+    {
+      "path": "generationexperiment/executors.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 161,
+      "widest_line_number": 193
+    },
+    {
+      "path": "generationexperiment/executors_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 152,
+      "widest_line_number": 19
+    },
+    {
+      "path": "generationexperiment/runner.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 175,
+      "widest_line_number": 299
+    },
+    {
+      "path": "guestclaim/guestclaim_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 144,
+      "widest_line_number": 51
+    },
+    {
+      "path": "guestdoc/guestdoc.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 448,
+      "widest_line_number": 275
+    },
+    {
+      "path": "guestdoc/guestdoc_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 160,
+      "widest_line_number": 41
+    },
+    {
+      "path": "message/descriptor.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 288,
+      "widest_line_number": 114
+    },
+    {
+      "path": "message/descriptor_test.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 170,
+      "widest_line_number": 36
+    },
+    {
+      "path": "message/english_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 380,
+      "widest_line_number": 40
+    },
+    {
+      "path": "oidcauth/oidcauth_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 171,
+      "widest_line_number": 121
+    },
+    {
+      "path": "playrun/tracker.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 146,
+      "widest_line_number": 55
+    },
+    {
+      "path": "playrun/tracker_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 153,
+      "widest_line_number": 34
+    },
+    {
+      "path": "privatefs/privatefs_windows.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 183,
+      "widest_line_number": 104
+    },
+    {
+      "path": "recovery/recovery.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 299,
+      "widest_line_number": 225
+    },
+    {
+      "path": "recovery/recovery_test.go",
+      "file_lines": null,
+      "long_line_count": 5,
+      "widest_line": 186,
+      "widest_line_number": 126
+    },
+    {
+      "path": "replenisher/replenisher.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 197,
+      "widest_line_number": 98
+    },
+    {
+      "path": "replenisher/replenisher_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 154,
+      "widest_line_number": 65
+    },
+    {
+      "path": "session/service.go",
+      "file_lines": null,
+      "long_line_count": 7,
+      "widest_line": 184,
+      "widest_line_number": 262
+    },
+    {
+      "path": "session/service_test.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 207,
+      "widest_line_number": 62
+    },
+    {
+      "path": "solver/bug_plus_one_solver.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 143,
+      "widest_line_number": 34
+    },
+    {
+      "path": "solver/fish_solver.go",
+      "file_lines": null,
+      "long_line_count": 4,
+      "widest_line": 178,
+      "widest_line_number": 49
+    },
+    {
+      "path": "solver/hidden_subset_solver.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 195,
+      "widest_line_number": 155
+    },
+    {
+      "path": "solver/integration_test.go",
+      "file_lines": 1052,
+      "long_line_count": 3,
+      "widest_line": 238,
+      "widest_line_number": 98
+    },
+    {
+      "path": "solver/naked_subset_solver.go",
+      "file_lines": null,
+      "long_line_count": 7,
+      "widest_line": 221,
+      "widest_line_number": 169
+    },
+    {
+      "path": "solver/pointing_pair_solver.go",
+      "file_lines": null,
+      "long_line_count": 7,
+      "widest_line": 186,
+      "widest_line_number": 193
+    },
+    {
+      "path": "solver/pointing_pair_solver_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 166,
+      "widest_line_number": 285
+    },
+    {
+      "path": "solver/simple_coloring_solver.go",
+      "file_lines": null,
+      "long_line_count": 2,
+      "widest_line": 181,
+      "widest_line_number": 236
+    },
+    {
+      "path": "solver/tier.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 151,
+      "widest_line_number": 10
+    },
+    {
+      "path": "solver/unique_rectangle_type234_solver.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 226,
+      "widest_line_number": 327
+    },
+    {
+      "path": "solver/x_cycles_solver.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 261,
+      "widest_line_number": 168
+    },
+    {
+      "path": "solver/xy_chain_solver.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 212,
+      "widest_line_number": 150
+    },
+    {
+      "path": "solver/xy_wing_solver.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 168,
+      "widest_line_number": 36
+    },
+    {
+      "path": "solver/xy_wing_solver_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 186,
+      "widest_line_number": 22
+    },
+    {
+      "path": "solver/xyz_wing_solver.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 143,
+      "widest_line_number": 39
+    },
+    {
+      "path": "tools/build-catalog-bundle/main.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 186,
+      "widest_line_number": 177
+    },
+    {
+      "path": "tools/e2e-web-server/main.go",
+      "file_lines": null,
+      "long_line_count": 4,
+      "widest_line": 256,
+      "widest_line_number": 44
+    },
+    {
+      "path": "tools/export-hint-plans/main.go",
+      "file_lines": null,
+      "long_line_count": 4,
+      "widest_line": 229,
+      "widest_line_number": 161
+    },
+    {
+      "path": "tui/model.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 186,
+      "widest_line_number": 539
+    },
+    {
+      "path": "tui/model_test.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 253,
+      "widest_line_number": 461
+    },
+    {
+      "path": "tui/render.go",
+      "file_lines": null,
+      "long_line_count": 5,
+      "widest_line": 308,
+      "widest_line_number": 459
+    },
+    {
+      "path": "webapi/account_routes.go",
+      "file_lines": null,
+      "long_line_count": 19,
+      "widest_line": 283,
+      "widest_line_number": 165
+    },
+    {
+      "path": "webapi/account_routes_test.go",
+      "file_lines": null,
+      "long_line_count": 18,
+      "widest_line": 267,
+      "widest_line_number": 34
+    },
+    {
+      "path": "webapi/hint_strategy_routes_test.go",
+      "file_lines": null,
+      "long_line_count": 9,
+      "widest_line": 216,
+      "widest_line_number": 73
+    },
+    {
+      "path": "webapi/message_descriptor_test.go",
+      "file_lines": null,
+      "long_line_count": 3,
+      "widest_line": 285,
+      "widest_line_number": 29
+    },
+    {
+      "path": "webapi/server.go",
+      "file_lines": null,
+      "long_line_count": 16,
+      "widest_line": 362,
+      "widest_line_number": 483
+    },
+    {
+      "path": "webapi/server_test.go",
+      "file_lines": null,
+      "long_line_count": 1,
+      "widest_line": 144,
+      "widest_line_number": 12
+    }
+  ]
+}
