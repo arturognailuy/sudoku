@@ -55,7 +55,12 @@ func TestLoadWebRuntimeSupportsGuestOnlyConfigWithoutAccounts(t *testing.T) {
 	}
 	options := game.NewDefaultOptions(solverStore)
 	options.StrategySolverKeys = solverStore.GetAllStrategySolverKeys()
-	guest, account, closeRuntime, err := loadWebRuntime(context.Background(), path, filepath.Join(t.TempDir(), "sudoku.db"), options)
+	guest, account, closeRuntime, err := loadWebRuntime(
+		context.Background(),
+		path,
+		filepath.Join(t.TempDir(), "sudoku.db"),
+		options,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +79,10 @@ func TestLoadWebRuntimeSupportsGuestOnlyConfigWithoutAccounts(t *testing.T) {
 
 func TestReadWebConfigRejectsAccountWithoutGuestAndUnsafeFile(t *testing.T) {
 	key := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{9}, 32))
-	body := `{"account":{"csrf_key":"` + key + `","google":{"client_id":"client","client_secret":"secret","redirect_url":"https://client.example/callback"},"return_path_prefix":"/","cookie_path":"/","session_idle_seconds":3600,"session_absolute_seconds":7200}}`
+	body := `{"account":{"csrf_key":"` + key + ("\",\"google\":{\"client_id\":\"client\",\"client_secret\":\"secret\"," +
+		"\"redirect_url\":\"https://client.example/callback\"},\"return_path_prefix\":\"/\"," +
+		"\"cookie_path\":\"/\",\"session_idle_seconds\":3600," +
+		"\"session_absolute_seconds\":7200}}")
 	path := filepath.Join(t.TempDir(), "web.json")
 	if err := os.WriteFile(path, []byte(body), 0600); err != nil {
 		t.Fatal(err)
@@ -97,9 +105,14 @@ func TestReadWebConfigRejectsAccountWithoutGuestAndUnsafeFile(t *testing.T) {
 
 func TestValidateAccountConfigRejectsPartialPolicy(t *testing.T) {
 	valid := accountConfigFile{
-		CSRFKey:          base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32)),
-		Google:           googleConfigFile{ClientID: "client", ClientSecret: "secret", RedirectURL: "https://client.example/callback"},
-		ReturnPathPrefix: "/", CookiePath: "/", SessionIdleSeconds: int64(time.Hour / time.Second), SessionAbsoluteSeconds: int64((2 * time.Hour) / time.Second),
+		CSRFKey: base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32)),
+		Google: googleConfigFile{
+			ClientID:     "client",
+			ClientSecret: "secret",
+			RedirectURL:  "https://client.example/callback",
+		},
+		ReturnPathPrefix: "/", CookiePath: "/", SessionIdleSeconds: int64(time.Hour / time.Second),
+		SessionAbsoluteSeconds: int64((2 * time.Hour) / time.Second),
 	}
 	if err := validateAccountConfig(valid); err != nil {
 		t.Fatal(err)

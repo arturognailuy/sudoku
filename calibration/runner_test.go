@@ -49,7 +49,11 @@ func TestRunAppendsOnceAndResumes(t *testing.T) {
 	directory := t.TempDir()
 	manifestPath := filepath.Join(directory, "manifest.json")
 	output := filepath.Join(directory, "run")
-	writeManifest(t, manifestPath, Manifest{Version: Version, Name: "pilot", Puzzles: []Puzzle{{ID: "known-1", Puzzle: knownPuzzle}}})
+	writeManifest(
+		t,
+		manifestPath,
+		Manifest{Version: Version, Name: "pilot", Puzzles: []Puzzle{{ID: "known-1", Puzzle: knownPuzzle}}},
+	)
 
 	first, err := Run(manifestPath, output, solver.NewStore())
 	if err != nil {
@@ -88,12 +92,17 @@ func TestRunRecoversLaggingCheckpoint(t *testing.T) {
 	directory := t.TempDir()
 	manifestPath := filepath.Join(directory, "manifest.json")
 	output := filepath.Join(directory, "run")
-	writeManifest(t, manifestPath, Manifest{Version: Version, Name: "pilot", Puzzles: []Puzzle{{ID: "known-1", Puzzle: knownPuzzle}}})
+	writeManifest(
+		t,
+		manifestPath,
+		Manifest{Version: Version, Name: "pilot", Puzzles: []Puzzle{{ID: "known-1", Puzzle: knownPuzzle}}},
+	)
 	result, err := Run(manifestPath, output, solver.NewStore())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := writeJSONAtomic(filepath.Join(output, "checkpoint.json"), checkpoint{Version: Version, ManifestHash: result.ManifestHash, NextIndex: 0}); err != nil {
+	if err := writeJSONAtomic(filepath.Join(output, "checkpoint.json"), checkpoint{Version: Version,
+		ManifestHash: result.ManifestHash, NextIndex: 0}); err != nil {
 		t.Fatal(err)
 	}
 	resumed, err := Run(manifestPath, output, solver.NewStore())
@@ -120,7 +129,8 @@ func TestRunRejectsChangedManifest(t *testing.T) {
 	}
 	manifest.Name = "changed"
 	writeManifest(t, manifestPath, manifest)
-	if _, err := Run(manifestPath, output, solver.NewStore()); err == nil || !strings.Contains(err.Error(), "immutable manifest") {
+	if _, err := Run(manifestPath, output, solver.NewStore()); err == nil ||
+		!strings.Contains(err.Error(), "immutable manifest") {
 		t.Fatalf("error = %v, want immutable manifest rejection", err)
 	}
 }
@@ -128,7 +138,15 @@ func TestRunRejectsChangedManifest(t *testing.T) {
 func TestLoadManifestRejectsDuplicateIDsAndUnknownFields(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "manifest.json")
-	writeManifest(t, path, Manifest{Version: Version, Name: "bad", Puzzles: []Puzzle{{ID: "same", Puzzle: knownPuzzle}, {ID: "same", Puzzle: knownPuzzle}}})
+	writeManifest(
+		t,
+		path,
+		Manifest{
+			Version: Version,
+			Name:    "bad",
+			Puzzles: []Puzzle{{ID: "same", Puzzle: knownPuzzle}, {ID: "same", Puzzle: knownPuzzle}},
+		},
+	)
 	if _, _, err := loadManifest(path); err == nil || !strings.Contains(err.Error(), "duplicate id") {
 		t.Fatalf("duplicate error = %v", err)
 	}
@@ -172,14 +190,33 @@ func TestPrepareManifestRejectsDuplicateNormalizedContent(t *testing.T) {
 	directory := t.TempDir()
 	input := filepath.Join(directory, "candidate.json")
 	candidate := Manifest{Version: Version, Name: "duplicates", Puzzles: []Puzzle{
-		{ID: "dots", Puzzle: knownPuzzle, SourceCategory: "external", SourceID: "dots", License: "CC0", Redistribution: "permitted", CollectionMethod: "fixture", Split: "exploratory"},
-		{ID: "zeros", Puzzle: strings.ReplaceAll(knownPuzzle, ".", "0"), SourceCategory: "external", SourceID: "zeros", License: "CC0", Redistribution: "permitted", CollectionMethod: "fixture", Split: "held-out"},
+		{
+			ID:               "dots",
+			Puzzle:           knownPuzzle,
+			SourceCategory:   "external",
+			SourceID:         "dots",
+			License:          "CC0",
+			Redistribution:   "permitted",
+			CollectionMethod: "fixture",
+			Split:            "exploratory",
+		},
+		{
+			ID:               "zeros",
+			Puzzle:           strings.ReplaceAll(knownPuzzle, ".", "0"),
+			SourceCategory:   "external",
+			SourceID:         "zeros",
+			License:          "CC0",
+			Redistribution:   "permitted",
+			CollectionMethod: "fixture",
+			Split:            "held-out",
+		},
 	}}
 	data, _ := json.Marshal(candidate)
 	if err := os.WriteFile(input, data, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := PrepareManifest(input, filepath.Join(directory, "manifest.json")); err == nil || !strings.Contains(err.Error(), "duplicate puzzle hash") {
+	if _, err := PrepareManifest(input, filepath.Join(directory, "manifest.json")); err == nil ||
+		!strings.Contains(err.Error(), "duplicate puzzle hash") {
 		t.Fatalf("error = %v, want duplicate puzzle hash", err)
 	}
 }
@@ -222,7 +259,13 @@ func TestLoadManifestValidatesGeneratedMetadata(t *testing.T) {
 func TestDeriveReportBuildsStratifiedBaseline(t *testing.T) {
 	generated := Puzzle{
 		ID: "generated-1", Puzzle: knownPuzzle, SourceCategory: "generated", Split: "exploratory",
-		Generator: &GeneratorMetadata{RequestedDifficulty: "hard", Attempt: 4, ElapsedMilliseconds: 250, ClueCount: 32, ClassificationOutcome: string(solver.ClassificationSolved)},
+		Generator: &GeneratorMetadata{
+			RequestedDifficulty:   "hard",
+			Attempt:               4,
+			ElapsedMilliseconds:   250,
+			ClueCount:             32,
+			ClassificationOutcome: string(solver.ClassificationSolved),
+		},
 	}
 	external := Puzzle{
 		ID: "external-1", Puzzle: strings.Repeat(".", 81), SourceCategory: "external", Split: "held-out",
@@ -230,7 +273,14 @@ func TestDeriveReportBuildsStratifiedBaseline(t *testing.T) {
 	}
 	manifest := Manifest{Version: Version, Name: "mixed", Puzzles: []Puzzle{generated, external}}
 	observations := []Observation{
-		{Index: 0, Outcome: solver.ClassificationSolved, Difficulty: "medium", Score: 25, MoveCount: 10, RepeatCount: 2},
+		{
+			Index:       0,
+			Outcome:     solver.ClassificationSolved,
+			Difficulty:  "medium",
+			Score:       25,
+			MoveCount:   10,
+			RepeatCount: 2,
+		},
 		{Index: 1, Outcome: solver.ClassificationStrategyUnsolved, Score: 0, MoveCount: 0, RepeatCount: 2},
 	}
 
@@ -238,7 +288,8 @@ func TestDeriveReportBuildsStratifiedBaseline(t *testing.T) {
 	if report.Reproducible != 2 || report.BySource["external"].StrategyUnsolved != 1 {
 		t.Fatalf("unexpected source report: %+v", report)
 	}
-	if report.BySource["external"].StrategyUnsolvedRate.Lower95 <= 0 || report.BySource["external"].StrategyUnsolvedRate.Upper95 != 1 {
+	if report.BySource["external"].StrategyUnsolvedRate.Lower95 <= 0 ||
+		report.BySource["external"].StrategyUnsolvedRate.Upper95 != 1 {
 		t.Fatalf("unexpected Wilson interval: %+v", report.BySource["external"].StrategyUnsolvedRate)
 	}
 	if got := report.ExternalAgreement["fixture-scale"]["challenging"]["unassigned"]; got != 1 {

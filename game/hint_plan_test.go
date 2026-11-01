@@ -30,7 +30,11 @@ func TestHintStepHasValidNarrationRequiresOnePayloadPerKind(t *testing.T) {
 		{name: "target", chunk: narrationTarget(validTarget), valid: true},
 		{name: "digit", chunk: narrationDigit(7), valid: true},
 		{name: "empty message", chunk: HintNarrationChunk{Kind: HintNarrationMessage}, valid: false},
-		{name: "conflicting target payload", chunk: HintNarrationChunk{Kind: HintNarrationTarget, Message: &validMessage, Target: &validTarget}, valid: false},
+		{
+			name:  "conflicting target payload",
+			chunk: HintNarrationChunk{Kind: HintNarrationTarget, Message: &validMessage, Target: &validTarget},
+			valid: false,
+		},
 		{name: "missing target", chunk: HintNarrationChunk{Kind: HintNarrationTarget}, valid: false},
 		{name: "invalid digit", chunk: HintNarrationChunk{Kind: HintNarrationDigit, Value: 10}, valid: false},
 		{name: "unknown kind", chunk: HintNarrationChunk{Kind: "future"}, valid: false},
@@ -52,13 +56,15 @@ func TestHintRepairsWrongValueBeforeStrategy(t *testing.T) {
 		t.Fatal(err)
 	}
 	plan := game.Hint()
-	if plan == nil || plan.Kind != HintKindValueCorrection || plan.Conclusion.ClearValue == nil || *plan.Conclusion.ClearValue != position {
+	if plan == nil || plan.Kind != HintKindValueCorrection || plan.Conclusion.ClearValue == nil ||
+		*plan.Conclusion.ClearValue != position {
 		t.Fatalf("unexpected value correction plan: %+v", plan)
 	}
 	if _, err := game.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
 		t.Fatal(err)
 	}
-	if snapshot := game.Snapshot(); snapshot.Values[position.Row][position.Column] != 0 || snapshot.Invalid[position.Row][position.Column] {
+	if snapshot := game.Snapshot(); snapshot.Values[position.Row][position.Column] != 0 ||
+		snapshot.Invalid[position.Row][position.Column] {
 		t.Fatalf("value correction did not clear the wrong value: %+v", snapshot)
 	}
 }
@@ -82,14 +88,20 @@ func TestHintRepairsCandidateCellBeforeStrategy(t *testing.T) {
 		}
 	}
 	if broken == legal || broken.Has(required) || (broken &^ legal).IsEmpty() {
-		t.Fatalf("test setup did not create both correction classes: legal=%v broken=%v", legal.Values(), broken.Values())
+		t.Fatalf(
+			"test setup did not create both correction classes: legal=%v broken=%v",
+			legal.Values(),
+			broken.Values(),
+		)
 	}
 	if _, err := game.Apply(SetCandidates{Position: position, Values: broken.Values()}); err != nil {
 		t.Fatal(err)
 	}
 	beforeCorrection := game.Snapshot()
 	plan := game.Hint()
-	if plan == nil || plan.Kind != HintKindCandidateCorrection || plan.Conclusion.SetCandidates == nil || plan.Conclusion.SetCandidates.Position != position || plan.Conclusion.SetCandidates.Values != legal {
+	if plan == nil || plan.Kind != HintKindCandidateCorrection || plan.Conclusion.SetCandidates == nil ||
+		plan.Conclusion.SetCandidates.Position != position ||
+		plan.Conclusion.SetCandidates.Values != legal {
 		t.Fatalf("unexpected candidate correction plan: %+v", plan)
 	}
 	if _, err := game.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
@@ -152,7 +164,8 @@ func TestHintResetsCorruptCandidateCellToFullLocalLegality(t *testing.T) {
 			}
 			for _, step := range plan.Steps {
 				message := strings.ToLower(step.Message.Text)
-				if strings.Contains(message, "solution") || strings.Contains(message, "required candidate") || strings.Contains(message, "keep every valid") {
+				if strings.Contains(message, "solution") || strings.Contains(message, "required candidate") ||
+					strings.Contains(message, "keep every valid") {
 					t.Fatalf("candidate correction leaks solution-specific reasoning: %q", step.Message.Text)
 				}
 			}
@@ -283,10 +296,14 @@ func TestNakedSingleHintPlanIsDeterministicAndApplicable(t *testing.T) {
 			t.Fatalf("naked-single step lacks structured narration: %+v", step)
 		}
 	}
-	if first.Steps[0].Message.ID != "hint.naked-single.constraints" || first.Steps[1].Message.ID != "hint.naked-single.only" || first.Steps[2].Message.ID != "hint.naked-single.apply" || first.Summary.ID != "hint.strategy.summary" {
+	if first.Steps[0].Message.ID != "hint.naked-single.constraints" ||
+		first.Steps[1].Message.ID != "hint.naked-single.only" ||
+		first.Steps[2].Message.ID != "hint.naked-single.apply" ||
+		first.Summary.ID != "hint.strategy.summary" {
 		t.Fatalf("naked-single descriptors are incomplete: %+v", first)
 	}
-	if first.Steps[0].Kind != HintStepObserve || first.Steps[1].Kind != HintStepExplain || first.Steps[2].Kind != HintStepApply {
+	if first.Steps[0].Kind != HintStepObserve || first.Steps[1].Kind != HintStepExplain ||
+		first.Steps[2].Kind != HintStepApply {
 		t.Fatalf("unexpected naked-single step order: %+v", first.Steps)
 	}
 	if got := len(first.Steps[0].Marks); got != 12 {
@@ -314,16 +331,24 @@ func TestHiddenSingleHintPlanHasUnitEvidence(t *testing.T) {
 			t.Fatalf("hidden-single step lacks structured narration: %+v", step)
 		}
 	}
-	if plan.Steps[0].Kind != HintStepObserve || plan.Steps[1].Kind != HintStepExplain || plan.Steps[2].Kind != HintStepExplain || plan.Steps[3].Kind != HintStepApply {
+	if plan.Steps[0].Kind != HintStepObserve || plan.Steps[1].Kind != HintStepExplain ||
+		plan.Steps[2].Kind != HintStepExplain ||
+		plan.Steps[3].Kind != HintStepApply {
 		t.Fatalf("unexpected step order: %+v", plan.Steps)
 	}
-	wantMessages := []string{"hint.hidden-single.inspect", "hint.hidden-single.blockers", "hint.hidden-single.only", "hint.hidden-single.apply"}
+	wantMessages := []string{
+		"hint.hidden-single.inspect",
+		"hint.hidden-single.blockers",
+		"hint.hidden-single.only",
+		"hint.hidden-single.apply",
+	}
 	for index, want := range wantMessages {
 		if plan.Steps[index].Message.ID != want {
 			t.Fatalf("hidden-single step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 		}
 	}
-	if plan.Conclusion.Placement == nil || plan.Conclusion.Placement.Position != core.NewPosition(3, 3) || plan.Conclusion.Placement.Value != 9 {
+	if plan.Conclusion.Placement == nil || plan.Conclusion.Placement.Position != core.NewPosition(3, 3) ||
+		plan.Conclusion.Placement.Value != 9 {
 		t.Fatalf("hidden-single conclusion = %+v, want r4c4=9", plan.Conclusion)
 	}
 	if got := len(plan.Steps[1].Marks); got != 14 {
@@ -352,22 +377,35 @@ func TestNakedPairHintAppliesAtomicNoteEliminationAndUndo(t *testing.T) {
 	}
 	game := gameWithStrategies(t, board, "naked-pair")
 	plan := game.Hint()
-	if plan == nil || plan.Strategy.ID != "naked-pair" || len(plan.Steps) != 4 || len(plan.Conclusion.Eliminations) == 0 || plan.Conclusion.Placement != nil {
+	if plan == nil || plan.Strategy.ID != "naked-pair" || len(plan.Steps) != 4 ||
+		len(plan.Conclusion.Eliminations) == 0 ||
+		plan.Conclusion.Placement != nil {
 		t.Fatalf("unexpected naked-pair plan: %+v", plan)
 	}
 	if plan.Reason == nil || plan.Reason.Kind != HintReasonSubsetReservation || plan.Reason.SubsetReservation == nil {
 		t.Fatalf("naked-pair reason is incomplete: %+v", plan.Reason)
 	}
-	wantMessages := []string{"hint.naked-pair.inspect", "hint.naked-pair.match", "hint.naked-pair.reserve", "hint.naked-pair.apply"}
+	wantMessages := []string{
+		"hint.naked-pair.inspect",
+		"hint.naked-pair.match",
+		"hint.naked-pair.reserve",
+		"hint.naked-pair.apply",
+	}
 	for index, want := range wantMessages {
 		if plan.Steps[index].Message.ID != want {
 			t.Fatalf("naked-pair step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 		}
 	}
-	if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{3, 5, 6, 6}) {
+	if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks),
+		len(plan.Steps[3].Marks)}; !reflect.DeepEqual(
+		got,
+		[]int{3, 5, 6, 6},
+	) {
 		t.Fatalf("naked-pair mark progression = %v, want [3 5 6 6]", got)
 	}
-	if plan.Steps[0].Kind != HintStepObserve || plan.Steps[1].Kind != HintStepExplain || plan.Steps[2].Kind != HintStepExplain || plan.Steps[3].Kind != HintStepApply {
+	if plan.Steps[0].Kind != HintStepObserve || plan.Steps[1].Kind != HintStepExplain ||
+		plan.Steps[2].Kind != HintStepExplain ||
+		plan.Steps[3].Kind != HintStepApply {
 		t.Fatalf("unexpected naked-pair step order: %+v", plan.Steps)
 	}
 	before := game.Snapshot()
@@ -380,7 +418,11 @@ func TestNakedPairHintAppliesAtomicNoteEliminationAndUndo(t *testing.T) {
 		expectedNotes[elimination.Position.Row][elimination.Position.Column].Remove(elimination.Value)
 	}
 	if after := game.Snapshot(); after.Candidates != expectedNotes {
-		t.Fatalf("elimination did not persist candidate progress: expected=%v candidates=%v", expectedNotes, after.Candidates)
+		t.Fatalf(
+			"elimination did not persist candidate progress: expected=%v candidates=%v",
+			expectedNotes,
+			after.Candidates,
+		)
 	}
 	next := game.Hint()
 	if next != nil && sameEliminations(next.Conclusion.Eliminations, plan.Conclusion.Eliminations) {
@@ -448,7 +490,10 @@ func TestReportedAccountGamePreservesEliminationsAcrossPlayerPlacement(t *testin
 		if len(plan.Conclusion.Eliminations) == 0 {
 			t.Fatalf("hint %d has no candidate progress: %+v", number+1, plan)
 		}
-		consumedEliminations = append(consumedEliminations, append([]solver.CandidateRef(nil), plan.Conclusion.Eliminations...))
+		consumedEliminations = append(
+			consumedEliminations,
+			append([]solver.CandidateRef(nil), plan.Conclusion.Eliminations...),
+		)
 		if _, err := current.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
 			t.Fatal(err)
 		}
@@ -461,7 +506,8 @@ func TestReportedAccountGamePreservesEliminationsAcrossPlayerPlacement(t *testin
 	if placement == nil || placement.Conclusion.Placement == nil {
 		t.Fatalf("reported game did not reach a placement after candidate-only deductions: %+v", placement)
 	}
-	if _, err := current.Apply(SetValue{Position: placement.Conclusion.Placement.Position, Value: placement.Conclusion.Placement.Value}); err != nil {
+	if _, err := current.Apply(SetValue{Position: placement.Conclusion.Placement.Position,
+		Value: placement.Conclusion.Placement.Value}); err != nil {
 		t.Fatal(err)
 	}
 	if current.Snapshot().Candidates[retained.Row][retained.Column].Has(9) {
@@ -551,7 +597,11 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 			if key == "naked-pair" || key == "naked-triple" || key == "naked-quad" {
 				actionIndex := len(plan.Steps) - 1
 				if plan.Reason == nil || plan.Reason.Kind != HintReasonSubsetReservation {
-					t.Fatalf("naked-subset contract = reason %+v, conclusion %+v", plan.Reason, plan.Steps[actionIndex].Message)
+					t.Fatalf(
+						"naked-subset contract = reason %+v, conclusion %+v",
+						plan.Reason,
+						plan.Steps[actionIndex].Message,
+					)
 				}
 				expectedMessage := "hint.subset-reservation.apply"
 				if key == "naked-pair" {
@@ -562,44 +612,91 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 					expectedMessage = "hint.subset-reservation.place"
 				}
 				if plan.Steps[actionIndex].Message.ID != expectedMessage {
-					t.Fatalf("naked-subset action descriptor = %q, want %q", plan.Steps[actionIndex].Message.ID, expectedMessage)
+					t.Fatalf(
+						"naked-subset action descriptor = %q, want %q",
+						plan.Steps[actionIndex].Message.ID,
+						expectedMessage,
+					)
 				}
 				reason := plan.Reason.SubsetReservation
-				if reason == nil || len(reason.PremiseCells) != len(reason.ReservedDigits) || len(reason.PremiseCells) < 2 || len(reason.ActionTargets) == 0 {
+				if reason == nil || len(reason.PremiseCells) != len(reason.ReservedDigits) ||
+					len(reason.PremiseCells) < 2 ||
+					len(reason.ActionTargets) == 0 {
 					t.Fatalf("naked-subset reason does not preserve its complete cardinality and action: %+v", reason)
 				}
 				if key == "naked-triple" && plan.Conclusion.Placement != nil {
-					wantMessages := []string{"hint.naked-triple.first", "hint.naked-triple.second", "hint.naked-triple.third", "hint.naked-triple.consequence", "hint.naked-triple.apply"}
+					wantMessages := []string{
+						"hint.naked-triple.first",
+						"hint.naked-triple.second",
+						"hint.naked-triple.third",
+						"hint.naked-triple.consequence",
+						"hint.naked-triple.apply",
+					}
 					for index, want := range wantMessages {
 						if plan.Steps[index].Message.ID != want {
-							t.Fatalf("naked-triple step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
+							t.Fatalf(
+								"naked-triple step %d message = %q, want %q",
+								index,
+								plan.Steps[index].Message.ID,
+								want,
+							)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{3, 5, 7, 10, 10}) {
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks),
+						len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(
+						got,
+						[]int{3, 5, 7, 10, 10},
+					) {
 						t.Fatalf("naked-triple mark progression = %v, want [3 5 7 10 10]", got)
 					}
-					if plan.Conclusion.Placement == nil || plan.Conclusion.Placement.Position != core.NewPosition(3, 1) || plan.Conclusion.Placement.Value != 7 {
+					if plan.Conclusion.Placement == nil ||
+						plan.Conclusion.Placement.Position != core.NewPosition(3, 1) ||
+						plan.Conclusion.Placement.Value != 7 {
 						t.Fatalf("naked-triple conclusion = %+v, want r4c2=7", plan.Conclusion)
 					}
 				}
 				if key == "naked-quad" && plan.Conclusion.Placement != nil {
-					wantMessages := []string{"hint.naked-quad.cell", "hint.naked-quad.cell", "hint.naked-quad.cell", "hint.naked-quad.cell", "hint.subset-reservation.explain", "hint.subset-reservation.place"}
+					wantMessages := []string{
+						"hint.naked-quad.cell",
+						"hint.naked-quad.cell",
+						"hint.naked-quad.cell",
+						"hint.naked-quad.cell",
+						"hint.subset-reservation.explain",
+						"hint.subset-reservation.place",
+					}
 					for index, want := range wantMessages {
 						if plan.Steps[index].Message.ID != want {
-							t.Fatalf("naked-quad step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
+							t.Fatalf(
+								"naked-quad step %d message = %q, want %q",
+								index,
+								plan.Steps[index].Message.ID,
+								want,
+							)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks), len(plan.Steps[5].Marks)}; !reflect.DeepEqual(got, []int{2, 4, 7, 11, 12, 12}) {
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks),
+						len(plan.Steps[3].Marks), len(plan.Steps[4].Marks), len(plan.Steps[5].Marks)}; !reflect.DeepEqual(
+						got,
+						[]int{2, 4, 7, 11, 12, 12},
+					) {
 						t.Fatalf("naked-quad mark progression = %v, want [2 4 7 11 12 12]", got)
 					}
-					wantCells := []core.Position{core.NewPosition(1, 2), core.NewPosition(2, 0), core.NewPosition(1, 0), core.NewPosition(1, 1)}
+					wantCells := []core.Position{
+						core.NewPosition(1, 2),
+						core.NewPosition(2, 0),
+						core.NewPosition(1, 0),
+						core.NewPosition(1, 1),
+					}
 					for index, want := range wantCells {
 						arguments := plan.Steps[index].Message.Arguments
-						if len(arguments) < 2 || arguments[1].Cell == nil || arguments[1].Cell.Row != want.Row+1 || arguments[1].Cell.Column != want.Column+1 {
+						if len(arguments) < 2 || arguments[1].Cell == nil || arguments[1].Cell.Row != want.Row+1 ||
+							arguments[1].Cell.Column != want.Column+1 {
 							t.Fatalf("naked-quad step %d cell arguments = %+v, want %v", index, arguments, want)
 						}
 					}
-					if plan.Conclusion.Placement == nil || plan.Conclusion.Placement.Position != core.NewPosition(0, 0) || plan.Conclusion.Placement.Value != 4 {
+					if plan.Conclusion.Placement == nil ||
+						plan.Conclusion.Placement.Position != core.NewPosition(0, 0) ||
+						plan.Conclusion.Placement.Value != 4 {
 						t.Fatalf("naked-quad conclusion = %+v, want r1c1=4", plan.Conclusion)
 					}
 				}
@@ -614,7 +711,8 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 							t.Fatalf("hidden-pair step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 5, 11, 11}) {
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks),
+						len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 5, 11, 11}) {
 						t.Fatalf("hidden-pair mark progression = %v, want [2 5 11 11]", got)
 					}
 					wantEliminations := []solver.CandidateRef{
@@ -629,13 +727,15 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 						t.Fatalf("hidden-pair eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
 					}
 				} else if key == "hidden-triple" {
-					wantMessages := []string{"hint.hidden-triple.first", "hint.hidden-triple.second", "hint.hidden-triple.third", "hint.hidden-triple.consequence", "hint.hidden-triple.apply"}
+					wantMessages := []string{"hint.hidden-triple.first", "hint.hidden-triple.second", "hint.hidden-triple.third",
+						"hint.hidden-triple.consequence", "hint.hidden-triple.apply"}
 					for index, want := range wantMessages {
 						if plan.Steps[index].Message.ID != want {
 							t.Fatalf("hidden-triple step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{3, 7, 10, 18, 18}) {
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks),
+						len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{3, 7, 10, 18, 18}) {
 						t.Fatalf("hidden-triple mark progression = %v, want [3 7 10 18 18]", got)
 					}
 					wantEliminations := []solver.CandidateRef{
@@ -652,13 +752,15 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 						t.Fatalf("hidden-triple eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
 					}
 				} else {
-					wantMessages := []string{"hint.hidden-quad.first", "hint.hidden-quad.second", "hint.hidden-quad.third", "hint.hidden-quad.fourth", "hint.hidden-quad.consequence", "hint.hidden-quad.apply"}
+					wantMessages := []string{"hint.hidden-quad.first", "hint.hidden-quad.second", "hint.hidden-quad.third",
+						"hint.hidden-quad.fourth", "hint.hidden-quad.consequence", "hint.hidden-quad.apply"}
 					for index, want := range wantMessages {
 						if plan.Steps[index].Message.ID != want {
 							t.Fatalf("hidden-quad step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks), len(plan.Steps[5].Marks)}; !reflect.DeepEqual(got, []int{4, 9, 13, 17, 24, 24}) {
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks),
+						len(plan.Steps[3].Marks), len(plan.Steps[4].Marks), len(plan.Steps[5].Marks)}; !reflect.DeepEqual(got, []int{4, 9, 13, 17, 24, 24}) {
 						t.Fatalf("hidden-quad mark progression = %v, want [4 9 13 17 24 24]", got)
 					}
 					wantEliminations := []solver.CandidateRef{
@@ -682,20 +784,24 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 				if plan.Reason == nil || plan.Reason.Kind != HintReasonIntersectionConfinement || plan.Reason.IntersectionConfinement == nil {
 					t.Fatalf("intersection contract = reason %+v", plan.Reason)
 				}
-				wantMessages := []string{"hint.pointing-pair.first", "hint.pointing-pair.second", "hint.pointing-pair.consequence", "hint.pointing-pair.apply"}
+				wantMessages := []string{"hint.pointing-pair.first", "hint.pointing-pair.second",
+					"hint.pointing-pair.consequence", "hint.pointing-pair.apply"}
 				for index, want := range wantMessages {
 					if plan.Steps[index].Message.ID != want {
 						t.Fatalf("pointing-pair step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 					}
 				}
-				if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 4, 5, 6}) {
+				if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks),
+					len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 4, 5, 6}) {
 					t.Fatalf("pointing-pair mark progression = %v, want [2 4 5 6]", got)
 				}
-				if plan.Conclusion.Placement == nil || plan.Conclusion.Placement.Position != core.NewPosition(6, 7) || plan.Conclusion.Placement.Value != 6 {
+				if plan.Conclusion.Placement == nil || plan.Conclusion.Placement.Position != core.NewPosition(6, 7) ||
+					plan.Conclusion.Placement.Value != 6 {
 					t.Fatalf("pointing-pair conclusion = %+v, want r7c8=6", plan.Conclusion)
 				}
 				removed := plan.Steps[2].Marks[4]
-				if removed.Target.Kind != HintTargetCandidate || removed.Target.Position == nil || *removed.Target.Position != core.NewPosition(6, 7) || removed.Target.Value != 9 || removed.Role != HintRoleEliminated {
+				if removed.Target.Kind != HintTargetCandidate || removed.Target.Position == nil ||
+					*removed.Target.Position != core.NewPosition(6, 7) || removed.Target.Value != 9 || removed.Role != HintRoleEliminated {
 					t.Fatalf("pointing-pair exact elimination is not preserved: %+v", plan.Steps[2].Marks)
 				}
 				reason := plan.Reason.IntersectionConfinement
@@ -706,499 +812,5 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 				t.Fatalf("backtracker conclusion descriptor = %+v", plan.Steps[len(plan.Steps)-1].Message)
 			}
 		})
-	}
-}
-
-func TestFishAndRelationalFamiliesTeachBeforeNaming(t *testing.T) {
-	games := realGamesForHintStrategies(t)
-	store := solver.NewStore()
-	keys := store.GetAllStrategySolverKeys()
-	families := []string{"x-wing", "swordfish", "jellyfish", "xy-wing", "w-wing", "xyz-wing"}
-	for _, key := range families {
-		t.Run(key, func(t *testing.T) {
-			options := NewDefaultOptions(store)
-			options.StrategySolverKeys = keys
-			current := NewGame(boardFromPuzzle(t, games[key]), options)
-			var plan *HintPlan
-			for number := 0; number < 128; number++ {
-				plan = current.Hint()
-				if plan == nil {
-					t.Fatalf("exhausted hints before %s", key)
-				}
-				if plan.Strategy.ID == key {
-					break
-				}
-				if _, err := current.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
-					t.Fatal(err)
-				}
-			}
-			expectedSteps := 3
-			if key == "x-wing" {
-				expectedSteps = 4
-			}
-			if key == "swordfish" {
-				expectedSteps = 5
-			}
-			if key == "jellyfish" {
-				expectedSteps = 6
-			}
-			if key == "xy-wing" {
-				expectedSteps = 5
-			}
-			if key == "xyz-wing" {
-				expectedSteps = 6
-			}
-			if key == "w-wing" {
-				expectedSteps = 4
-			}
-			if plan == nil || plan.Strategy.ID != key || len(plan.Steps) != expectedSteps {
-				t.Fatalf("unexpected family plan: %+v", plan)
-			}
-			for _, step := range plan.Steps[:len(plan.Steps)-1] {
-				if strings.Contains(step.Message.Text, plan.Strategy.Name.Text) {
-					t.Fatalf("strategy vocabulary appears before the reasoning: %q", step.Message.Text)
-				}
-				if strings.Contains(step.Message.Text, "(") {
-					t.Fatalf("family plan exposes coordinate shorthand: %q", step.Message.Text)
-				}
-			}
-			if key == "x-wing" || key == "swordfish" || key == "jellyfish" {
-				if plan.Reason == nil || plan.Reason.Kind != HintReasonFishConfinement {
-					t.Fatalf("fish contract = reason %+v", plan.Reason)
-				}
-				expectedSize := map[string]int{"x-wing": 2, "swordfish": 3, "jellyfish": 4}[key]
-				reason := plan.Reason.FishConfinement
-				if reason == nil || len(reason.BaseUnits) != expectedSize || len(reason.CoverUnits) != expectedSize || len(reason.PatternCandidates) < expectedSize || len(reason.ActionTargets) == 0 {
-					t.Fatalf("fish reason is incomplete: %+v", reason)
-				}
-				if key == "x-wing" {
-					wantMessages := []string{"hint.x-wing.first", "hint.x-wing.second", "hint.x-wing.consequence", "hint.x-wing.apply"}
-					for index, want := range wantMessages {
-						if plan.Steps[index].Message.ID != want {
-							t.Fatalf("x-wing step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
-						}
-					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 6, 8, 10}) {
-						t.Fatalf("x-wing mark progression = %v, want [2 6 8 10]", got)
-					}
-					if got := plan.Steps[0].Message.Text; got != "In row 5, candidate 7 appears only in column 1 and column 4." {
-						t.Fatalf("x-wing first-step copy = %q", got)
-					}
-					wantEliminations := []solver.CandidateRef{
-						{Position: core.NewPosition(0, 3), Value: 7},
-						{Position: core.NewPosition(7, 3), Value: 7},
-					}
-					if !reflect.DeepEqual(plan.Conclusion.Eliminations, wantEliminations) {
-						t.Fatalf("x-wing eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
-					}
-				} else if key == "swordfish" {
-					wantMessages := []string{"hint.fish-confinement.observe", "hint.fish-confinement.observe", "hint.fish-confinement.observe", "hint.swordfish.consequence", "hint.fish-confinement.apply"}
-					for index, want := range wantMessages {
-						if plan.Steps[index].Message.ID != want {
-							t.Fatalf("swordfish step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
-						}
-					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{2, 6, 9, 12, 13}) {
-						t.Fatalf("swordfish mark progression = %v, want [2 6 9 12 13]", got)
-					}
-					wantCopy := []string{
-						"In row 3, candidate 3 appears only in column 2 and column 6.",
-						"In row 8, candidate 3 appears only in column 2 and column 9.",
-						"In row 9, candidate 3 appears only in column 6 and column 9.",
-					}
-					for index, want := range wantCopy {
-						if plan.Steps[index].Message.Text != want {
-							t.Fatalf("swordfish step %d copy = %q, want %q", index, plan.Steps[index].Message.Text, want)
-						}
-					}
-				} else if key == "jellyfish" {
-					wantMessages := []string{"hint.fish-confinement.observe", "hint.fish-confinement.observe", "hint.fish-confinement.observe", "hint.fish-confinement.observe", "hint.jellyfish.consequence", "hint.fish-confinement.apply"}
-					for index, want := range wantMessages {
-						if plan.Steps[index].Message.ID != want {
-							t.Fatalf("jellyfish step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
-						}
-					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks), len(plan.Steps[5].Marks)}; !reflect.DeepEqual(got, []int{2, 6, 9, 12, 16, 21}) {
-						t.Fatalf("jellyfish mark progression = %v, want [2 6 9 12 16 21]", got)
-					}
-					wantCopy := []string{
-						"In row 2, candidate 9 appears only in column 1 and column 4.",
-						"In row 3, candidate 9 appears only in column 1 and column 9.",
-						"In row 4, candidate 9 appears only in column 3 and column 4.",
-						"In row 7, candidate 9 appears only in column 3 and column 9.",
-					}
-					for index, want := range wantCopy {
-						if plan.Steps[index].Message.Text != want {
-							t.Fatalf("jellyfish step %d copy = %q, want %q", index, plan.Steps[index].Message.Text, want)
-						}
-					}
-					wantEliminations := []solver.CandidateRef{
-						{Position: core.NewPosition(0, 3), Value: 9},
-						{Position: core.NewPosition(4, 3), Value: 9},
-						{Position: core.NewPosition(7, 3), Value: 9},
-						{Position: core.NewPosition(8, 3), Value: 9},
-						{Position: core.NewPosition(8, 8), Value: 9},
-					}
-					if !reflect.DeepEqual(plan.Conclusion.Eliminations, wantEliminations) {
-						t.Fatalf("jellyfish eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
-					}
-				} else if plan.Steps[2].Message.ID != "hint.fish-confinement.apply" {
-					t.Fatalf("fish conclusion = %+v", plan.Steps[2].Message)
-				}
-			} else {
-				if strings.HasPrefix(plan.Steps[1].Message.ID, "hint.strategy.") || strings.HasPrefix(plan.Steps[len(plan.Steps)-1].Message.ID, "hint.strategy.") {
-					t.Fatalf("relational-wing descriptors remain generic: %+v", plan.Steps)
-				}
-				expectedApply := "hint.relational-wing.apply"
-				if plan.Conclusion.Placement != nil {
-					expectedApply = "hint.relational-wing.place"
-				}
-				if key == "xy-wing" {
-					expectedApply = "hint.xy-wing.apply"
-					if plan.Conclusion.Placement != nil {
-						expectedApply = "hint.xy-wing.place"
-					}
-				}
-				if key == "xyz-wing" {
-					expectedApply = "hint.xyz-wing.apply"
-				}
-				if key == "w-wing" {
-					expectedApply = "hint.strong-link-wing.apply"
-					if plan.Conclusion.Placement != nil {
-						expectedApply = "hint.strong-link-wing.place"
-					}
-				}
-				if plan.Steps[len(plan.Steps)-1].Message.ID != expectedApply {
-					t.Fatalf("relational-wing action descriptor = %q, want %q", plan.Steps[len(plan.Steps)-1].Message.ID, expectedApply)
-				}
-			}
-			switch key {
-			case "xy-wing":
-				wantMessages := []string{"hint.xy-wing.pivot", "hint.xy-wing.case", "hint.xy-wing.case", "hint.xy-wing.guarantee", "hint.xy-wing.place"}
-				wantLinks := []int{0, 1, 2, 2, 4}
-				for index, step := range plan.Steps {
-					if step.Message.ID != wantMessages[index] || len(step.Nodes) == 0 || len(step.Links) != wantLinks[index] {
-						t.Fatalf("XY-Wing step %d is incomplete: %+v", index, step)
-					}
-				}
-				for _, step := range plan.Steps[1:4] {
-					for _, link := range step.Links {
-						if link.Kind != solver.LinkImplication {
-							t.Fatalf("XY-Wing case step has non-implication link: %+v", step)
-						}
-					}
-				}
-				if plan.Steps[4].Links[2].Kind != solver.LinkWeak || plan.Steps[4].Links[3].Kind != solver.LinkWeak {
-					t.Fatalf("XY-Wing result lacks both target witnesses: %+v", plan.Steps[4])
-				}
-			case "xyz-wing":
-				wantMessages := []string{"hint.xyz-wing.pivot", "hint.xyz-wing.case", "hint.xyz-wing.case", "hint.xyz-wing.pivot-case", "hint.xyz-wing.guarantee", "hint.xyz-wing.apply"}
-				wantLinks := []int{0, 1, 2, 2, 2, 5}
-				for index, step := range plan.Steps {
-					if step.Message.ID != wantMessages[index] || len(step.Nodes) == 0 || len(step.Links) != wantLinks[index] {
-						t.Fatalf("XYZ-Wing step %d is incomplete: %+v", index, step)
-					}
-				}
-				for _, step := range plan.Steps[1:5] {
-					for _, link := range step.Links {
-						if link.Kind != solver.LinkImplication {
-							t.Fatalf("XYZ-Wing case step has non-implication link: %+v", step)
-						}
-					}
-				}
-				for _, link := range plan.Steps[5].Links[2:] {
-					if link.Kind != solver.LinkWeak {
-						t.Fatalf("XYZ-Wing result lacks all three target witnesses: %+v", plan.Steps[5])
-					}
-				}
-			case "w-wing":
-				if len(plan.Steps[0].Links) != 0 {
-					t.Fatalf("W-Wing introduces the bridge before the paired cells: %+v", plan.Steps[0])
-				}
-				if plan.Steps[1].Message.ID != "hint.strong-link-wing.bridge" || plan.Steps[2].Message.ID != "hint.strong-link-wing.force" {
-					t.Fatalf("W-Wing causal descriptors are incomplete: %+v", plan.Steps)
-				}
-				if len(plan.Steps[1].Links) != 1 || plan.Steps[1].Links[0].Kind != solver.LinkStrong {
-					t.Fatalf("W-Wing bridge step is incomplete: %+v", plan.Steps[1])
-				}
-				for _, step := range plan.Steps[2:] {
-					if len(step.Nodes) == 0 || len(step.Links) != 3 || step.Links[0].Kind != solver.LinkStrong || step.Links[1].Kind != solver.LinkImplication || step.Links[2].Kind != solver.LinkImplication {
-						t.Fatalf("W-Wing case implications are incomplete: %+v", step)
-					}
-				}
-			}
-		})
-	}
-}
-
-func TestUniquenessFamilyTeachesBeforeNaming(t *testing.T) {
-	games := realGamesForHintStrategies(t)
-	store := solver.NewStore()
-	keys := store.GetAllStrategySolverKeys()
-	families := []string{"bug-plus-one", "unique-rectangle", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4"}
-	for _, key := range families {
-		t.Run(key, func(t *testing.T) {
-			options := NewDefaultOptions(store)
-			options.StrategySolverKeys = keys
-			current := NewGame(boardFromPuzzle(t, games[key]), options)
-			var plan *HintPlan
-			for number := 0; number < 128; number++ {
-				plan = current.Hint()
-				if plan == nil {
-					t.Fatalf("exhausted hints before %s", key)
-				}
-				if plan.Strategy.ID == key {
-					break
-				}
-				if _, err := current.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
-					t.Fatal(err)
-				}
-			}
-			expectedSteps := 3
-			if key == "bug-plus-one" || key == "unique-rectangle" || key == "unique-rectangle-2" || key == "unique-rectangle-4" {
-				expectedSteps = 6
-			}
-			if key == "unique-rectangle-3" {
-				expectedSteps = 7
-			}
-			if plan == nil || plan.Strategy.ID != key || len(plan.Steps) != expectedSteps {
-				t.Fatalf("unexpected family plan: %+v", plan)
-			}
-			for _, step := range plan.Steps[:len(plan.Steps)-1] {
-				if strings.Contains(step.Message.Text, plan.Strategy.Name.Text) {
-					t.Fatalf("strategy vocabulary appears before the reasoning: %q", step.Message.Text)
-				}
-				if strings.Contains(step.Message.Text, "(") {
-					t.Fatalf("family plan exposes coordinate shorthand: %q", step.Message.Text)
-				}
-			}
-			if key == "bug-plus-one" {
-				ids := []string{"hint.bug-plus-one.bivalue", "hint.bug-plus-one.trivalue", "hint.bug-plus-one.unit-count", "hint.bug-plus-one.unit-count", "hint.bug-plus-one.explain", "hint.bug-plus-one.place"}
-				for index, id := range ids {
-					if plan.Steps[index].Message.ID != id {
-						t.Fatalf("BUG+1 descriptor %d = %q, want %q", index, plan.Steps[index].Message.ID, id)
-					}
-				}
-				markCounts := []int{12, 16, 17, 18, 19, 20}
-				for index, count := range markCounts {
-					if len(plan.Steps[index].Marks) != count {
-						t.Fatalf("BUG+1 mark count %d = %d, want %d", index, len(plan.Steps[index].Marks), count)
-					}
-				}
-			} else if key == "unique-rectangle" {
-				ids := []string{"hint.unique-rectangle.rectangle", "hint.unique-rectangle.pair-corners", "hint.unique-rectangle.third-corner", "hint.unique-rectangle.expanded-corner", "hint.unique-rectangle.protect-uniqueness", "hint.unique-rectangle.type1-place"}
-				markCounts := []int{8, 12, 14, 17, 17, 18}
-				for index, id := range ids {
-					if plan.Steps[index].Message.ID != id || len(plan.Steps[index].Marks) != markCounts[index] {
-						t.Fatalf("Unique Rectangle Type 1 step %d = %+v", index, plan.Steps[index])
-					}
-				}
-			} else if key == "unique-rectangle-2" {
-				ids := []string{"hint.unique-rectangle.rectangle", "hint.unique-rectangle.pair-corners", "hint.unique-rectangle.type2-first-expanded", "hint.unique-rectangle.type2-shared-extra", "hint.unique-rectangle.type2-protect-uniqueness", "hint.unique-rectangle.type2-place"}
-				markCounts := []int{8, 12, 15, 18, 19, 20}
-				for index, id := range ids {
-					if plan.Steps[index].Message.ID != id || len(plan.Steps[index].Marks) != markCounts[index] {
-						t.Fatalf("Unique Rectangle Type 2 step %d = %+v", index, plan.Steps[index])
-					}
-				}
-			} else if key == "unique-rectangle-3" {
-				ids := []string{"hint.unique-rectangle.rectangle", "hint.unique-rectangle.pair-corners", "hint.unique-rectangle.type3-first-expanded", "hint.unique-rectangle.type3-second-expanded", "hint.unique-rectangle.type3-partner", "hint.unique-rectangle.type3-reserve", "hint.unique-rectangle.type3-place"}
-				markCounts := []int{8, 12, 15, 18, 20, 21, 22}
-				for index, id := range ids {
-					if plan.Steps[index].Message.ID != id || len(plan.Steps[index].Marks) != markCounts[index] {
-						t.Fatalf("Unique Rectangle Type 3 step %d = %+v", index, plan.Steps[index])
-					}
-				}
-			} else if key == "unique-rectangle-4" {
-				ids := []string{"hint.unique-rectangle.rectangle", "hint.unique-rectangle.pair-corners", "hint.unique-rectangle.type4-first-expanded", "hint.unique-rectangle.type4-second-expanded", "hint.unique-rectangle.type4", "hint.unique-rectangle.type4-apply"}
-				markCounts := []int{8, 12, 15, 18, 20, 20}
-				linkCounts := []int{0, 0, 0, 0, 1, 1}
-				for index, id := range ids {
-					if plan.Steps[index].Message.ID != id || len(plan.Steps[index].Marks) != markCounts[index] || len(plan.Steps[index].Links) != linkCounts[index] {
-						t.Fatalf("Unique Rectangle Type 4 step %d = %+v", index, plan.Steps[index])
-					}
-				}
-				for _, step := range plan.Steps[4:] {
-					if len(step.Nodes) != 2 || step.Links[0].Kind != solver.LinkStrong {
-						t.Fatalf("Unique Rectangle Type 4 conjugate pair is incomplete: %+v", step)
-					}
-				}
-			} else {
-				explainID := map[string]string{
-					"unique-rectangle":   "hint.unique-rectangle.type1",
-					"unique-rectangle-2": "hint.unique-rectangle.type2",
-					"unique-rectangle-3": "hint.unique-rectangle.type3",
-					"unique-rectangle-4": "hint.unique-rectangle.type4",
-				}[key]
-				if plan.Steps[0].Message.ID != "hint.unique-rectangle.observe" || plan.Steps[1].Message.ID != explainID {
-					t.Fatalf("unique-rectangle descriptors remain generic: %+v", plan.Steps)
-				}
-				expectedApply := "hint.unique-rectangle.apply"
-				if plan.Conclusion.Placement != nil {
-					expectedApply = "hint.unique-rectangle.place"
-				}
-				if plan.Steps[2].Message.ID != expectedApply {
-					t.Fatalf("unique-rectangle action descriptor = %q, want %q", plan.Steps[2].Message.ID, expectedApply)
-				}
-			}
-		})
-	}
-}
-
-func TestColoringAndChainFamiliesTeachBeforeNaming(t *testing.T) {
-	games := realGamesForHintStrategies(t)
-	store := solver.NewStore()
-	keys := store.GetAllStrategySolverKeys()
-	for _, key := range []string{"simple-coloring", "x-cycles", "xy-chain"} {
-		t.Run(key, func(t *testing.T) {
-			options := NewDefaultOptions(store)
-			options.StrategySolverKeys = keys
-			current := NewGame(boardFromPuzzle(t, games[key]), options)
-			var plan *HintPlan
-			for number := 0; number < 128; number++ {
-				plan = current.Hint()
-				if plan == nil {
-					t.Fatalf("exhausted hints before %s", key)
-				}
-				if plan.Strategy.ID == key {
-					break
-				}
-				if _, err := current.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if plan == nil || plan.Strategy.ID != key {
-				t.Fatalf("unexpected family plan: %+v", plan)
-			}
-			switch key {
-			case "xy-chain":
-				if plan.Reason == nil || plan.Reason.ImplicationChain == nil || len(plan.Steps) != 6 {
-					t.Fatalf("unexpected logic-sized XY-chain plan: %+v", plan)
-				}
-			case "simple-coloring":
-				if len(plan.Steps) != 6 {
-					t.Fatalf("Simple Coloring should mirror the approved six-step progression: %+v", plan)
-				}
-			case "x-cycles":
-				if len(plan.Steps) != 5 {
-					t.Fatalf("X-Cycles should mirror the approved five-step progression: %+v", plan)
-				}
-			default:
-				if len(plan.Steps) != 3 {
-					t.Fatalf("unexpected family plan: %+v", plan)
-				}
-			}
-			preVocabularySteps := plan.Steps[:2]
-			if key == "simple-coloring" || key == "x-cycles" || key == "xy-chain" {
-				preVocabularySteps = plan.Steps[:len(plan.Steps)-1]
-			}
-			for _, step := range preVocabularySteps {
-				if strings.Contains(step.Message.Text, plan.Strategy.Name.Text) {
-					t.Fatalf("strategy vocabulary appears before the reasoning: %q", step.Message.Text)
-				}
-				if strings.Contains(step.Message.Text, "r1c") || strings.Contains(step.Message.Text, "(") {
-					t.Fatalf("family plan exposes compact notation: %q", step.Message.Text)
-				}
-			}
-			last := plan.Steps[len(plan.Steps)-1]
-			switch key {
-			case "xy-chain":
-				if plan.Reason == nil || plan.Reason.Kind != HintReasonImplicationChain || last.Message.ID != "hint.xy-chain.place" {
-					t.Fatalf("xy-chain pilot contract = reason %+v, conclusion %+v", plan.Reason, last.Message)
-				}
-				want := []string{"hint.xy-chain.start", "hint.xy-chain.assume", "hint.xy-chain.follow", "hint.xy-chain.follow", "hint.xy-chain.reach", "hint.xy-chain.place"}
-				for index, id := range want {
-					if plan.Steps[index].Message.ID != id {
-						t.Fatalf("XY-Chain step %d descriptor = %q, want %q", index+1, plan.Steps[index].Message.ID, id)
-					}
-				}
-				for index, linkCount := range []int{0, 2, 4, 6, 7, 7} {
-					if len(plan.Steps[index].Links) != linkCount {
-						t.Fatalf("XY-Chain step %d links = %d, want %d", index+1, len(plan.Steps[index].Links), linkCount)
-					}
-				}
-			case "simple-coloring":
-				want := []string{"hint.coloring.pair", "hint.coloring.chain", "hint.coloring.alternatives", "hint.coloring.elimination", "hint.coloring.elimination", "hint.coloring.apply"}
-				for index, id := range want {
-					if plan.Steps[index].Message.ID != id {
-						t.Fatalf("Simple Coloring step %d descriptor = %q, want %q", index+1, plan.Steps[index].Message.ID, id)
-					}
-				}
-			case "x-cycles":
-				want := []string{"hint.x-cycle.opening", "hint.x-cycle.assume", "hint.x-cycle.follow", "hint.x-cycle.close", "hint.x-cycle.place"}
-				for index, id := range want {
-					if plan.Steps[index].Message.ID != id {
-						t.Fatalf("X-Cycles step %d descriptor = %q, want %q", index+1, plan.Steps[index].Message.ID, id)
-					}
-				}
-				for index, linkCount := range []int{1, 3, 5, 7, 7} {
-					if len(plan.Steps[index].Links) != linkCount {
-						t.Fatalf("X-Cycles step %d links = %d, want %d", index+1, len(plan.Steps[index].Links), linkCount)
-					}
-				}
-			}
-			if len(plan.Steps[1].Links) <= len(plan.Steps[0].Links) {
-				t.Fatalf("complex scene is not progressive: %+v", plan.Steps)
-			}
-			for _, mark := range plan.Steps[1].Marks {
-				if mark.Target.Kind == HintTargetRow || mark.Target.Kind == HintTargetColumn || mark.Target.Kind == HintTargetBox {
-					t.Fatalf("chain scene paints broad unit scope: %+v", mark)
-				}
-			}
-			switch key {
-			case "simple-coloring":
-				if len(plan.Steps[1].Links) == 0 || plan.Steps[1].Nodes[0].Group == "" {
-					t.Fatalf("coloring plan does not teach alternating groups: %+v", plan.Steps)
-				}
-			case "x-cycles":
-				if len(plan.Steps[1].Links) < 3 || plan.Steps[1].Nodes[0].Order == 0 {
-					t.Fatalf("cycle plan does not teach alternating links: %+v", plan.Steps)
-				}
-			case "xy-chain":
-				for _, step := range plan.Steps {
-					if len(step.Narration) == 0 {
-						t.Fatalf("XY-chain step lacks structured narration: %+v", step)
-					}
-				}
-				if len(plan.Steps[1].Links) == 0 || plan.Steps[1].Links[0].Kind != solver.LinkImplication {
-					t.Fatalf("XY-chain plan does not teach the endpoint implication: %+v", plan.Steps)
-				}
-			}
-		})
-	}
-}
-
-func TestBoxLineReductionUsesItsSpecificRelationshipName(t *testing.T) {
-	source := solver.UnitRef{Kind: solver.UnitRow, Index: 3}
-	box := solver.UnitRef{Kind: solver.UnitBox, Index: 3}
-	move := &solver.Move{
-		Cell:      core.NewCell(core.NewPosition(4, 2), 7),
-		Technique: "pointing-pair",
-		Evidence: &solver.Evidence{
-			Unit:  &source,
-			Units: []solver.UnitRef{source, box},
-			Premises: []solver.CandidateGroup{
-				{Position: core.NewPosition(3, 0), Values: []int{9}},
-				{Position: core.NewPosition(3, 1), Values: []int{9}},
-			},
-		},
-	}
-	steps := intersectionSteps(move)
-	if len(steps) != 3 || steps[0].Marks[0].Target.Kind != HintTargetRow || steps[1].Marks[len(steps[1].Marks)-1].Target.Kind != HintTargetBox {
-		t.Fatalf("unexpected box-line scene: %+v", steps)
-	}
-	if steps[0].Message.ID != "hint.intersection-confinement.observe" || steps[1].Message.ID != "hint.intersection-confinement.explain" {
-		t.Fatalf("box-line relationship uses generic descriptors: %+v", steps)
-	}
-}
-
-func TestUnsupportedStrategicEvidenceReturnsNoPlan(t *testing.T) {
-	move := &solver.Move{
-		Cell:      core.NewCell(core.NewPosition(0, 0), 1),
-		Technique: "simple-coloring",
-		Evidence:  &solver.Evidence{},
-	}
-	if plan := composeHintPlan(Snapshot{}, nil, move); plan != nil {
-		t.Fatalf("unsupported strategic evidence produced a plan: %+v", plan)
 	}
 }

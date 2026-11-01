@@ -17,7 +17,13 @@ func TestExternalIdentityUsesIssuerAndSubjectInsteadOfEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	identity := ExternalIdentity{Issuer: "https://issuer.example", Subject: "subject-a", UserID: "user-a", ProfileEmail: "old@example.test", DisplayName: "Old"}
+	identity := ExternalIdentity{
+		Issuer:       "https://issuer.example",
+		Subject:      "subject-a",
+		UserID:       "user-a",
+		ProfileEmail: "old@example.test",
+		DisplayName:  "Old",
+	}
 	if err := database.LinkExternalIdentity(identity); err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +37,8 @@ func TestExternalIdentityUsesIssuerAndSubjectInsteadOfEmail(t *testing.T) {
 		t.Fatalf("cross-user relink error = %v, want ErrIdentityAlreadyLinked", err)
 	}
 	user, err := database.UserByExternalIdentity(identity.Issuer, identity.Subject)
-	if err != nil || user == nil || user.ID != "user-a" || user.ProfileEmail != "new@example.test" || user.DisplayName != "New" {
+	if err != nil || user == nil || user.ID != "user-a" || user.ProfileEmail != "new@example.test" ||
+		user.DisplayName != "New" {
 		t.Fatalf("resolved user = %+v, %v", user, err)
 	}
 	missing, err := database.UserByExternalIdentity(identity.Issuer, "missing")
@@ -50,7 +57,13 @@ func TestWebSessionsExpireAndRevokeWithoutStoringVerifier(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now().UTC().Truncate(time.Second)
-	session := WebSession{ID: "session-a", UserID: "user-a", VerifierDigest: []byte("digest-a"), IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: now.Add(24 * time.Hour)}
+	session := WebSession{
+		ID:                "session-a",
+		UserID:            "user-a",
+		VerifierDigest:    []byte("digest-a"),
+		IdleExpiresAt:     now.Add(time.Hour),
+		AbsoluteExpiresAt: now.Add(24 * time.Hour),
+	}
 	if err := database.CreateWebSession(session); err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +71,8 @@ func TestWebSessionsExpireAndRevokeWithoutStoringVerifier(t *testing.T) {
 	if err != nil || active == nil || active.UserID != "user-a" {
 		t.Fatalf("active session = %+v, %v", active, err)
 	}
-	if expired, err := database.ActiveWebSession([]byte("digest-a"), now.Add(2*time.Hour)); err != nil || expired != nil {
+	if expired, err := database.ActiveWebSession([]byte("digest-a"), now.Add(2*time.Hour)); err != nil ||
+		expired != nil {
 		t.Fatalf("expired session = %+v, %v", expired, err)
 	}
 	if revoked, err := database.RevokeWebSession("user-b", "session-a"); err != nil || revoked {
@@ -91,19 +105,23 @@ func TestAccountGamesAreOwnerScopedAndRevisionChecked(t *testing.T) {
 	if err := database.InsertPlayRun(PlayRun{ID: "run-a", BasePuzzleID: basePuzzleID, PresentedPuzzle: puzzle}); err != nil {
 		t.Fatal(err)
 	}
-	if err := database.CreateAccountGame(AccountGame{ID: "game-a", UserID: "user-a", BasePuzzleID: basePuzzleID, PlayRunID: "run-a", EngineState: []byte(`{"version":1}`), ActualDifficulty: "easy", Status: "in-progress"}); err != nil {
+	if err := database.CreateAccountGame(AccountGame{ID: "game-a", UserID: "user-a", BasePuzzleID: basePuzzleID,
+		PlayRunID: "run-a", EngineState: []byte(`{"version":1}`), ActualDifficulty: "easy", Status: "in-progress"}); err != nil {
 		t.Fatal(err)
 	}
 	if other, err := database.AccountGameByID("user-b", "game-a"); err != nil || other != nil {
 		t.Fatalf("cross-user read = %+v, %v", other, err)
 	}
-	if updated, err := database.UpdateAccountGame("user-b", "game-a", 0, []byte(`{"version":2}`), "in-progress"); err != nil || updated {
+	if updated, err := database.UpdateAccountGame("user-b", "game-a", 0, []byte(`{"version":2}`), "in-progress"); err != nil ||
+		updated {
 		t.Fatalf("cross-user update = %v, %v", updated, err)
 	}
-	if updated, err := database.UpdateAccountGame("user-a", "game-a", 1, []byte(`{"version":2}`), "in-progress"); err != nil || updated {
+	if updated, err := database.UpdateAccountGame("user-a", "game-a", 1, []byte(`{"version":2}`), "in-progress"); err != nil ||
+		updated {
 		t.Fatalf("stale update = %v, %v", updated, err)
 	}
-	if updated, err := database.UpdateAccountGame("user-a", "game-a", 0, []byte(`{"version":2}`), "solved"); err != nil || !updated {
+	if updated, err := database.UpdateAccountGame("user-a", "game-a", 0, []byte(`{"version":2}`), "solved"); err != nil ||
+		!updated {
 		t.Fatalf("owner update = %v, %v", updated, err)
 	}
 	if updated, err := database.UpdateAccountGameElapsed("user-a", "game-a", 125); err != nil || !updated {
@@ -113,7 +131,9 @@ func TestAccountGamesAreOwnerScopedAndRevisionChecked(t *testing.T) {
 		t.Fatalf("stale elapsed update = %v, %v", updated, err)
 	}
 	game, err := database.AccountGameByID("user-a", "game-a")
-	if err != nil || game == nil || game.Revision != 1 || string(game.EngineState) != `{"version":2}` || game.Status != "solved" || game.ElapsedSeconds != 125 {
+	if err != nil || game == nil || game.Revision != 1 || string(game.EngineState) != `{"version":2}` ||
+		game.Status != "solved" ||
+		game.ElapsedSeconds != 125 {
 		t.Fatalf("updated game = %+v, %v", game, err)
 	}
 	if deleted, err := database.DeleteAccountGame("user-b", "game-a"); err != nil || deleted {
@@ -146,11 +166,13 @@ func TestDeleteUserCascadesPrivateStateAndPreservesCatalog(t *testing.T) {
 	if err := database.CreateUser(User{ID: "user-a"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := database.LinkExternalIdentity(ExternalIdentity{Issuer: "https://issuer.example", Subject: "subject-a", UserID: "user-a"}); err != nil {
+	if err := database.LinkExternalIdentity(ExternalIdentity{Issuer: "https://issuer.example", Subject: "subject-a",
+		UserID: "user-a"}); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Now().UTC()
-	if err := database.CreateWebSession(WebSession{ID: "session-a", UserID: "user-a", VerifierDigest: []byte("digest-a"), IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: now.Add(2 * time.Hour)}); err != nil {
+	if err := database.CreateWebSession(WebSession{ID: "session-a", UserID: "user-a",
+		VerifierDigest: []byte("digest-a"), IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: now.Add(2 * time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
 	puzzle := "preserved-catalog-puzzle"
@@ -161,7 +183,8 @@ func TestDeleteUserCascadesPrivateStateAndPreservesCatalog(t *testing.T) {
 	if err := database.InsertPlayRun(PlayRun{ID: "run-a", BasePuzzleID: basePuzzleID, PresentedPuzzle: puzzle}); err != nil {
 		t.Fatal(err)
 	}
-	if err := database.CreateAccountGame(AccountGame{ID: "game-a", UserID: "user-a", BasePuzzleID: basePuzzleID, PlayRunID: "run-a", EngineState: []byte("state"), ActualDifficulty: "easy", Status: "in-progress"}); err != nil {
+	if err := database.CreateAccountGame(AccountGame{ID: "game-a", UserID: "user-a", BasePuzzleID: basePuzzleID,
+		PlayRunID: "run-a", EngineState: []byte("state"), ActualDifficulty: "easy", Status: "in-progress"}); err != nil {
 		t.Fatal(err)
 	}
 	if deleted, err := database.DeleteUser("user-a"); err != nil || !deleted {
@@ -190,12 +213,14 @@ func TestWebSessionRotationIsAtomic(t *testing.T) {
 	if err := database.CreateUser(User{ID: "user-a"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := database.LinkExternalIdentity(ExternalIdentity{Issuer: "https://issuer.example", Subject: "subject-a", UserID: "user-a"}); err != nil {
+	if err := database.LinkExternalIdentity(ExternalIdentity{Issuer: "https://issuer.example", Subject: "subject-a",
+		UserID: "user-a"}); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Now().UTC().Truncate(time.Second)
 	oldDigest := []byte("old-digest")
-	if err := database.CreateWebSession(WebSession{ID: "session-a", UserID: "user-a", VerifierDigest: oldDigest, IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: now.Add(24 * time.Hour)}); err != nil {
+	if err := database.CreateWebSession(WebSession{ID: "session-a", UserID: "user-a", VerifierDigest: oldDigest,
+		IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: now.Add(24 * time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
 	_, _, err = database.RotateWebSessionForIdentity(WebSessionRotation{
@@ -229,7 +254,8 @@ func TestRefreshActiveWebSessionCapsIdleExpiryAtAbsoluteLifetime(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 	digest := []byte("digest-a")
 	absolute := now.Add(2 * time.Hour)
-	if err := database.CreateWebSession(WebSession{ID: "session-a", UserID: "user-a", VerifierDigest: digest, IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: absolute}); err != nil {
+	if err := database.CreateWebSession(WebSession{ID: "session-a", UserID: "user-a", VerifierDigest: digest,
+		IdleExpiresAt: now.Add(time.Hour), AbsoluteExpiresAt: absolute}); err != nil {
 		t.Fatal(err)
 	}
 	refreshed, err := database.RefreshActiveWebSession(digest, now.Add(30*time.Minute), 3*time.Hour)
@@ -253,7 +279,15 @@ func TestCreateOwnedGameRollsBackPlayRunWhenAccountInsertFails(t *testing.T) {
 	}
 	baseID := BasePuzzleID(puzzle)
 	run := PlayRun{ID: "run-rollback", BasePuzzleID: baseID, PresentedPuzzle: puzzle}
-	game := AccountGame{ID: "game-rollback", UserID: "missing-user", BasePuzzleID: baseID, PlayRunID: run.ID, EngineState: []byte("state"), ActualDifficulty: "easy", Status: "in-progress"}
+	game := AccountGame{
+		ID:               "game-rollback",
+		UserID:           "missing-user",
+		BasePuzzleID:     baseID,
+		PlayRunID:        run.ID,
+		EngineState:      []byte("state"),
+		ActualDifficulty: "easy",
+		Status:           "in-progress",
+	}
 	if err := database.CreateOwnedGame(run, game); err == nil {
 		t.Fatal("owned game creation unexpectedly succeeded for an absent owner")
 	}

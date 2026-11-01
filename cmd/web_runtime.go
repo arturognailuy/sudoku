@@ -59,7 +59,11 @@ type googleConfigFile struct {
 	RedirectURL  string `json:"redirect_url"`
 }
 
-func loadWebRuntime(ctx context.Context, path, databasePath string, options game.Options) (*webapi.GuestRuntime, *webapi.AccountRuntime, func() error, error) {
+func loadWebRuntime(
+	ctx context.Context,
+	path, databasePath string,
+	options game.Options,
+) (*webapi.GuestRuntime, *webapi.AccountRuntime, func() error, error) {
 	config, err := readWebConfig(path)
 	if err != nil {
 		return nil, nil, nil, err
@@ -74,7 +78,13 @@ func loadWebRuntime(ctx context.Context, path, databasePath string, options game
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		documents, err = guestdoc.New(guestdoc.Config{ActiveKeyID: managedGuestKeyID, Keys: map[string][]byte{managedGuestKeyID: key}, Lifetime: defaultGuestLifetime})
+		documents, err = guestdoc.New(
+			guestdoc.Config{
+				ActiveKeyID: managedGuestKeyID,
+				Keys:        map[string][]byte{managedGuestKeyID: key},
+				Lifetime:    defaultGuestLifetime,
+			},
+		)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("configure managed guest documents: %w", err)
 		}
@@ -98,11 +108,25 @@ func loadWebRuntime(ctx context.Context, path, databasePath string, options game
 	if err != nil || len(csrfKey) < 32 {
 		return nil, nil, nil, errors.New("--web-config account.csrf_key must contain at least 32 base64url bytes")
 	}
-	provider, err := oidcauth.NewGoogleProvider(ctx, oidcauth.GoogleConfig{ClientID: accountConfig.Google.ClientID, ClientSecret: accountConfig.Google.ClientSecret, RedirectURL: accountConfig.Google.RedirectURL})
+	provider, err := oidcauth.NewGoogleProvider(
+		ctx,
+		oidcauth.GoogleConfig{
+			ClientID:     accountConfig.Google.ClientID,
+			ClientSecret: accountConfig.Google.ClientSecret,
+			RedirectURL:  accountConfig.Google.RedirectURL,
+		},
+	)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("configure Google OIDC: %w", err)
 	}
-	login, err := oidcauth.New(oidcauth.Config{Provider: provider, Issuer: oidcauth.GoogleIssuer, ClientID: accountConfig.Google.ClientID, ReturnPathPrefix: accountConfig.ReturnPathPrefix})
+	login, err := oidcauth.New(
+		oidcauth.Config{
+			Provider:         provider,
+			Issuer:           oidcauth.GoogleIssuer,
+			ClientID:         accountConfig.Google.ClientID,
+			ReturnPathPrefix: accountConfig.ReturnPathPrefix,
+		},
+	)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("configure OIDC transactions: %w", err)
 	}
@@ -111,7 +135,14 @@ func loadWebRuntime(ctx context.Context, path, databasePath string, options game
 		return nil, nil, nil, fmt.Errorf("open account database: %w", err)
 	}
 	closeDatabase := func() error { return database.Close() }
-	authentication, err := accountauth.New(accountauth.Config{Login: login, Store: database, IdleLifetime: time.Duration(accountConfig.SessionIdleSeconds) * time.Second, AbsoluteLifetime: time.Duration(accountConfig.SessionAbsoluteSeconds) * time.Second})
+	authentication, err := accountauth.New(
+		accountauth.Config{
+			Login:            login,
+			Store:            database,
+			IdleLifetime:     time.Duration(accountConfig.SessionIdleSeconds) * time.Second,
+			AbsoluteLifetime: time.Duration(accountConfig.SessionAbsoluteSeconds) * time.Second,
+		},
+	)
 	if err != nil {
 		_ = database.Close()
 		return nil, nil, nil, fmt.Errorf("configure account sessions: %w", err)
@@ -185,7 +216,13 @@ func configuredGuestDocuments(config guestConfigFile) (*guestdoc.Sealer, error) 
 		}
 		keys[keyID] = value
 	}
-	documents, err := guestdoc.New(guestdoc.Config{ActiveKeyID: config.ActiveKeyID, Keys: keys, Lifetime: time.Duration(config.LifetimeSeconds) * time.Second})
+	documents, err := guestdoc.New(
+		guestdoc.Config{
+			ActiveKeyID: config.ActiveKeyID,
+			Keys:        keys,
+			Lifetime:    time.Duration(config.LifetimeSeconds) * time.Second,
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("configure guest documents: %w", err)
 	}
@@ -193,7 +230,11 @@ func configuredGuestDocuments(config guestConfigFile) (*guestdoc.Sealer, error) 
 }
 
 func validateAccountConfig(config accountConfigFile) error {
-	if config.Google.ClientID == "" || config.Google.ClientSecret == "" || config.Google.RedirectURL == "" || config.SessionIdleSeconds <= 0 || config.SessionAbsoluteSeconds <= config.SessionIdleSeconds || !validApplicationPath(config.CookiePath) || !validApplicationPath(config.ReturnPathPrefix) {
+	if config.Google.ClientID == "" || config.Google.ClientSecret == "" || config.Google.RedirectURL == "" ||
+		config.SessionIdleSeconds <= 0 ||
+		config.SessionAbsoluteSeconds <= config.SessionIdleSeconds ||
+		!validApplicationPath(config.CookiePath) ||
+		!validApplicationPath(config.ReturnPathPrefix) {
 		return errors.New("--web-config contains an incomplete or invalid account section")
 	}
 	return nil
@@ -326,5 +367,7 @@ func decodeSecret(value string) ([]byte, error) {
 }
 
 func validApplicationPath(value string) bool {
-	return value == "/" || strings.HasPrefix(value, "/") && strings.HasSuffix(value, "/") && !strings.HasPrefix(value, "//") && !strings.ContainsAny(value, "\\?#")
+	return value == "/" ||
+		strings.HasPrefix(value, "/") && strings.HasSuffix(value, "/") && !strings.HasPrefix(value, "//") &&
+			!strings.ContainsAny(value, "\\?#")
 }

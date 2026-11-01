@@ -72,7 +72,13 @@ func premiseCandidateMarks(evidence *solver.Evidence) []HintMark {
 	var marks []HintMark
 	for _, premise := range evidence.Premises {
 		for _, value := range premise.Values {
-			marks = append(marks, HintMark{Target: candidateTarget(solver.CandidateRef{Position: premise.Position, Value: value}), Role: HintRolePremise})
+			marks = append(
+				marks,
+				HintMark{
+					Target: candidateTarget(solver.CandidateRef{Position: premise.Position, Value: value}),
+					Role:   HintRolePremise,
+				},
+			)
 		}
 	}
 	return marks
@@ -159,7 +165,13 @@ func unitAndPremiseMarks(evidence *solver.Evidence) []HintMark {
 	for _, premise := range evidence.Premises {
 		marks = append(marks, HintMark{Target: cellTarget(premise.Position), Role: HintRoleFocus})
 		for _, value := range premise.Values {
-			marks = append(marks, HintMark{Target: candidateTarget(solver.CandidateRef{Position: premise.Position, Value: value}), Role: HintRolePremise})
+			marks = append(
+				marks,
+				HintMark{
+					Target: candidateTarget(solver.CandidateRef{Position: premise.Position, Value: value}),
+					Role:   HintRolePremise,
+				},
+			)
 		}
 	}
 	return marks
@@ -182,7 +194,14 @@ func conclusionKind(conclusion HintConclusion) HintStepKind {
 
 func conclusionMarks(conclusion HintConclusion) []HintMark {
 	if conclusion.Placement != nil {
-		return []HintMark{{Target: candidateTarget(solver.CandidateRef{Position: conclusion.Placement.Position, Value: conclusion.Placement.Value}), Role: HintRoleConclusion}}
+		return []HintMark{
+			{
+				Target: candidateTarget(
+					solver.CandidateRef{Position: conclusion.Placement.Position, Value: conclusion.Placement.Value},
+				),
+				Role: HintRoleConclusion,
+			},
+		}
 	}
 	marks := make([]HintMark, len(conclusion.Eliminations))
 	for i, ref := range conclusion.Eliminations {
@@ -192,5 +211,8 @@ func conclusionMarks(conclusion HintConclusion) []HintMark {
 }
 
 func conclusionEffect(conclusion HintConclusion) *HintEffect {
-	return &HintEffect{Placement: conclusion.Placement, Eliminations: append([]solver.CandidateRef(nil), conclusion.Eliminations...)}
+	return &HintEffect{
+		Placement:    conclusion.Placement,
+		Eliminations: append([]solver.CandidateRef(nil), conclusion.Eliminations...),
+	}
 }

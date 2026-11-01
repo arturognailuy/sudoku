@@ -36,8 +36,9 @@ func NewXYZWingSolver() *XYZWingSolver {
 		Base: Base{
 			Key:         "xyz-wing",
 			DisplayName: "XYZ-Wing",
-			Description: "Finds a pivot with {X,Y,Z} connected to wings with {X,Z} and {Y,Z}, enabling elimination of Z from cells that see all three.",
-			Weight:      WeightXYZWing,
+			Description: ("Finds a pivot with {X,Y,Z} connected to wings with {X,Z} and {Y,Z}, enabling " +
+				"elimination of Z from cells that see all three."),
+			Weight: WeightXYZWing,
 		},
 	}
 }
@@ -100,7 +101,12 @@ func (s *XYZWingSolver) Apply(board *core.Board) *Move {
 
 // tryXYZWing searches for wings having {ca, shared} and {cb, shared} that
 // share a unit with the pivot, and eliminates shared from cells seeing all three.
-func (s *XYZWingSolver) tryXYZWing(board *core.Board, pivotPos core.Position, ca, cb, shared int, biCells []xyzBiCell) *Move {
+func (s *XYZWingSolver) tryXYZWing(
+	board *core.Board,
+	pivotPos core.Position,
+	ca, cb, shared int,
+	biCells []xyzBiCell,
+) *Move {
 	// Find wing1 candidates: bi-value cells sharing a unit with pivot, having {ca, shared}.
 	var wing1s []core.Position
 	for _, bc := range biCells {
@@ -154,10 +160,19 @@ func (s *XYZWingSolver) tryXYZWing(board *core.Board, pivotPos core.Position, ca
 								Technique: s.Key,
 								Reason: fmt.Sprintf(
 									"XYZ-Wing: pivot %s {%d,%d,%d}, wings %s {%d,%d} and %s {%d,%d} — %d eliminated from %s, leaving %d",
-									pivotPos.ToString(), ca, cb, shared,
-									w1.ToString(), ca, shared,
-									w2.ToString(), cb, shared,
-									shared, pos.ToString(), value,
+									pivotPos.ToString(),
+									ca,
+									cb,
+									shared,
+									w1.ToString(),
+									ca,
+									shared,
+									w2.ToString(),
+									cb,
+									shared,
+									shared,
+									pos.ToString(),
+									value,
 								),
 							}
 						}
@@ -180,9 +195,16 @@ func (s *XYZWingSolver) tryXYZWing(board *core.Board, pivotPos core.Position, ca
 					Technique:       s.Key,
 					Reason: fmt.Sprintf(
 						"XYZ-Wing: pivot %s {%d,%d,%d}, wings %s {%d,%d} and %s {%d,%d} — %d eliminated from cells seeing all three",
-						pivotPos.ToString(), ca, cb, shared,
-						w1.ToString(), ca, shared,
-						w2.ToString(), cb, shared,
+						pivotPos.ToString(),
+						ca,
+						cb,
+						shared,
+						w1.ToString(),
+						ca,
+						shared,
+						w2.ToString(),
+						cb,
+						shared,
 						shared,
 					),
 					Evidence: evidence,

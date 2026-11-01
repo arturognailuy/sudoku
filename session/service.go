@@ -129,7 +129,12 @@ func (service *Service) Create(request Request) (Result, error) {
 	return service.createFromDifficulty(request, options, catalog, catalogErr)
 }
 
-func (service *Service) createFromPuzzle(request Request, problem core.Board, options game.Options, catalog *db.DB) (Result, error) {
+func (service *Service) createFromPuzzle(
+	request Request,
+	problem core.Board,
+	options game.Options,
+	catalog *db.DB,
+) (Result, error) {
 	count := service.solver.GetDefaultSolver().CountSolutionsUpTo(&problem, 2)
 	if count == 0 {
 		return Result{}, fmt.Errorf("the input is not a solvable Sudoku problem: %s", request.Puzzle)
@@ -139,13 +144,21 @@ func (service *Service) createFromPuzzle(request Request, problem core.Board, op
 		result.Notices = append(result.Notices, Notice{Kind: NoticeMultipleSolutions})
 	}
 	if _, err := service.store(catalog, problem, "input"); err != nil && !errors.Is(err, errCatalogExcluded) {
-		result.Notices = append(result.Notices, Notice{Kind: NoticePersistenceFailed, Operation: "store the reusable puzzle", Cause: err})
+		result.Notices = append(
+			result.Notices,
+			Notice{Kind: NoticePersistenceFailed, Operation: "store the reusable puzzle", Cause: err},
+		)
 	}
 	result.Game = game.NewGame(problem, options)
 	return result, nil
 }
 
-func (service *Service) createFromDifficulty(request Request, options game.Options, catalog *db.DB, catalogErr error) (Result, error) {
+func (service *Service) createFromDifficulty(
+	request Request,
+	options game.Options,
+	catalog *db.DB,
+	catalogErr error,
+) (Result, error) {
 	difficulty, err := generator.DifficultyForName(request.Difficulty)
 	if err != nil {
 		return Result{}, err
@@ -165,19 +178,28 @@ func (service *Service) createFromDifficulty(request Request, options game.Optio
 			}
 			result.Notices = append(result.Notices, Notice{Kind: NoticeCatalogFallback, RequestedDifficulty: request.Difficulty, Cause: err})
 			var notices []Notice
-			problem, keys, result.Source, result.ActualDifficulty, notices, err = service.generateWithFallback(catalog, catalogErr, difficulty, request.Difficulty)
+			problem, keys, result.Source, result.ActualDifficulty, notices, err = service.generateWithFallback(catalog,
+				catalogErr, difficulty, request.Difficulty)
 			result.Notices = append(result.Notices, notices...)
 		}
 	} else {
 		var notices []Notice
-		problem, keys, result.Source, result.ActualDifficulty, notices, err = service.generateWithFallback(catalog, catalogErr, difficulty, request.Difficulty)
+		problem, keys, result.Source, result.ActualDifficulty, notices, err = service.generateWithFallback(catalog,
+			catalogErr, difficulty, request.Difficulty)
 		result.Notices = append(result.Notices, notices...)
 	}
 	if err != nil {
 		return Result{}, err
 	}
 	if result.ActualDifficulty != "" && result.ActualDifficulty != request.Difficulty {
-		result.Notices = append(result.Notices, Notice{Kind: NoticeDifficultyChanged, RequestedDifficulty: request.Difficulty, ActualDifficulty: result.ActualDifficulty})
+		result.Notices = append(
+			result.Notices,
+			Notice{
+				Kind:                NoticeDifficultyChanged,
+				RequestedDifficulty: request.Difficulty,
+				ActualDifficulty:    result.ActualDifficulty,
+			},
+		)
 	}
 	options.StrategySolverKeys = keys
 	result.Game = game.NewGame(problem, options)
@@ -188,7 +210,12 @@ func catalogFirst(level string) bool {
 	return level == "hard" || level == "expert" || level == "evil"
 }
 
-func (service *Service) acquire(catalog *db.DB, catalogErr error, difficulty generator.Difficulty, level string) (core.Board, []string, error) {
+func (service *Service) acquire(
+	catalog *db.DB,
+	catalogErr error,
+	difficulty generator.Difficulty,
+	level string,
+) (core.Board, []string, error) {
 	if catalog == nil {
 		if catalogErr != nil {
 			return core.Board{}, nil, fmt.Errorf("open puzzle database: %w", catalogErr)
@@ -208,7 +235,12 @@ func (service *Service) acquire(catalog *db.DB, catalogErr error, difficulty gen
 	return board, service.allowedKeys(difficulty), nil
 }
 
-func (service *Service) generateWithFallback(catalog *db.DB, catalogErr error, difficulty generator.Difficulty, level string) (core.Board, []string, Source, string, []Notice, error) {
+func (service *Service) generateWithFallback(
+	catalog *db.DB,
+	catalogErr error,
+	difficulty generator.Difficulty,
+	level string,
+) (core.Board, []string, Source, string, []Notice, error) {
 	options := generator.NewBestEffortOptions(service.solver, difficulty)
 	generated := generator.GenerateBestEffort(options)
 	storedPuzzle := ""
@@ -217,25 +249,41 @@ func (service *Service) generateWithFallback(catalog *db.DB, catalogErr error, d
 		var storeErr error
 		storedPuzzle, storeErr = service.store(catalog, generated.Puzzle, "generated")
 		if storeErr != nil && !errors.Is(storeErr, errCatalogExcluded) {
-			notices = append(notices, Notice{Kind: NoticePersistenceFailed, Operation: "store the generated puzzle", Cause: storeErr})
+			notices = append(
+				notices,
+				Notice{Kind: NoticePersistenceFailed, Operation: "store the generated puzzle", Cause: storeErr},
+			)
 		}
 	}
 	if generated.Matched {
 		if err := markPlayed(catalog, storedPuzzle); err != nil {
-			notices = append(notices, Notice{Kind: NoticePersistenceFailed, Operation: "record puzzle acquisition", Cause: err})
+			notices = append(
+				notices,
+				Notice{Kind: NoticePersistenceFailed, Operation: "record puzzle acquisition", Cause: err},
+			)
 		}
-		return generated.Puzzle, service.allowedKeys(difficulty), SourceGenerated, generated.Classification.Difficulty, notices, nil
+		return generated.Puzzle, service.allowedKeys(
+			difficulty,
+		), SourceGenerated, generated.Classification.Difficulty, notices, nil
 	}
 	if board, keys, err := service.acquire(catalog, catalogErr, difficulty, level); err == nil {
 		return board, keys, SourceCatalog, level, notices, nil
 	}
 	if generated.RoundsUsed == 0 {
-		return core.Board{}, nil, "", "", notices, fmt.Errorf("generation timed out before a puzzle completed and no %s puzzle is available in the database", level)
+		return core.Board{}, nil, "", "", notices, fmt.Errorf(
+			"generation timed out before a puzzle completed and no %s puzzle is available in the database",
+			level,
+		)
 	}
 	if err := markPlayed(catalog, storedPuzzle); err != nil {
-		notices = append(notices, Notice{Kind: NoticePersistenceFailed, Operation: "record puzzle acquisition", Cause: err})
+		notices = append(
+			notices,
+			Notice{Kind: NoticePersistenceFailed, Operation: "record puzzle acquisition", Cause: err},
+		)
 	}
-	return generated.Puzzle, service.allowedKeys(difficulty), SourceGeneratedFallback, generated.Classification.Difficulty, notices, nil
+	return generated.Puzzle, service.allowedKeys(
+		difficulty,
+	), SourceGeneratedFallback, generated.Classification.Difficulty, notices, nil
 }
 
 func (service *Service) allowedKeys(difficulty generator.Difficulty) []string {
@@ -259,7 +307,15 @@ func (service *Service) store(catalog *db.DB, board core.Board, source string) (
 	if classification.Outcome != solver.ClassificationSolved {
 		return "", errCatalogExcluded
 	}
-	_, err = catalog.InsertPuzzle(db.Puzzle{Puzzle: puzzle, Difficulty: classification.Difficulty, Score: classification.Score, MaxTechnique: classification.MaxTechnique, Source: source})
+	_, err = catalog.InsertPuzzle(
+		db.Puzzle{
+			Puzzle:       puzzle,
+			Difficulty:   classification.Difficulty,
+			Score:        classification.Score,
+			MaxTechnique: classification.MaxTechnique,
+			Source:       source,
+		},
+	)
 	return puzzle, err
 }
 

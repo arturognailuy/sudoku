@@ -104,31 +104,43 @@ func TestEveryRegisteredStrategyBuildsTypedPlanFromRealGame(t *testing.T) {
 				}
 				switch key {
 				case "naked-pair", "naked-triple", "naked-quad":
-					if first.Reason == nil || first.Reason.Kind != HintReasonSubsetReservation || strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") {
+					if first.Reason == nil || first.Reason.Kind != HintReasonSubsetReservation ||
+						strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") {
 						t.Fatalf("naked subset did not use its typed family reason: %+v", first)
 					}
 				case "pointing-pair":
-					if first.Reason == nil || first.Reason.Kind != HintReasonIntersectionConfinement || strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") {
+					if first.Reason == nil || first.Reason.Kind != HintReasonIntersectionConfinement ||
+						strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") {
 						t.Fatalf("intersection did not use its typed family reason: %+v", first)
 					}
 				case "x-wing", "swordfish", "jellyfish":
-					if first.Reason == nil || first.Reason.Kind != HintReasonFishConfinement || strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") {
+					if first.Reason == nil || first.Reason.Kind != HintReasonFishConfinement ||
+						strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") {
 						t.Fatalf("fish did not use its typed family reason: %+v", first)
 					}
 				case "xy-wing", "xyz-wing", "w-wing":
-					if strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") || strings.HasPrefix(first.Steps[len(first.Steps)-1].Message.ID, "hint.strategy.") {
+					if strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") ||
+						strings.HasPrefix(first.Steps[len(first.Steps)-1].Message.ID, "hint.strategy.") {
 						t.Fatalf("%s did not use complete relational-wing descriptors: %+v", key, first)
 					}
-				case "bug-plus-one", "unique-rectangle", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4":
-					if strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") || strings.HasPrefix(first.Steps[len(first.Steps)-1].Message.ID, "hint.strategy.") {
+				case "bug-plus-one",
+					"unique-rectangle",
+					"unique-rectangle-2",
+					"unique-rectangle-3",
+					"unique-rectangle-4":
+					if strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") ||
+						strings.HasPrefix(first.Steps[len(first.Steps)-1].Message.ID, "hint.strategy.") {
 						t.Fatalf("%s did not use complete uniqueness descriptors: %+v", key, first)
 					}
 				case "simple-coloring":
-					if strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") || strings.HasPrefix(first.Steps[len(first.Steps)-1].Message.ID, "hint.strategy.") {
+					if strings.HasPrefix(first.Steps[1].Message.ID, "hint.strategy.") ||
+						strings.HasPrefix(first.Steps[len(first.Steps)-1].Message.ID, "hint.strategy.") {
 						t.Fatalf("%s did not use complete linked-candidate descriptors: %+v", key, first)
 					}
 				case "xy-chain":
-					if first.Reason == nil || first.Reason.Kind != HintReasonImplicationChain || first.Reason.ImplicationChain == nil || len(first.Steps) != 6 {
+					if first.Reason == nil || first.Reason.Kind != HintReasonImplicationChain ||
+						first.Reason.ImplicationChain == nil ||
+						len(first.Steps) != 6 {
 						t.Fatalf("xy-chain did not use its approved six-step progression: %+v", first)
 					}
 				}
@@ -197,7 +209,13 @@ func TestStrategicHintRegressionCorpusHasNoGenericFallbackOrPanic(t *testing.T) 
 			wantStrategies[plan.Strategy.ID] = wantStrategies[plan.Strategy.ID] || plan.Strategy.ID != ""
 			for _, step := range plan.Steps {
 				if strings.HasPrefix(step.Message.ID, "hint.strategy.") {
-					t.Fatalf("puzzle %d hint %d strategy %s used generic descriptor %s", puzzleIndex, hintNumber+1, plan.Strategy.ID, step.Message.ID)
+					t.Fatalf(
+						"puzzle %d hint %d strategy %s used generic descriptor %s",
+						puzzleIndex,
+						hintNumber+1,
+						plan.Strategy.ID,
+						step.Message.ID,
+					)
 				}
 			}
 			if _, err := current.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
@@ -252,8 +270,12 @@ func narrationHasTypedConclusion(chunks []HintNarrationChunk) bool {
 		}
 		hasDigit, hasCells := false, false
 		for _, argument := range chunk.Message.Arguments {
-			hasDigit = hasDigit || argument.Kind == message.ArgumentDigit || argument.Kind == message.ArgumentDigits || argument.Kind == message.ArgumentCandidate || argument.Kind == message.ArgumentCandidates
-			hasCells = hasCells || argument.Kind == message.ArgumentCell || argument.Kind == message.ArgumentCells || argument.Kind == message.ArgumentCandidate || argument.Kind == message.ArgumentCandidates
+			hasDigit = hasDigit || argument.Kind == message.ArgumentDigit || argument.Kind == message.ArgumentDigits ||
+				argument.Kind == message.ArgumentCandidate ||
+				argument.Kind == message.ArgumentCandidates
+			hasCells = hasCells || argument.Kind == message.ArgumentCell || argument.Kind == message.ArgumentCells ||
+				argument.Kind == message.ArgumentCandidate ||
+				argument.Kind == message.ArgumentCandidates
 		}
 		if hasDigit && hasCells {
 			return true

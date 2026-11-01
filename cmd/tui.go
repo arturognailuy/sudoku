@@ -64,11 +64,20 @@ func newTUICommand() *cobra.Command {
 				}
 			}
 
-			current, resumePath, tracker, err := createTrackedSession(sessionRequest{input: input, level: level, resume: resume, dbPath: dbPath}, command.OutOrStdout(), command.ErrOrStderr())
+			current, resumePath, tracker, err := createTrackedSession(
+				sessionRequest{input: input, level: level, resume: resume, dbPath: dbPath},
+				command.OutOrStdout(),
+				command.ErrOrStderr(),
+			)
 			if err != nil {
 				return err
 			}
-			program := tea.NewProgram(front.NewTrackedModelWithRecovery(current, resumePath, recoveryOptions, tracker), tea.WithAltScreen(), tea.WithInput(os.Stdin), tea.WithOutput(os.Stdout))
+			program := tea.NewProgram(
+				front.NewTrackedModelWithRecovery(current, resumePath, recoveryOptions, tracker),
+				tea.WithAltScreen(),
+				tea.WithInput(os.Stdin),
+				tea.WithOutput(os.Stdout),
+			)
 			_, err = program.Run()
 			return err
 		},

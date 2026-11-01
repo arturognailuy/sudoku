@@ -30,7 +30,10 @@ func BasePuzzleID(canonicalPuzzle string) string {
 
 // RecordCompletion atomically records a completion for an existing canonical puzzle.
 func (db *DB) RecordCompletion(puzzle string) (bool, error) {
-	result, err := db.conn.Exec(`UPDATE base_puzzles SET completion_count = completion_count + 1, last_completed_at = CURRENT_TIMESTAMP WHERE canonical_puzzle = ?`, puzzle)
+	result, err := db.conn.Exec(
+		`UPDATE base_puzzles SET completion_count = completion_count + 1, last_completed_at = CURRENT_TIMESTAMP WHERE canonical_puzzle = ?`,
+		puzzle,
+	)
 	if err != nil {
 		return false, fmt.Errorf("record completion: %w", err)
 	}
@@ -46,31 +49,34 @@ func (db *DB) AcquireForPlay(difficulty string) (*Puzzle, error) {
 	if difficulty == "evil" {
 		return db.acquireEvilForPlay()
 	}
-	row := db.conn.QueryRow(`
-		UPDATE base_puzzles SET play_count = play_count + 1, last_played_at = CURRENT_TIMESTAMP
-		WHERE canonical_puzzle = (SELECT canonical_puzzle FROM base_puzzles WHERE difficulty = ?
-			ORDER BY play_count ASC, last_played_at ASC, RANDOM() LIMIT 1)
-		RETURNING base_puzzle_id, canonical_puzzle, difficulty, score, max_technique, COALESCE((SELECT source FROM puzzle_provenance WHERE base_puzzle_id = base_puzzles.base_puzzle_id ORDER BY provenance_id LIMIT 1), ''),
-			play_count, COALESCE(CAST(last_played_at AS TEXT), '')`, difficulty)
+	row := db.conn.QueryRow(("\n\t\tUPDATE base_puzzles SET play_count = play_count + 1, last_played_at = " +
+		"CURRENT_TIMESTAMP\n\t\tWHERE canonical_puzzle = (SELECT canonical_puzzle FROM " +
+		"base_puzzles WHERE difficulty = ?\n\t\t\tORDER BY play_count ASC, last_played_at ASC, " +
+		"RANDOM() LIMIT 1)\n\t\tRETURNING base_puzzle_id, canonical_puzzle, difficulty, score, " +
+		"max_technique, COALESCE((SELECT source FROM puzzle_provenance WHERE base_puzzle_id = " +
+		"base_puzzles.base_puzzle_id ORDER BY provenance_id LIMIT 1), ''),\n\t\t\tplay_count, " +
+		"COALESCE(CAST(last_played_at AS TEXT), '')"), difficulty)
 	return scanPuzzle(row, "acquire puzzle")
 }
 
 func (db *DB) acquireEvilForPlay() (*Puzzle, error) {
 	var materialized int
-	if err := db.conn.QueryRow(`SELECT EXISTS(SELECT 1 FROM serving_cohorts WHERE cohort_name = 'evil-v1' AND difficulty = 'evil')`).Scan(&materialized); err != nil {
+	if err := db.conn.QueryRow(("SELECT EXISTS(SELECT 1 FROM serving_cohorts WHERE cohort_name = 'evil-v1' AND " +
+		"difficulty = 'evil')")).Scan(&materialized); err != nil {
 		return nil, fmt.Errorf("inspect Evil serving cohort: %w", err)
 	}
 	if materialized == 0 {
 		return nil, ErrEvilCohortUnavailable
 	}
-	row := db.conn.QueryRow(`
-		UPDATE base_puzzles SET play_count = play_count + 1, last_played_at = CURRENT_TIMESTAMP
-		WHERE base_puzzle_id = (SELECT b.base_puzzle_id FROM base_puzzles b
-			JOIN serving_cohort_members m ON m.base_puzzle_id = b.base_puzzle_id
-			WHERE m.cohort_name = 'evil-v1' AND b.difficulty = 'evil'
-			ORDER BY b.play_count ASC, b.last_played_at ASC, RANDOM() LIMIT 1)
-		RETURNING base_puzzle_id, canonical_puzzle, difficulty, score, max_technique, COALESCE((SELECT source FROM puzzle_provenance WHERE base_puzzle_id = base_puzzles.base_puzzle_id ORDER BY provenance_id LIMIT 1), ''),
-			play_count, COALESCE(CAST(last_played_at AS TEXT), '')`)
+	row := db.conn.QueryRow(("\n\t\tUPDATE base_puzzles SET play_count = play_count + 1, last_played_at = " +
+		"CURRENT_TIMESTAMP\n\t\tWHERE base_puzzle_id = (SELECT b.base_puzzle_id FROM " +
+		"base_puzzles b\n\t\t\tJOIN serving_cohort_members m ON m.base_puzzle_id = " +
+		"b.base_puzzle_id\n\t\t\tWHERE m.cohort_name = 'evil-v1' AND b.difficulty = 'evil'\n\t" +
+		"\t\tORDER BY b.play_count ASC, b.last_played_at ASC, RANDOM() LIMIT 1)\n\t\tRETURNING " +
+		"base_puzzle_id, canonical_puzzle, difficulty, score, max_technique, COALESCE((SELECT " +
+		"source FROM puzzle_provenance WHERE base_puzzle_id = base_puzzles.base_puzzle_id " +
+		"ORDER BY provenance_id LIMIT 1), ''),\n\t\t\tplay_count, COALESCE(CAST(last_played_at " +
+		"AS TEXT), '')"))
 	puzzle, err := scanPuzzle(row, "acquire Evil cohort puzzle")
 	if err != nil {
 		return nil, err
@@ -90,7 +96,11 @@ type CohortDefinition struct {
 // MaterializeServingCohort atomically replaces one cohort after proving every
 // member exists at the bound exact difficulty.
 func (db *DB) MaterializeServingCohort(definition CohortDefinition, basePuzzleIDs []string) error {
-	if definition.Name == "" || definition.Difficulty == "" || definition.RuleVersion < 1 || definition.ManifestHash == "" || definition.RepositoryCommit == "" || definition.SolverConfigDigest == "" || definition.EvidenceHash == "" {
+	if definition.Name == "" || definition.Difficulty == "" || definition.RuleVersion < 1 ||
+		definition.ManifestHash == "" ||
+		definition.RepositoryCommit == "" ||
+		definition.SolverConfigDigest == "" ||
+		definition.EvidenceHash == "" {
 		return fmt.Errorf("serving cohort definition is incomplete")
 	}
 	if definition.MemberCount != len(basePuzzleIDs) || definition.MemberCount == 0 {
@@ -111,12 +121,14 @@ func (db *DB) MaterializeServingCohort(definition CohortDefinition, basePuzzleID
 	if _, err := tx.Exec(`DELETE FROM serving_cohort_members WHERE cohort_name = ?`, definition.Name); err != nil {
 		return fmt.Errorf("clear serving cohort members: %w", err)
 	}
-	if _, err := tx.Exec(`INSERT INTO serving_cohorts (cohort_name, difficulty, rule_version, manifest_hash, repository_commit, solver_config_digest, evidence_hash, member_count)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(cohort_name) DO UPDATE SET difficulty=excluded.difficulty, rule_version=excluded.rule_version,
-		manifest_hash=excluded.manifest_hash, repository_commit=excluded.repository_commit,
-		solver_config_digest=excluded.solver_config_digest, evidence_hash=excluded.evidence_hash,
-		member_count=excluded.member_count, created_at=CURRENT_TIMESTAMP`, definition.Name, definition.Difficulty,
+	if _, err := tx.Exec(("INSERT INTO serving_cohorts (cohort_name, difficulty, rule_version, manifest_hash, " +
+		"repository_commit, solver_config_digest, evidence_hash, member_count)\n\t\tVALUES (?, " +
+		"?, ?, ?, ?, ?, ?, ?)\n\t\tON CONFLICT(cohort_name) DO UPDATE SET " +
+		"difficulty=excluded.difficulty, rule_version=excluded.rule_version,\n\t\t" +
+		"manifest_hash=excluded.manifest_hash, repository_commit=excluded.repository_commit,\n" +
+		"\t\tsolver_config_digest=excluded.solver_config_digest, " +
+		"evidence_hash=excluded.evidence_hash,\n\t\tmember_count=excluded.member_count, " +
+		"created_at=CURRENT_TIMESTAMP"), definition.Name, definition.Difficulty,
 		definition.RuleVersion, definition.ManifestHash, definition.RepositoryCommit, definition.SolverConfigDigest,
 		definition.EvidenceHash, definition.MemberCount); err != nil {
 		return fmt.Errorf("store serving cohort definition: %w", err)
@@ -140,11 +152,12 @@ func (db *DB) MaterializeServingCohort(definition CohortDefinition, basePuzzleID
 
 // MarkForPlay atomically records selection of a specific stored puzzle.
 func (db *DB) MarkForPlay(puzzle string) (*Puzzle, error) {
-	row := db.conn.QueryRow(`
-		UPDATE base_puzzles SET play_count = play_count + 1, last_played_at = CURRENT_TIMESTAMP
-		WHERE canonical_puzzle = ?
-		RETURNING base_puzzle_id, canonical_puzzle, difficulty, score, max_technique, COALESCE((SELECT source FROM puzzle_provenance WHERE base_puzzle_id = base_puzzles.base_puzzle_id ORDER BY provenance_id LIMIT 1), ''),
-			play_count, COALESCE(CAST(last_played_at AS TEXT), '')`, puzzle)
+	row := db.conn.QueryRow(("\n\t\tUPDATE base_puzzles SET play_count = play_count + 1, last_played_at = " +
+		"CURRENT_TIMESTAMP\n\t\tWHERE canonical_puzzle = ?\n\t\tRETURNING base_puzzle_id, " +
+		"canonical_puzzle, difficulty, score, max_technique, COALESCE((SELECT source FROM " +
+		"puzzle_provenance WHERE base_puzzle_id = base_puzzles.base_puzzle_id ORDER BY " +
+		"provenance_id LIMIT 1), ''),\n\t\t\tplay_count, COALESCE(CAST(last_played_at AS TEXT)," +
+		" '')"), puzzle)
 	return scanPuzzle(row, "mark puzzle played")
 }
 
@@ -154,7 +167,16 @@ type rowScanner interface {
 
 func scanPuzzle(row rowScanner, operation string) (*Puzzle, error) {
 	var p Puzzle
-	err := row.Scan(&p.BasePuzzleID, &p.Puzzle, &p.Difficulty, &p.Score, &p.MaxTechnique, &p.Source, &p.PlayCount, &p.LastPlayedAt)
+	err := row.Scan(
+		&p.BasePuzzleID,
+		&p.Puzzle,
+		&p.Difficulty,
+		&p.Score,
+		&p.MaxTechnique,
+		&p.Source,
+		&p.PlayCount,
+		&p.LastPlayedAt,
+	)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -191,7 +213,8 @@ func (db *DB) InsertPuzzle(p Puzzle) (bool, error) {
 		return false, fmt.Errorf("base puzzle rows affected: %w", err)
 	}
 	if p.Source != "" {
-		if _, err := tx.Exec(`INSERT OR IGNORE INTO puzzle_provenance (base_puzzle_id, source, source_ref) VALUES (?, ?, ?)`, p.BasePuzzleID, p.Source, p.SourceRef); err != nil {
+		if _, err := tx.Exec(("INSERT OR IGNORE INTO puzzle_provenance (base_puzzle_id, source, source_ref) VALUES " +
+			"(?, ?, ?)"), p.BasePuzzleID, p.Source, p.SourceRef); err != nil {
 			return false, fmt.Errorf("insert puzzle provenance: %w", err)
 		}
 	}
@@ -224,7 +247,8 @@ func (db *DB) ReplenishmentSeeds(difficulty string) ([]Puzzle, error) {
 // ContainsPuzzle reports whether canonical content already belongs to the catalog.
 func (db *DB) ContainsPuzzle(canonicalPuzzle string) (bool, error) {
 	var present int
-	err := db.conn.QueryRow(`SELECT EXISTS(SELECT 1 FROM base_puzzles WHERE canonical_puzzle = ?)`, canonicalPuzzle).Scan(&present)
+	err := db.conn.QueryRow(`SELECT EXISTS(SELECT 1 FROM base_puzzles WHERE canonical_puzzle = ?)`, canonicalPuzzle).
+		Scan(&present)
 	if err != nil {
 		return false, fmt.Errorf("check catalog puzzle: %w", err)
 	}
@@ -241,7 +265,8 @@ func (db *DB) PublishPuzzleBatch(puzzles []Puzzle) (bool, error) {
 	seen := make(map[string]struct{}, len(puzzles))
 	for index := range puzzles {
 		puzzle := &puzzles[index]
-		if puzzle.Puzzle == "" || puzzle.Difficulty == "" || puzzle.MaxTechnique == "" || puzzle.Source == "" || puzzle.SourceRef == "" {
+		if puzzle.Puzzle == "" || puzzle.Difficulty == "" || puzzle.MaxTechnique == "" || puzzle.Source == "" ||
+			puzzle.SourceRef == "" {
 			return false, fmt.Errorf("replenishment puzzle %d is incomplete", index)
 		}
 		derivedID := BasePuzzleID(puzzle.Puzzle)
@@ -266,7 +291,8 @@ func (db *DB) PublishPuzzleBatch(puzzles []Puzzle) (bool, error) {
 		args[index] = puzzle.BasePuzzleID
 	}
 	var existing int
-	if err := tx.QueryRow(`SELECT COUNT(*) FROM base_puzzles WHERE base_puzzle_id IN (`+placeholders+`)`, args...).Scan(&existing); err != nil {
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM base_puzzles WHERE base_puzzle_id IN (`+placeholders+`)`,
+		args...).Scan(&existing); err != nil {
 		return false, fmt.Errorf("check replenishment publication: %w", err)
 	}
 	if existing != 0 && existing != len(puzzles) {
@@ -390,7 +416,8 @@ func (db *DB) PlayStatistics(level string) ([]PlayStats, error) {
 	var result []PlayStats
 	for rows.Next() {
 		var row PlayStats
-		if err := rows.Scan(&row.Level, &row.Stored, &row.NeverSelected, &row.Selected, &row.Acquisitions, &row.Completed, &row.Completions, &row.LatestSelection, &row.LatestCompletion); err != nil {
+		if err := rows.Scan(&row.Level, &row.Stored, &row.NeverSelected, &row.Selected, &row.Acquisitions,
+			&row.Completed, &row.Completions, &row.LatestSelection, &row.LatestCompletion); err != nil {
 			rows.Close()
 			return nil, fmt.Errorf("scan statistics: %w", err)
 		}
@@ -414,12 +441,13 @@ func (db *DB) PlayStatistics(level string) ([]PlayStats, error) {
 		result = append(result, row)
 	}
 	overall := PlayStats{Level: "overall"}
-	err = tx.QueryRow(`SELECT COUNT(*),
-		COALESCE(SUM(CASE WHEN play_count = 0 THEN 1 ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END), 0), COALESCE(SUM(play_count), 0),
-		COALESCE(SUM(CASE WHEN completion_count > 0 THEN 1 ELSE 0 END), 0), COALESCE(SUM(completion_count), 0),
-		COALESCE(CAST(MAX(last_played_at) AS TEXT), ''), COALESCE(CAST(MAX(last_completed_at) AS TEXT), '')
-		FROM base_puzzles`+where, args...).Scan(&overall.Stored, &overall.NeverSelected, &overall.Selected, &overall.Acquisitions, &overall.Completed, &overall.Completions, &overall.LatestSelection, &overall.LatestCompletion)
+	err = tx.QueryRow(("SELECT COUNT(*),\n\t\tCOALESCE(SUM(CASE WHEN play_count = 0 THEN 1 ELSE 0 END), 0),\n"+
+		"\t\tCOALESCE(SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END), 0), "+
+		"COALESCE(SUM(play_count), 0),\n\t\tCOALESCE(SUM(CASE WHEN completion_count > 0 THEN 1 "+
+		"ELSE 0 END), 0), COALESCE(SUM(completion_count), 0),\n\t\t"+
+		"COALESCE(CAST(MAX(last_played_at) AS TEXT), ''), COALESCE(CAST(MAX(last_completed_at) "+
+		"AS TEXT), '')\n\t\tFROM base_puzzles")+where, args...).Scan(&overall.Stored, &overall.NeverSelected,
+		&overall.Selected, &overall.Acquisitions, &overall.Completed, &overall.Completions, &overall.LatestSelection, &overall.LatestCompletion)
 	if err != nil {
 		return nil, fmt.Errorf("query overall statistics: %w", err)
 	}
@@ -441,7 +469,9 @@ func (db *DB) PreviewHistoryReset(level string) (HistoryPreview, error) {
 		where, args = " WHERE difficulty = ?", append(args, level)
 	}
 	var preview HistoryPreview
-	err := db.conn.QueryRow(`SELECT COUNT(*), COALESCE(SUM(play_count), 0), COALESCE(SUM(completion_count), 0) FROM base_puzzles`+where, args...).Scan(&preview.Rows, &preview.Acquisitions, &preview.Completions)
+	err := db.conn.QueryRow(("SELECT COUNT(*), COALESCE(SUM(play_count), 0), COALESCE(SUM(completion_count), 0) "+
+		"FROM base_puzzles")+where, args...).
+		Scan(&preview.Rows, &preview.Acquisitions, &preview.Completions)
 	if err != nil {
 		return preview, fmt.Errorf("preview history reset: %w", err)
 	}

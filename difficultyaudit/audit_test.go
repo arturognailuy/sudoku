@@ -18,14 +18,18 @@ func TestRunProducesDeterministicEvidence(t *testing.T) {
 	puzzle := source.Puzzles[0]
 	puzzle.OriginalRating = &calibration.OriginalRating{System: "reference", Label: "7.5"}
 	manifestPath := filepath.Join(t.TempDir(), "manifest.json")
-	if _, err := calibration.WriteManifest(manifestPath, calibration.Manifest{Version: calibration.Version, Name: "audit-test", Puzzles: []calibration.Puzzle{puzzle}}); err != nil {
+	if _, err := calibration.WriteManifest(manifestPath, calibration.Manifest{Version: calibration.Version,
+		Name: "audit-test", Puzzles: []calibration.Puzzle{puzzle}}); err != nil {
 		t.Fatal(err)
 	}
 
 	var outputs []string
 	for i := 0; i < 2; i++ {
 		output := filepath.Join(t.TempDir(), "audit")
-		result, err := Run(Options{ManifestPath: manifestPath, OutputDir: output, RepositoryCommit: "0123456789abcdef", Workers: 2}, solver.NewStore())
+		result, err := Run(
+			Options{ManifestPath: manifestPath, OutputDir: output, RepositoryCommit: "0123456789abcdef", Workers: 2},
+			solver.NewStore(),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -51,7 +55,10 @@ func TestRunProducesDeterministicEvidence(t *testing.T) {
 
 func TestRunRefusesExistingOutput(t *testing.T) {
 	output := t.TempDir()
-	_, err := Run(Options{ManifestPath: "unused", OutputDir: output, RepositoryCommit: "commit", Workers: 1}, solver.NewStore())
+	_, err := Run(
+		Options{ManifestPath: "unused", OutputDir: output, RepositoryCommit: "commit", Workers: 1},
+		solver.NewStore(),
+	)
 	if err == nil {
 		t.Fatal("expected existing output rejection")
 	}

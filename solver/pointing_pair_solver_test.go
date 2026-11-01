@@ -282,11 +282,13 @@ func TestPointingPairSolver_HintReturnsEliminationWithoutPlacement(t *testing.T)
 	if got := move.Evidence.Eliminations[0]; got != want {
 		t.Fatalf("Elimination = %+v, want %+v", got, want)
 	}
-	if len(move.Evidence.Premises) != 2 || move.Evidence.Premises[0].Position != core.NewPosition(3, 3) || move.Evidence.Premises[1].Position != core.NewPosition(5, 3) {
+	if len(move.Evidence.Premises) != 2 || move.Evidence.Premises[0].Position != core.NewPosition(3, 3) ||
+		move.Evidence.Premises[1].Position != core.NewPosition(5, 3) {
 		t.Fatalf("Premises do not preserve r4c4/r6c4: %+v", move.Evidence.Premises)
 	}
 	wantUnits := []solver.UnitRef{{Kind: solver.UnitBox, Index: 4}, {Kind: solver.UnitColumn, Index: 3}}
-	if len(move.Evidence.Units) != len(wantUnits) || move.Evidence.Units[0] != wantUnits[0] || move.Evidence.Units[1] != wantUnits[1] {
+	if len(move.Evidence.Units) != len(wantUnits) || move.Evidence.Units[0] != wantUnits[0] ||
+		move.Evidence.Units[1] != wantUnits[1] {
 		t.Fatalf("Units = %+v, want %+v", move.Evidence.Units, wantUnits)
 	}
 }

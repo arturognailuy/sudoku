@@ -9,7 +9,12 @@ import (
 
 const knownPuzzle = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 
-func request(t *testing.T, handler http.Handler, method, path, contentType, body string, headers map[string]string) *httptest.ResponseRecorder {
+func request(
+	t *testing.T,
+	handler http.Handler,
+	method, path, contentType, body string,
+	headers map[string]string,
+) *httptest.ResponseRecorder {
 	t.Helper()
 	r := httptest.NewRequest(method, path, strings.NewReader(body))
 	if contentType != "" {

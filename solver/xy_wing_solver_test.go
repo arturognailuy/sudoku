@@ -19,7 +19,19 @@ func TestXYWingSolver_FindsPattern(t *testing.T) {
 	board.FromString(puzzle)
 
 	store := solver.NewStore()
-	lowerKeys := []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "hidden-triple", "swordfish", "naked-quad", "hidden-quad"}
+	lowerKeys := []string{
+		"naked-single",
+		"hidden-single",
+		"naked-pair",
+		"naked-triple",
+		"pointing-pair",
+		"hidden-pair",
+		"x-wing",
+		"hidden-triple",
+		"swordfish",
+		"naked-quad",
+		"hidden-quad",
+	}
 	for {
 		var found *solver.Move
 		for _, k := range lowerKeys {

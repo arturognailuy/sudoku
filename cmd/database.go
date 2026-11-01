@@ -14,7 +14,14 @@ import (
 
 func newDatabaseCommand() *cobra.Command {
 	command := &cobra.Command{Use: "db", Short: "Inspect and manage puzzle history"}
-	command.AddCommand(newDatabaseStatsCommand(), newDatabaseBootstrapCommand(), newDatabaseResetCommand(), newDatabaseRebuildCommand(), newDatabaseRebuildWebCommand(), newDatabaseMaterializeEvilCohortCommand())
+	command.AddCommand(
+		newDatabaseStatsCommand(),
+		newDatabaseBootstrapCommand(),
+		newDatabaseResetCommand(),
+		newDatabaseRebuildCommand(),
+		newDatabaseRebuildWebCommand(),
+		newDatabaseMaterializeEvilCohortCommand(),
+	)
 	return command
 }
 
@@ -52,14 +59,30 @@ func newDatabaseStatsCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(command.OutOrStdout(), "LEVEL    STORED  NEVER-SELECTED  SELECTED  ACQUISITIONS  COMPLETED  COMPLETIONS  LATEST-SELECTION  LATEST-COMPLETION")
+			fmt.Fprintln(
+				command.OutOrStdout(),
+				"LEVEL    STORED  NEVER-SELECTED  SELECTED  ACQUISITIONS  COMPLETED  COMPLETIONS  LATEST-SELECTION  LATEST-COMPLETION",
+			)
 			for _, row := range rows {
-				fmt.Fprintf(command.OutOrStdout(), "%-8s %-7d %-15d %-9d %-13d %-10d %-12d %-17s %s\n", row.Level, row.Stored, row.NeverSelected, row.Selected, row.Acquisitions, row.Completed, row.Completions, displayTime(row.LatestSelection), displayTime(row.LatestCompletion))
+				fmt.Fprintf(
+					command.OutOrStdout(),
+					"%-8s %-7d %-15d %-9d %-13d %-10d %-12d %-17s %s\n",
+					row.Level,
+					row.Stored,
+					row.NeverSelected,
+					row.Selected,
+					row.Acquisitions,
+					row.Completed,
+					row.Completions,
+					displayTime(row.LatestSelection),
+					displayTime(row.LatestCompletion),
+				)
 			}
 			return nil
 		},
 	}
-	command.Flags().StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
+	command.Flags().
+		StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
 	command.Flags().StringVarP(&level, "level", "l", "", "Filter by difficulty level")
 	return command
 }
@@ -98,7 +121,16 @@ func newDatabaseResetCommand() *cobra.Command {
 			if history == "completion" || history == "all" {
 				completions = preview.Completions
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Database: %s\nHistory: %s\nLevel: %s\nAffected puzzles: %d\nAcquisitions to clear: %d\nCompletions to clear: %d\n", resolved, history, filter, preview.Rows, acquisitions, completions)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Database: %s\nHistory: %s\nLevel: %s\nAffected puzzles: %d\nAcquisitions to clear: %d\nCompletions to clear: %d\n",
+				resolved,
+				history,
+				filter,
+				preview.Rows,
+				acquisitions,
+				completions,
+			)
 			if preview.Rows == 0 {
 				return nil
 			}
@@ -129,7 +161,8 @@ func newDatabaseResetCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&history, "history", "", "History to reset: acquisition, completion, or all")
-	command.Flags().StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
+	command.Flags().
+		StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
 	command.Flags().StringVarP(&level, "level", "l", "", "Filter by difficulty level")
 	command.Flags().BoolVar(&yes, "yes", false, "Confirm reset without an interactive prompt")
 	_ = command.MarkFlagRequired("history")
@@ -148,7 +181,11 @@ func newDatabaseRebuildCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Database: %s\nAll catalog, play-run, account, identity, and application-session rows will be deleted.\n", resolved)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Database: %s\nAll catalog, play-run, account, identity, and application-session rows will be deleted.\n",
+				resolved,
+			)
 			if !yes {
 				inputFile, interactive := command.InOrStdin().(*os.File)
 				if !interactive {
@@ -175,7 +212,8 @@ func newDatabaseRebuildCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
+	command.Flags().
+		StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
 	command.Flags().BoolVar(&yes, "yes", false, "Confirm destructive rebuild without an interactive prompt")
 	return command
 }
@@ -190,7 +228,12 @@ func newDatabaseRebuildWebCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Database: %s\nUsers, identities, application sessions, account games, and claims will be deleted. Puzzle catalog, cohort evidence, and play-run history will be preserved.\n", resolved)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				("Database: %s\nUsers, identities, application sessions, account games, and claims will " +
+					"be deleted. Puzzle catalog, cohort evidence, and play-run history will be preserved.\n"),
+				resolved,
+			)
 			if !yes {
 				return fmt.Errorf("web-state rebuild requires --yes")
 			}
@@ -201,7 +244,8 @@ func newDatabaseRebuildWebCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
+	command.Flags().
+		StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
 	command.Flags().BoolVar(&yes, "yes", false, "Confirm the web-state rebuild")
 	return command
 }
@@ -231,11 +275,19 @@ func newDatabaseMaterializeEvilCohortCommand() *cobra.Command {
 			if err := puzzleDB.MaterializeServingCohort(definition, selection.BasePuzzleIDs); err != nil {
 				return err
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Materialized %s with %d exact-Evil puzzles (%d exploratory, %d held-out).\n", evilcohort.Name, len(selection.BasePuzzleIDs), selection.ExploratoryMembers, selection.HeldOutMembers)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Materialized %s with %d exact-Evil puzzles (%d exploratory, %d held-out).\n",
+				evilcohort.Name,
+				len(selection.BasePuzzleIDs),
+				selection.ExploratoryMembers,
+				selection.HeldOutMembers,
+			)
 			return nil
 		},
 	}
-	command.Flags().StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
+	command.Flags().
+		StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
 	command.Flags().StringVar(&evidencePath, "evidence", "", "Immutable full-catalog evidence JSONL")
 	command.Flags().StringVar(&reportPath, "report", "", "Bound full-catalog audit report JSON")
 	_ = command.MarkFlagRequired("evidence")

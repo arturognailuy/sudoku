@@ -54,7 +54,13 @@ type AccountRuntime struct {
 }
 
 func (runtime *AccountRuntime) valid() bool {
-	return runtime != nil && runtime.Guest.valid() && runtime.OIDC != nil && runtime.Auth != nil && runtime.Games != nil && runtime.Claims != nil && runtime.Store != nil && runtime.CreateOwned != nil && runtime.CookiePath != "" && len(runtime.CSRFKey) >= 32
+	return runtime != nil && runtime.Guest.valid() && runtime.OIDC != nil && runtime.Auth != nil &&
+		runtime.Games != nil &&
+		runtime.Claims != nil &&
+		runtime.Store != nil &&
+		runtime.CreateOwned != nil &&
+		runtime.CookiePath != "" &&
+		len(runtime.CSRFKey) >= 32
 }
 
 func (s *Server) SetGuestRuntime(runtime *GuestRuntime)     { s.guest = runtime }
@@ -105,19 +111,38 @@ func (runtime *AccountRuntime) validCSRF(verifier, supplied string) bool {
 }
 
 func (runtime *AccountRuntime) sessionCookie(verifier string, expires time.Time) string {
-	cookie := http.Cookie{Name: "sudoku_session", Value: verifier, Path: runtime.CookiePath, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode, Expires: expires, MaxAge: int(time.Until(expires).Seconds())}
+	cookie := http.Cookie{
+		Name:     "sudoku_session",
+		Value:    verifier,
+		Path:     runtime.CookiePath,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  expires,
+		MaxAge:   int(time.Until(expires).Seconds()),
+	}
 	return cookie.String()
 }
 
 func (runtime *AccountRuntime) clearCookie() string {
-	return (&http.Cookie{Name: "sudoku_session", Path: runtime.CookiePath, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode, Expires: time.Unix(1, 0), MaxAge: -1}).String()
+	return (&http.Cookie{Name: "sudoku_session", Path: runtime.CookiePath, Secure: true, HttpOnly: true,
+		SameSite: http.SameSiteLaxMode, Expires: time.Unix(1, 0), MaxAge: -1}).String()
 }
 
 func accountGame(state accountgame.State) AccountGame {
-	return AccountGame{Id: state.Game.ID, Revision: state.Game.Revision, ActualDifficulty: Difficulty(state.Game.ActualDifficulty), ElapsedSeconds: state.Game.ElapsedSeconds, Snapshot: apiSnapshot(state.Snapshot)}
+	return AccountGame{
+		Id:               state.Game.ID,
+		Revision:         state.Game.Revision,
+		ActualDifficulty: Difficulty(state.Game.ActualDifficulty),
+		ElapsedSeconds:   state.Game.ElapsedSeconds,
+		Snapshot:         apiSnapshot(state.Snapshot),
+	}
 }
 
-func (s *Server) CreateGuestGame(_ context.Context, request CreateGuestGameRequestObject) (CreateGuestGameResponseObject, error) {
+func (s *Server) CreateGuestGame(
+	_ context.Context,
+	request CreateGuestGameRequestObject,
+) (CreateGuestGameResponseObject, error) {
 	if !s.guest.valid() {
 		return CreateGuestGame503JSONResponse{UnavailableJSONResponse(guestUnavailable())}, nil
 	}
@@ -136,10 +161,20 @@ func (s *Server) CreateGuestGame(_ context.Context, request CreateGuestGameReque
 	if err != nil {
 		return CreateGuestGame500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodeInternalError))}, nil
 	}
-	return CreateGuestGame201JSONResponse(GuestGame{Document: token, Revision: document.Revision, ActualDifficulty: difficulty, Snapshot: apiSnapshot(current.Snapshot())}), nil
+	return CreateGuestGame201JSONResponse(
+		GuestGame{
+			Document:         token,
+			Revision:         document.Revision,
+			ActualDifficulty: difficulty,
+			Snapshot:         apiSnapshot(current.Snapshot()),
+		},
+	), nil
 }
 
-func (s *Server) ApplyGuestAction(_ context.Context, request ApplyGuestActionRequestObject) (ApplyGuestActionResponseObject, error) {
+func (s *Server) ApplyGuestAction(
+	_ context.Context,
+	request ApplyGuestActionRequestObject,
+) (ApplyGuestActionResponseObject, error) {
 	if !s.guest.valid() {
 		return ApplyGuestAction503JSONResponse{UnavailableJSONResponse(guestUnavailable())}, nil
 	}
@@ -154,7 +189,9 @@ func (s *Server) ApplyGuestAction(_ context.Context, request ApplyGuestActionReq
 	if err != nil {
 		var documentError *guestdoc.Error
 		if errors.As(err, &documentError) && documentError.Code == guestdoc.ErrorRevisionConflict {
-			return ApplyGuestAction409JSONResponse{GuestRevisionConflictJSONResponse(apiError(ErrorCodeGuestRevisionConflict))}, nil
+			return ApplyGuestAction409JSONResponse{
+				GuestRevisionConflictJSONResponse(apiError(ErrorCodeGuestRevisionConflict)),
+			}, nil
 		}
 		var engineError *game.EngineError
 		if errors.As(err, &engineError) {
@@ -162,10 +199,21 @@ func (s *Server) ApplyGuestAction(_ context.Context, request ApplyGuestActionReq
 		}
 		return ApplyGuestAction422JSONResponse{UnprocessableEntityJSONResponse(apiError(ErrorCodeInvalidSession))}, nil
 	}
-	return ApplyGuestAction200JSONResponse(GuestActionResponse{Document: transition.Token, Revision: transition.Document.Revision, ActualDifficulty: Difficulty(transition.Document.ActualDifficulty), Snapshot: apiSnapshot(transition.Snapshot), Result: apiResult(transition.Result)}), nil
+	return ApplyGuestAction200JSONResponse(
+		GuestActionResponse{
+			Document:         transition.Token,
+			Revision:         transition.Document.Revision,
+			ActualDifficulty: Difficulty(transition.Document.ActualDifficulty),
+			Snapshot:         apiSnapshot(transition.Snapshot),
+			Result:           apiResult(transition.Result),
+		},
+	), nil
 }
 
-func (s *Server) BeginGoogleLogin(_ context.Context, request BeginGoogleLoginRequestObject) (BeginGoogleLoginResponseObject, error) {
+func (s *Server) BeginGoogleLogin(
+	_ context.Context,
+	request BeginGoogleLoginRequestObject,
+) (BeginGoogleLoginResponseObject, error) {
 	if !s.accounts.valid() {
 		return BeginGoogleLogin503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -173,10 +221,15 @@ func (s *Server) BeginGoogleLogin(_ context.Context, request BeginGoogleLoginReq
 	if err != nil {
 		return BeginGoogleLogin400JSONResponse{BadRequestJSONResponse(apiError(ErrorCodeInvalidRequest))}, nil
 	}
-	return BeginGoogleLogin303Response{Headers: BeginGoogleLogin303ResponseHeaders{Location: start.AuthorizationURL}}, nil
+	return BeginGoogleLogin303Response{
+		Headers: BeginGoogleLogin303ResponseHeaders{Location: start.AuthorizationURL},
+	}, nil
 }
 
-func (s *Server) CompleteGoogleLogin(ctx context.Context, request CompleteGoogleLoginRequestObject) (CompleteGoogleLoginResponseObject, error) {
+func (s *Server) CompleteGoogleLogin(
+	ctx context.Context,
+	request CompleteGoogleLoginRequestObject,
+) (CompleteGoogleLoginResponseObject, error) {
 	if !s.accounts.valid() {
 		return CompleteGoogleLogin503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -188,10 +241,18 @@ func (s *Server) CompleteGoogleLogin(ctx context.Context, request CompleteGoogle
 	if err != nil {
 		return CompleteGoogleLogin400JSONResponse{BadRequestJSONResponse(apiError(ErrorCodeInvalidRequest))}, nil
 	}
-	return CompleteGoogleLogin303Response{Headers: CompleteGoogleLogin303ResponseHeaders{Location: login.ReturnTo, SetCookie: s.accounts.sessionCookie(login.Verifier, login.AbsoluteExpiresAt)}}, nil
+	return CompleteGoogleLogin303Response{
+		Headers: CompleteGoogleLogin303ResponseHeaders{
+			Location:  login.ReturnTo,
+			SetCookie: s.accounts.sessionCookie(login.Verifier, login.AbsoluteExpiresAt),
+		},
+	}, nil
 }
 
-func (s *Server) GetCurrentAccount(_ context.Context, request GetCurrentAccountRequestObject) (GetCurrentAccountResponseObject, error) {
+func (s *Server) GetCurrentAccount(
+	_ context.Context,
+	request GetCurrentAccountRequestObject,
+) (GetCurrentAccountResponseObject, error) {
 	if !s.accounts.valid() {
 		return GetCurrentAccount503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -213,10 +274,15 @@ func (s *Server) GetCurrentAccount(_ context.Context, request GetCurrentAccountR
 	if user == nil {
 		return GetCurrentAccount401JSONResponse{AccountUnauthorizedJSONResponse(accountUnauthorized())}, nil
 	}
-	return GetCurrentAccount200JSONResponse(Account{Email: user.ProfileEmail, DisplayName: user.DisplayName, CsrfToken: s.accounts.csrfToken(verifier)}), nil
+	return GetCurrentAccount200JSONResponse(
+		Account{Email: user.ProfileEmail, DisplayName: user.DisplayName, CsrfToken: s.accounts.csrfToken(verifier)},
+	), nil
 }
 
-func (s *Server) LogoutAccount(_ context.Context, request LogoutAccountRequestObject) (LogoutAccountResponseObject, error) {
+func (s *Server) LogoutAccount(
+	_ context.Context,
+	request LogoutAccountRequestObject,
+) (LogoutAccountResponseObject, error) {
 	if !s.accounts.valid() {
 		return LogoutAccount503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -234,7 +300,10 @@ func (s *Server) LogoutAccount(_ context.Context, request LogoutAccountRequestOb
 	return LogoutAccount204Response{Headers: LogoutAccount204ResponseHeaders{SetCookie: s.accounts.clearCookie()}}, nil
 }
 
-func (s *Server) DeleteAllAccountGames(_ context.Context, request DeleteAllAccountGamesRequestObject) (DeleteAllAccountGamesResponseObject, error) {
+func (s *Server) DeleteAllAccountGames(
+	_ context.Context,
+	request DeleteAllAccountGamesRequestObject,
+) (DeleteAllAccountGamesResponseObject, error) {
 	if !s.accounts.valid() {
 		return DeleteAllAccountGames503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -255,7 +324,10 @@ func (s *Server) DeleteAllAccountGames(_ context.Context, request DeleteAllAccou
 	return DeleteAllAccountGames204Response{}, nil
 }
 
-func (s *Server) ListAccountGames(_ context.Context, request ListAccountGamesRequestObject) (ListAccountGamesResponseObject, error) {
+func (s *Server) ListAccountGames(
+	_ context.Context,
+	request ListAccountGamesRequestObject,
+) (ListAccountGamesResponseObject, error) {
 	if !s.accounts.valid() {
 		return ListAccountGames503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -272,12 +344,22 @@ func (s *Server) ListAccountGames(_ context.Context, request ListAccountGamesReq
 	}
 	items := make([]AccountGameSummary, len(rows))
 	for i, row := range rows {
-		items[i] = AccountGameSummary{Id: row.ID, Revision: row.Revision, ActualDifficulty: Difficulty(row.ActualDifficulty), Status: GameStatus(row.Status), ElapsedSeconds: row.ElapsedSeconds, UpdatedAt: row.UpdatedAt}
+		items[i] = AccountGameSummary{
+			Id:               row.ID,
+			Revision:         row.Revision,
+			ActualDifficulty: Difficulty(row.ActualDifficulty),
+			Status:           GameStatus(row.Status),
+			ElapsedSeconds:   row.ElapsedSeconds,
+			UpdatedAt:        row.UpdatedAt,
+		}
 	}
 	return ListAccountGames200JSONResponse(AccountGameList{Games: items}), nil
 }
 
-func (s *Server) CreateAccountGame(_ context.Context, request CreateAccountGameRequestObject) (CreateAccountGameResponseObject, error) {
+func (s *Server) CreateAccountGame(
+	_ context.Context,
+	request CreateAccountGameRequestObject,
+) (CreateAccountGameResponseObject, error) {
 	if !s.accounts.valid() {
 		return CreateAccountGame503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -308,10 +390,16 @@ func (s *Server) CreateAccountGame(_ context.Context, request CreateAccountGameR
 		return CreateAccountGame500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodePersistenceFailed))}, nil
 	}
 	body := accountGame(state)
-	return CreateAccountGame201JSONResponse{Body: body, Headers: CreateAccountGame201ResponseHeaders{Location: "/api/v1/account/games/" + body.Id}}, nil
+	return CreateAccountGame201JSONResponse{
+		Body:    body,
+		Headers: CreateAccountGame201ResponseHeaders{Location: "/api/v1/account/games/" + body.Id},
+	}, nil
 }
 
-func (s *Server) ClaimGuestGame(_ context.Context, request ClaimGuestGameRequestObject) (ClaimGuestGameResponseObject, error) {
+func (s *Server) ClaimGuestGame(
+	_ context.Context,
+	request ClaimGuestGameRequestObject,
+) (ClaimGuestGameResponseObject, error) {
 	if !s.accounts.valid() {
 		return ClaimGuestGame503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -347,7 +435,10 @@ func (s *Server) ClaimGuestGame(_ context.Context, request ClaimGuestGameRequest
 	return ClaimGuestGame200JSONResponse(body), nil
 }
 
-func (s *Server) GetAccountGame(_ context.Context, request GetAccountGameRequestObject) (GetAccountGameResponseObject, error) {
+func (s *Server) GetAccountGame(
+	_ context.Context,
+	request GetAccountGameRequestObject,
+) (GetAccountGameResponseObject, error) {
 	if !s.accounts.valid() {
 		return GetAccountGame503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -368,7 +459,10 @@ func (s *Server) GetAccountGame(_ context.Context, request GetAccountGameRequest
 	return GetAccountGame200JSONResponse(accountGame(state)), nil
 }
 
-func (s *Server) DeleteAccountGame(_ context.Context, request DeleteAccountGameRequestObject) (DeleteAccountGameResponseObject, error) {
+func (s *Server) DeleteAccountGame(
+	_ context.Context,
+	request DeleteAccountGameRequestObject,
+) (DeleteAccountGameResponseObject, error) {
 	if !s.accounts.valid() {
 		return DeleteAccountGame503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -393,14 +487,19 @@ func (s *Server) DeleteAccountGame(_ context.Context, request DeleteAccountGameR
 	return DeleteAccountGame204Response{}, nil
 }
 
-func (s *Server) UpdateAccountGamePresentation(_ context.Context, request UpdateAccountGamePresentationRequestObject) (UpdateAccountGamePresentationResponseObject, error) {
+func (s *Server) UpdateAccountGamePresentation(
+	_ context.Context,
+	request UpdateAccountGamePresentationRequestObject,
+) (UpdateAccountGamePresentationResponseObject, error) {
 	if !s.accounts.valid() {
 		return UpdateAccountGamePresentation503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
 	verifier := string(request.Params.SudokuSession)
 	session, err := s.accounts.authenticate(verifier)
 	if err != nil {
-		return UpdateAccountGamePresentation500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodeInternalError))}, nil
+		return UpdateAccountGamePresentation500JSONResponse{
+			InternalErrorJSONResponse(apiError(ErrorCodeInternalError)),
+		}, nil
 	}
 	if session == nil {
 		return UpdateAccountGamePresentation401JSONResponse{AccountUnauthorizedJSONResponse(accountUnauthorized())}, nil
@@ -409,22 +508,31 @@ func (s *Server) UpdateAccountGamePresentation(_ context.Context, request Update
 		return UpdateAccountGamePresentation403JSONResponse{ForbiddenJSONResponse(csrfFailed())}, nil
 	}
 	if request.Body == nil {
-		return UpdateAccountGamePresentation400JSONResponse{BadRequestJSONResponse(apiError(ErrorCodeInvalidRequest))}, nil
+		return UpdateAccountGamePresentation400JSONResponse{
+			BadRequestJSONResponse(apiError(ErrorCodeInvalidRequest)),
+		}, nil
 	}
 	if request.Body.ElapsedSeconds < 0 {
-		return UpdateAccountGamePresentation422JSONResponse{UnprocessableEntityJSONResponse(apiError(ErrorCodeInvalidRequest))}, nil
+		return UpdateAccountGamePresentation422JSONResponse{
+			UnprocessableEntityJSONResponse(apiError(ErrorCodeInvalidRequest)),
+		}, nil
 	}
 	state, err := s.accounts.Games.UpdateElapsed(session.UserID, request.AccountGameId, request.Body.ElapsedSeconds)
 	if errors.Is(err, accountgame.ErrNotFound) {
 		return UpdateAccountGamePresentation404JSONResponse{AccountGameNotFoundJSONResponse(accountNotFound())}, nil
 	}
 	if err != nil {
-		return UpdateAccountGamePresentation500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodePersistenceFailed))}, nil
+		return UpdateAccountGamePresentation500JSONResponse{
+			InternalErrorJSONResponse(apiError(ErrorCodePersistenceFailed)),
+		}, nil
 	}
 	return UpdateAccountGamePresentation200JSONResponse(accountGame(state)), nil
 }
 
-func (s *Server) ApplyAccountGameAction(_ context.Context, request ApplyAccountGameActionRequestObject) (ApplyAccountGameActionResponseObject, error) {
+func (s *Server) ApplyAccountGameAction(
+	_ context.Context,
+	request ApplyAccountGameActionRequestObject,
+) (ApplyAccountGameActionResponseObject, error) {
 	if !s.accounts.valid() {
 		return ApplyAccountGameAction503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -444,12 +552,21 @@ func (s *Server) ApplyAccountGameAction(_ context.Context, request ApplyAccountG
 	}
 	action, expected, err := translateAction(*request.Body)
 	if err != nil {
-		return ApplyAccountGameAction422JSONResponse{UnprocessableEntityJSONResponse(apiError(ErrorCodeInvalidAction))}, nil
+		return ApplyAccountGameAction422JSONResponse{
+			UnprocessableEntityJSONResponse(apiError(ErrorCodeInvalidAction)),
+		}, nil
 	}
 	transition, err := s.accounts.Games.Apply(session.UserID, request.AccountGameId, expected, action)
 	var conflict *accountgame.RevisionConflictError
 	if errors.As(err, &conflict) {
-		return ApplyAccountGameAction409JSONResponse{AccountRevisionConflictJSONResponse(AccountRevisionConflict{Error: apiError(ErrorCodeRevisionConflict).Error, CurrentRevision: conflict.CurrentRevision})}, nil
+		return ApplyAccountGameAction409JSONResponse{
+			AccountRevisionConflictJSONResponse(
+				AccountRevisionConflict{
+					Error:           apiError(ErrorCodeRevisionConflict).Error,
+					CurrentRevision: conflict.CurrentRevision,
+				},
+			),
+		}, nil
 	}
 	if errors.Is(err, accountgame.ErrNotFound) {
 		return ApplyAccountGameAction404JSONResponse{AccountGameNotFoundJSONResponse(accountNotFound())}, nil
@@ -459,12 +576,19 @@ func (s *Server) ApplyAccountGameAction(_ context.Context, request ApplyAccountG
 		return ApplyAccountGameAction422JSONResponse{UnprocessableEntityJSONResponse(engineAPIError(engineError))}, nil
 	}
 	if err != nil {
-		return ApplyAccountGameAction500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodePersistenceFailed))}, nil
+		return ApplyAccountGameAction500JSONResponse{
+			InternalErrorJSONResponse(apiError(ErrorCodePersistenceFailed)),
+		}, nil
 	}
-	return ApplyAccountGameAction200JSONResponse(AccountActionResponse{Game: accountGame(transition.State), Result: apiResult(transition.Result)}), nil
+	return ApplyAccountGameAction200JSONResponse(
+		AccountActionResponse{Game: accountGame(transition.State), Result: apiResult(transition.Result)},
+	), nil
 }
 
-func (s *Server) RevokeAccountSessions(_ context.Context, request RevokeAccountSessionsRequestObject) (RevokeAccountSessionsResponseObject, error) {
+func (s *Server) RevokeAccountSessions(
+	_ context.Context,
+	request RevokeAccountSessionsRequestObject,
+) (RevokeAccountSessionsResponseObject, error) {
 	if !s.accounts.valid() {
 		return RevokeAccountSessions503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -482,10 +606,15 @@ func (s *Server) RevokeAccountSessions(_ context.Context, request RevokeAccountS
 	if _, err := s.accounts.Store.RevokeAllWebSessions(session.UserID); err != nil {
 		return RevokeAccountSessions500JSONResponse{InternalErrorJSONResponse(apiError(ErrorCodeInternalError))}, nil
 	}
-	return RevokeAccountSessions204Response{Headers: RevokeAccountSessions204ResponseHeaders{SetCookie: s.accounts.clearCookie()}}, nil
+	return RevokeAccountSessions204Response{
+		Headers: RevokeAccountSessions204ResponseHeaders{SetCookie: s.accounts.clearCookie()},
+	}, nil
 }
 
-func (s *Server) DeleteCurrentAccount(_ context.Context, request DeleteCurrentAccountRequestObject) (DeleteCurrentAccountResponseObject, error) {
+func (s *Server) DeleteCurrentAccount(
+	_ context.Context,
+	request DeleteCurrentAccountRequestObject,
+) (DeleteCurrentAccountResponseObject, error) {
 	if !s.accounts.valid() {
 		return DeleteCurrentAccount503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -507,7 +636,9 @@ func (s *Server) DeleteCurrentAccount(_ context.Context, request DeleteCurrentAc
 	if !deleted {
 		return DeleteCurrentAccount401JSONResponse{AccountUnauthorizedJSONResponse(accountUnauthorized())}, nil
 	}
-	return DeleteCurrentAccount204Response{Headers: DeleteCurrentAccount204ResponseHeaders{SetCookie: s.accounts.clearCookie()}}, nil
+	return DeleteCurrentAccount204Response{
+		Headers: DeleteCurrentAccount204ResponseHeaders{SetCookie: s.accounts.clearCookie()},
+	}, nil
 }
 
 func (runtime *AccountRuntime) String() string {
@@ -517,7 +648,10 @@ func (runtime *AccountRuntime) String() string {
 	return fmt.Sprintf("accounts cookie path %s", runtime.CookiePath)
 }
 
-func (s *Server) PreviewGuestHint(_ context.Context, request PreviewGuestHintRequestObject) (PreviewGuestHintResponseObject, error) {
+func (s *Server) PreviewGuestHint(
+	_ context.Context,
+	request PreviewGuestHintRequestObject,
+) (PreviewGuestHintResponseObject, error) {
 	if !s.guest.valid() {
 		return PreviewGuestHint503JSONResponse{UnavailableJSONResponse(guestUnavailable())}, nil
 	}
@@ -539,7 +673,10 @@ func (s *Server) PreviewGuestHint(_ context.Context, request PreviewGuestHintReq
 	return PreviewGuestHint200JSONResponse(HintPreview{Revision: document.Revision, Hint: apiHintPlan(hint)}), nil
 }
 
-func (s *Server) PreviewAccountGameHint(_ context.Context, request PreviewAccountGameHintRequestObject) (PreviewAccountGameHintResponseObject, error) {
+func (s *Server) PreviewAccountGameHint(
+	_ context.Context,
+	request PreviewAccountGameHintRequestObject,
+) (PreviewAccountGameHintResponseObject, error) {
 	if !s.accounts.valid() {
 		return PreviewAccountGameHint503JSONResponse{UnavailableJSONResponse(unavailable())}, nil
 	}
@@ -565,5 +702,7 @@ func (s *Server) PreviewAccountGameHint(_ context.Context, request PreviewAccoun
 	if hint == nil {
 		return PreviewAccountGameHint422JSONResponse{UnprocessableEntityJSONResponse(apiError(ErrorCodeNoHint))}, nil
 	}
-	return PreviewAccountGameHint200JSONResponse(HintPreview{Revision: state.Game.Revision, Hint: apiHintPlan(hint)}), nil
+	return PreviewAccountGameHint200JSONResponse(
+		HintPreview{Revision: state.Game.Revision, Hint: apiHintPlan(hint)},
+	), nil
 }

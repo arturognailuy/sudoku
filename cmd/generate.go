@@ -105,11 +105,26 @@ func runGenerate(cmd *cobra.Command) error {
 	return nil
 }
 
-func batchGenerate(puzzleDB *db.DB, count int, level string, timeout time.Duration, rounds int, workers int) generateReport {
+func batchGenerate(
+	puzzleDB *db.DB,
+	count int,
+	level string,
+	timeout time.Duration,
+	rounds int,
+	workers int,
+) generateReport {
 	return batchGenerateWith(puzzleDB, count, level, timeout, rounds, workers, generateOnePuzzle)
 }
 
-func batchGenerateWith(puzzleDB *db.DB, count int, level string, timeout time.Duration, rounds int, workers int, generate puzzleGenerator) generateReport {
+func batchGenerateWith(
+	puzzleDB *db.DB,
+	count int,
+	level string,
+	timeout time.Duration,
+	rounds int,
+	workers int,
+	generate puzzleGenerator,
+) generateReport {
 	report := generateReport{
 		byLevel: make(map[string]int),
 	}

@@ -92,7 +92,13 @@ func protect(path string, directory bool) error {
 	if directory {
 		inheritance = "OICI"
 	}
-	sddl := fmt.Sprintf("D:P(A;%s;FA;;;%s)(A;%s;FA;;;SY)(A;%s;FA;;;BA)", inheritance, user.String(), inheritance, inheritance)
+	sddl := fmt.Sprintf(
+		"D:P(A;%s;FA;;;%s)(A;%s;FA;;;SY)(A;%s;FA;;;BA)",
+		inheritance,
+		user.String(),
+		inheritance,
+		inheritance,
+	)
 	descriptor, err := windows.SecurityDescriptorFromString(sddl)
 	if err != nil {
 		return fmt.Errorf("build private Windows DACL: %w", err)
@@ -101,7 +107,8 @@ func protect(path string, directory bool) error {
 	if err != nil {
 		return fmt.Errorf("read private Windows DACL: %w", err)
 	}
-	if err := windows.SetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, nil, nil, dacl, nil); err != nil {
+	if err := windows.SetNamedSecurityInfo(path, windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, nil, nil, dacl, nil); err != nil {
 		return fmt.Errorf("apply private Windows DACL: %w", err)
 	}
 	return nil

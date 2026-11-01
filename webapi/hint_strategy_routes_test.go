@@ -49,7 +49,15 @@ func TestGuestHTTPRoutesPreviewAndApplyEveryRegisteredHintStrategy(t *testing.T)
 	for _, testCase := range manifest.Cases {
 		t.Run(testCase.Strategy, func(t *testing.T) {
 			t.Parallel()
-			created := request(t, handler, http.MethodPost, "/api/v1/guest/games", "application/json", `{"source":{"kind":"puzzle","puzzle":"`+testCase.Puzzle+`"}}`, nil)
+			created := request(
+				t,
+				handler,
+				http.MethodPost,
+				"/api/v1/guest/games",
+				"application/json",
+				`{"source":{"kind":"puzzle","puzzle":"`+testCase.Puzzle+`"}}`,
+				nil,
+			)
 			if created.Code != http.StatusCreated {
 				t.Fatalf("create status=%d body=%s", created.Code, created.Body.String())
 			}
@@ -58,7 +66,15 @@ func TestGuestHTTPRoutesPreviewAndApplyEveryRegisteredHintStrategy(t *testing.T)
 				t.Fatal(err)
 			}
 			for number := 1; number <= 128; number++ {
-				preview := request(t, handler, http.MethodPost, "/api/v1/guest/games/hint", "application/json", `{"document":"`+current.Document+`"}`, nil)
+				preview := request(
+					t,
+					handler,
+					http.MethodPost,
+					"/api/v1/guest/games/hint",
+					"application/json",
+					`{"document":"`+current.Document+`"}`,
+					nil,
+				)
 				if preview.Code != http.StatusOK {
 					t.Fatalf("preview %d status=%d body=%s", number, preview.Code, preview.Body.String())
 				}
@@ -69,17 +85,25 @@ func TestGuestHTTPRoutesPreviewAndApplyEveryRegisteredHintStrategy(t *testing.T)
 				matched := hint.Hint.Strategy.Id == testCase.Strategy
 				if matched {
 					strategy := hint.Hint.Strategy
-					if strategy.Name.Id != "strategy."+testCase.Strategy+".name" || strategy.Name.Text != testCase.DisplayName || len(strategy.Name.Arguments) != 0 ||
-						string(strategy.Grade) != testCase.Grade || strategy.GradeName.Id != "difficulty."+testCase.Grade+".name" || strategy.GradeName.Text == "" || len(strategy.GradeName.Arguments) != 0 || len(hint.Hint.Steps) < 2 {
+					if strategy.Name.Id != "strategy."+testCase.Strategy+".name" ||
+						strategy.Name.Text != testCase.DisplayName ||
+						len(strategy.Name.Arguments) != 0 ||
+						string(strategy.Grade) != testCase.Grade ||
+						strategy.GradeName.Id != "difficulty."+testCase.Grade+".name" ||
+						strategy.GradeName.Text == "" ||
+						len(strategy.GradeName.Arguments) != 0 ||
+						len(hint.Hint.Steps) < 2 {
 						t.Fatalf("public strategy = %+v steps=%d", strategy, len(hint.Hint.Steps))
 					}
-					if hint.Hint.Summary.Id != "hint.strategy.summary" || hint.Hint.Summary.Text == "" || len(hint.Hint.Summary.Arguments) != 2 {
+					if hint.Hint.Summary.Id != "hint.strategy.summary" || hint.Hint.Summary.Text == "" ||
+						len(hint.Hint.Summary.Arguments) != 2 {
 						t.Fatalf("summary descriptor = %+v", hint.Hint.Summary)
 					}
 					migratedReasons := map[string]string{
 						"naked-pair": "subset-reservation", "naked-triple": "subset-reservation", "naked-quad": "subset-reservation",
 						"hidden-pair": "hidden-subset-confinement", "hidden-triple": "hidden-subset-confinement", "hidden-quad": "hidden-subset-confinement",
-						"pointing-pair": "intersection-confinement", "x-wing": "fish-confinement", "swordfish": "fish-confinement", "jellyfish": "fish-confinement", "xy-chain": "implication-chain",
+						"pointing-pair": "intersection-confinement", "x-wing": "fish-confinement", "swordfish": "fish-confinement",
+						"jellyfish": "fish-confinement", "xy-chain": "implication-chain",
 					}
 					if want, migrated := migratedReasons[testCase.Strategy]; migrated {
 						if hint.Hint.Reason == nil {
@@ -87,7 +111,13 @@ func TestGuestHTTPRoutesPreviewAndApplyEveryRegisteredHintStrategy(t *testing.T)
 						}
 						kind, err := hint.Hint.Reason.Discriminator()
 						if err != nil || kind != want {
-							t.Fatalf("migrated strategy %s reason = %q, %v; want %q", testCase.Strategy, kind, err, want)
+							t.Fatalf(
+								"migrated strategy %s reason = %q, %v; want %q",
+								testCase.Strategy,
+								kind,
+								err,
+								want,
+							)
 						}
 					} else if hint.Hint.Reason != nil {
 						t.Fatalf("unmigrated strategy %s unexpectedly exposed a typed reason", testCase.Strategy)
@@ -135,11 +165,20 @@ func TestGuestHTTPRoutesPreviewAndApplyEveryRegisteredHintStrategy(t *testing.T)
 						case "xyz-wing":
 							wantLinks := []int{0, 1, 2, 2, 2, 5}[index]
 							if len(step.Links) != wantLinks {
-								t.Fatalf("XYZ-Wing HTTP links at step %d = %+v, want %d", index+1, step.Links, wantLinks)
+								t.Fatalf(
+									"XYZ-Wing HTTP links at step %d = %+v, want %d",
+									index+1,
+									step.Links,
+									wantLinks,
+								)
 							}
 							for _, link := range step.Links[:min(2, len(step.Links))] {
 								if link.Kind != Implication {
-									t.Fatalf("XYZ-Wing HTTP case link at step %d = %+v, want implication", index+1, link)
+									t.Fatalf(
+										"XYZ-Wing HTTP case link at step %d = %+v, want implication",
+										index+1,
+										link,
+									)
 								}
 							}
 							if index == 5 {
@@ -158,13 +197,30 @@ func TestGuestHTTPRoutesPreviewAndApplyEveryRegisteredHintStrategy(t *testing.T)
 								t.Fatalf("W-Wing HTTP bridge at step %d = %+v, want strong", index+1, step.Links)
 							}
 							if index > 1 && (step.Links[1].Kind != Implication || step.Links[2].Kind != Implication) {
-								t.Fatalf("W-Wing HTTP case links at step %d = %+v, want implications", index+1, step.Links)
+								t.Fatalf(
+									"W-Wing HTTP case links at step %d = %+v, want implications",
+									index+1,
+									step.Links,
+								)
 							}
 						}
 					}
 				}
-				body := fmt.Sprintf(`{"document":%q,"action":{"kind":"apply-hint","expected_revision":%d,"plan_id":%q}}`, current.Document, current.Revision, hint.Hint.PlanId)
-				applied := request(t, handler, http.MethodPost, "/api/v1/guest/games/actions", "application/json", body, nil)
+				body := fmt.Sprintf(
+					`{"document":%q,"action":{"kind":"apply-hint","expected_revision":%d,"plan_id":%q}}`,
+					current.Document,
+					current.Revision,
+					hint.Hint.PlanId,
+				)
+				applied := request(
+					t,
+					handler,
+					http.MethodPost,
+					"/api/v1/guest/games/actions",
+					"application/json",
+					body,
+					nil,
+				)
 				if applied.Code != http.StatusOK {
 					t.Fatalf("apply %d status=%d body=%s", number, applied.Code, applied.Body.String())
 				}
@@ -178,7 +234,12 @@ func TestGuestHTTPRoutesPreviewAndApplyEveryRegisteredHintStrategy(t *testing.T)
 				if matched {
 					return
 				}
-				current = GuestGame{Document: response.Document, Revision: response.Revision, ActualDifficulty: response.ActualDifficulty, Snapshot: response.Snapshot}
+				current = GuestGame{
+					Document:         response.Document,
+					Revision:         response.Revision,
+					ActualDifficulty: response.ActualDifficulty,
+					Snapshot:         response.Snapshot,
+				}
 			}
 			t.Fatalf("strategy %s was not reached within 128 HTTP hints", testCase.Strategy)
 		})
@@ -198,16 +259,32 @@ func hintStrategyRouteHandler(t *testing.T) (http.Handler, func()) {
 	for i := range key {
 		key[i] = 7
 	}
-	documents, err := guestdoc.New(guestdoc.Config{ActiveKeyID: "test", Keys: map[string][]byte{"test": key}, Lifetime: 24 * time.Hour})
+	documents, err := guestdoc.New(
+		guestdoc.Config{ActiveKeyID: "test", Keys: map[string][]byte{"test": key}, Lifetime: 24 * time.Hour},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	provider := &accountRouteProvider{}
-	login, err := oidcauth.New(oidcauth.Config{Provider: provider, Issuer: oidcauth.GoogleIssuer, ClientID: "client-1", ReturnPathPrefix: "/app/"})
+	login, err := oidcauth.New(
+		oidcauth.Config{
+			Provider:         provider,
+			Issuer:           oidcauth.GoogleIssuer,
+			ClientID:         "client-1",
+			ReturnPathPrefix: "/app/",
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	authentication, err := accountauth.New(accountauth.Config{Login: login, Store: database, IdleLifetime: 24 * time.Hour, AbsoluteLifetime: 30 * 24 * time.Hour})
+	authentication, err := accountauth.New(
+		accountauth.Config{
+			Login:            login,
+			Store:            database,
+			IdleLifetime:     24 * time.Hour,
+			AbsoluteLifetime: 30 * 24 * time.Hour,
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,12 +301,16 @@ func hintStrategyRouteHandler(t *testing.T) (http.Handler, func()) {
 		board.FromString(puzzle)
 		return game.NewGame(board, options)
 	}
-	guest := &GuestRuntime{Documents: documents, Options: options, Create: func(kind, value string) (game.Game, string, Difficulty, error) {
-		if kind != "puzzle" {
-			return game.Game{}, "", "", fmt.Errorf("unexpected source kind %q", kind)
-		}
-		return newGame(value), db.BasePuzzleID(value), Easy, nil
-	}}
+	guest := &GuestRuntime{
+		Documents: documents,
+		Options:   options,
+		Create: func(kind, value string) (game.Game, string, Difficulty, error) {
+			if kind != "puzzle" {
+				return game.Game{}, "", "", fmt.Errorf("unexpected source kind %q", kind)
+			}
+			return newGame(value), db.BasePuzzleID(value), Easy, nil
+		},
+	}
 	runtime := &AccountRuntime{
 		Guest: guest, OIDC: login, Auth: authentication, Games: games, Claims: claims, Store: database,
 		CookiePath: "/app/", CSRFKey: append([]byte(nil), key...),

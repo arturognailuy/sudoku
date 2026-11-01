@@ -76,7 +76,12 @@ func (db *DB) CreateUser(user User) error {
 	if user.ID == "" {
 		return errors.New("user identity is required")
 	}
-	_, err := db.conn.Exec(`INSERT INTO users (user_id, profile_email, display_name) VALUES (?, ?, ?)`, user.ID, user.ProfileEmail, user.DisplayName)
+	_, err := db.conn.Exec(
+		`INSERT INTO users (user_id, profile_email, display_name) VALUES (?, ?, ?)`,
+		user.ID,
+		user.ProfileEmail,
+		user.DisplayName,
+	)
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)
 	}
@@ -96,19 +101,34 @@ func (db *DB) LinkExternalIdentity(identity ExternalIdentity) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 	var existingUserID string
-	err = tx.QueryRow(`SELECT user_id FROM external_identities WHERE issuer = ? AND subject = ?`, identity.Issuer, identity.Subject).Scan(&existingUserID)
+	err = tx.QueryRow(`SELECT user_id FROM external_identities WHERE issuer = ? AND subject = ?`, identity.Issuer, identity.Subject).
+		Scan(&existingUserID)
 	switch {
 	case err == nil && existingUserID != identity.UserID:
 		return ErrIdentityAlreadyLinked
 	case err == nil:
-		_, err = tx.Exec(`UPDATE external_identities SET profile_email = ?, display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE issuer = ? AND subject = ?`, identity.ProfileEmail, identity.DisplayName, identity.Issuer, identity.Subject)
+		_, err = tx.Exec(
+			`UPDATE external_identities SET profile_email = ?, display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE issuer = ? AND subject = ?`,
+			identity.ProfileEmail,
+			identity.DisplayName,
+			identity.Issuer,
+			identity.Subject,
+		)
 	case errors.Is(err, sql.ErrNoRows):
-		_, err = tx.Exec(`INSERT INTO external_identities (issuer, subject, user_id, profile_email, display_name) VALUES (?, ?, ?, ?, ?)`, identity.Issuer, identity.Subject, identity.UserID, identity.ProfileEmail, identity.DisplayName)
+		_, err = tx.Exec(
+			`INSERT INTO external_identities (issuer, subject, user_id, profile_email, display_name) VALUES (?, ?, ?, ?, ?)`,
+			identity.Issuer,
+			identity.Subject,
+			identity.UserID,
+			identity.ProfileEmail,
+			identity.DisplayName,
+		)
 	}
 	if err != nil {
 		return fmt.Errorf("link external identity: %w", err)
 	}
-	if _, err = tx.Exec(`UPDATE users SET profile_email = ?, display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`, identity.ProfileEmail, identity.DisplayName, identity.UserID); err != nil {
+	if _, err = tx.Exec(("UPDATE users SET profile_email = ?, display_name = ?, updated_at = CURRENT_TIMESTAMP " +
+		"WHERE user_id = ?"), identity.ProfileEmail, identity.DisplayName, identity.UserID); err != nil {
 		return fmt.Errorf("refresh user profile: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -133,7 +153,8 @@ func (db *DB) UserByExternalIdentity(issuer, subject string) (*User, error) {
 
 func (db *DB) UserByID(userID string) (*User, error) {
 	var user User
-	err := db.conn.QueryRow(`SELECT user_id, profile_email, display_name FROM users WHERE user_id = ?`, userID).Scan(&user.ID, &user.ProfileEmail, &user.DisplayName)
+	err := db.conn.QueryRow(`SELECT user_id, profile_email, display_name FROM users WHERE user_id = ?`, userID).
+		Scan(&user.ID, &user.ProfileEmail, &user.DisplayName)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -154,9 +175,10 @@ func (db *DB) CreateWebSession(session WebSession) error {
 	if session.RotatedFromID != "" {
 		rotatedFrom = session.RotatedFromID
 	}
-	_, err := db.conn.Exec(`INSERT INTO application_sessions
-		(application_session_id, user_id, verifier_digest, idle_expires_at, absolute_expires_at, rotated_from_id)
-		VALUES (?, ?, ?, ?, ?, ?)`, session.ID, session.UserID, session.VerifierDigest, session.IdleExpiresAt.UTC(), session.AbsoluteExpiresAt.UTC(), rotatedFrom)
+	_, err := db.conn.Exec(("INSERT INTO application_sessions\n\t\t(application_session_id, user_id, " +
+		"verifier_digest, idle_expires_at, absolute_expires_at, rotated_from_id)\n\t\tVALUES " +
+		"(?, ?, ?, ?, ?, ?)"), session.ID, session.UserID, session.VerifierDigest, session.IdleExpiresAt.UTC(),
+		session.AbsoluteExpiresAt.UTC(), rotatedFrom)
 	if err != nil {
 		return fmt.Errorf("create web session: %w", err)
 	}
@@ -169,9 +191,10 @@ func (db *DB) ActiveWebSession(verifierDigest []byte, now time.Time) (*WebSessio
 	var rotatedFrom sql.NullString
 	err := db.conn.QueryRow(`SELECT application_session_id, user_id, verifier_digest, idle_expires_at, absolute_expires_at, rotated_from_id
 		FROM application_sessions WHERE verifier_digest = ? AND revoked_at IS NULL
-		AND idle_expires_at > ? AND absolute_expires_at > ?`, verifierDigest, now.UTC(), now.UTC()).Scan(
-		&session.ID, &session.UserID, &session.VerifierDigest, &session.IdleExpiresAt, &session.AbsoluteExpiresAt, &rotatedFrom,
-	)
+		AND idle_expires_at > ? AND absolute_expires_at > ?`, verifierDigest, now.UTC(), now.UTC()).
+		Scan(
+			&session.ID, &session.UserID, &session.VerifierDigest, &session.IdleExpiresAt, &session.AbsoluteExpiresAt, &rotatedFrom,
+		)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -187,7 +210,11 @@ func (db *DB) ActiveWebSession(verifierDigest []byte, now time.Time) (*WebSessio
 
 // RefreshActiveWebSession advances last-seen and idle expiry without extending
 // the absolute lifetime. Invalid, revoked, and expired digests resolve as absent.
-func (db *DB) RefreshActiveWebSession(verifierDigest []byte, now time.Time, idleLifetime time.Duration) (*WebSession, error) {
+func (db *DB) RefreshActiveWebSession(
+	verifierDigest []byte,
+	now time.Time,
+	idleLifetime time.Duration,
+) (*WebSession, error) {
 	if len(verifierDigest) == 0 || now.IsZero() || idleLifetime <= 0 {
 		return nil, errors.New("verifier digest, current time, and idle lifetime are required")
 	}
@@ -200,9 +227,10 @@ func (db *DB) RefreshActiveWebSession(verifierDigest []byte, now time.Time, idle
 	var rotatedFrom sql.NullString
 	err = tx.QueryRow(`SELECT application_session_id, user_id, verifier_digest, idle_expires_at, absolute_expires_at, rotated_from_id
 		FROM application_sessions WHERE verifier_digest = ? AND revoked_at IS NULL
-		AND idle_expires_at > ? AND absolute_expires_at > ?`, verifierDigest, now.UTC(), now.UTC()).Scan(
-		&session.ID, &session.UserID, &session.VerifierDigest, &session.IdleExpiresAt, &session.AbsoluteExpiresAt, &rotatedFrom,
-	)
+		AND idle_expires_at > ? AND absolute_expires_at > ?`, verifierDigest, now.UTC(), now.UTC()).
+		Scan(
+			&session.ID, &session.UserID, &session.VerifierDigest, &session.IdleExpiresAt, &session.AbsoluteExpiresAt, &rotatedFrom,
+		)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -217,7 +245,8 @@ func (db *DB) RefreshActiveWebSession(verifierDigest []byte, now time.Time, idle
 	if session.IdleExpiresAt.After(session.AbsoluteExpiresAt) {
 		session.IdleExpiresAt = session.AbsoluteExpiresAt
 	}
-	if _, err = tx.Exec(`UPDATE application_sessions SET last_seen_at = ?, idle_expires_at = ? WHERE application_session_id = ? AND revoked_at IS NULL`, now.UTC(), session.IdleExpiresAt, session.ID); err != nil {
+	if _, err = tx.Exec(("UPDATE application_sessions SET last_seen_at = ?, idle_expires_at = ? WHERE " +
+		"application_session_id = ? AND revoked_at IS NULL"), now.UTC(), session.IdleExpiresAt, session.ID); err != nil {
 		return nil, fmt.Errorf("refresh active web session: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -236,7 +265,8 @@ func (db *DB) RotateWebSessionForIdentity(rotation WebSessionRotation) (User, We
 	if rotation.Session.ID == "" || len(rotation.Session.VerifierDigest) == 0 {
 		return User{}, WebSession{}, errors.New("session identity and verifier digest are required")
 	}
-	if rotation.Now.IsZero() || !rotation.Session.IdleExpiresAt.After(rotation.Now) || !rotation.Session.IdleExpiresAt.Before(rotation.Session.AbsoluteExpiresAt) {
+	if rotation.Now.IsZero() || !rotation.Session.IdleExpiresAt.After(rotation.Now) ||
+		!rotation.Session.IdleExpiresAt.Before(rotation.Session.AbsoluteExpiresAt) {
 		return User{}, WebSession{}, errors.New("valid session time bounds are required")
 	}
 	tx, err := db.conn.Begin()
@@ -246,16 +276,23 @@ func (db *DB) RotateWebSessionForIdentity(rotation WebSessionRotation) (User, We
 	defer func() { _ = tx.Rollback() }()
 
 	var user User
-	err = tx.QueryRow(`SELECT u.user_id, u.profile_email, u.display_name
-		FROM external_identities i JOIN users u ON u.user_id = i.user_id
-		WHERE i.issuer = ? AND i.subject = ?`, rotation.Identity.Issuer, rotation.Identity.Subject).Scan(&user.ID, &user.ProfileEmail, &user.DisplayName)
+	err = tx.QueryRow(("SELECT u.user_id, u.profile_email, u.display_name\n\t\tFROM external_identities i "+
+		"JOIN users u ON u.user_id = i.user_id\n\t\tWHERE i.issuer = ? AND i.subject = ?"), rotation.Identity.Issuer,
+		rotation.Identity.Subject).Scan(&user.ID, &user.ProfileEmail, &user.DisplayName)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		user = User{ID: rotation.CandidateUserID, ProfileEmail: rotation.Identity.ProfileEmail, DisplayName: rotation.Identity.DisplayName}
-		if _, err = tx.Exec(`INSERT INTO users (user_id, profile_email, display_name) VALUES (?, ?, ?)`, user.ID, user.ProfileEmail, user.DisplayName); err != nil {
+		user = User{
+			ID:           rotation.CandidateUserID,
+			ProfileEmail: rotation.Identity.ProfileEmail,
+			DisplayName:  rotation.Identity.DisplayName,
+		}
+		if _, err = tx.Exec(`INSERT INTO users (user_id, profile_email, display_name) VALUES (?, ?, ?)`, user.ID,
+			user.ProfileEmail, user.DisplayName); err != nil {
 			return User{}, WebSession{}, fmt.Errorf("create login user: %w", err)
 		}
-		if _, err = tx.Exec(`INSERT INTO external_identities (issuer, subject, user_id, profile_email, display_name) VALUES (?, ?, ?, ?, ?)`, rotation.Identity.Issuer, rotation.Identity.Subject, user.ID, user.ProfileEmail, user.DisplayName); err != nil {
+		if _, err = tx.Exec(("INSERT INTO external_identities (issuer, subject, user_id, profile_email, " +
+			"display_name) VALUES (?, ?, ?, ?, ?)"), rotation.Identity.Issuer, rotation.Identity.Subject, user.ID,
+			user.ProfileEmail, user.DisplayName); err != nil {
 			return User{}, WebSession{}, fmt.Errorf("create login identity: %w", err)
 		}
 	case err != nil:
@@ -263,22 +300,28 @@ func (db *DB) RotateWebSessionForIdentity(rotation WebSessionRotation) (User, We
 	default:
 		user.ProfileEmail = rotation.Identity.ProfileEmail
 		user.DisplayName = rotation.Identity.DisplayName
-		if _, err = tx.Exec(`UPDATE external_identities SET profile_email = ?, display_name = ?, updated_at = ? WHERE issuer = ? AND subject = ?`, user.ProfileEmail, user.DisplayName, rotation.Now.UTC(), rotation.Identity.Issuer, rotation.Identity.Subject); err != nil {
+		if _, err = tx.Exec(("UPDATE external_identities SET profile_email = ?, display_name = ?, updated_at = ? " +
+			"WHERE issuer = ? AND subject = ?"), user.ProfileEmail, user.DisplayName, rotation.Now.UTC(),
+			rotation.Identity.Issuer, rotation.Identity.Subject); err != nil {
 			return User{}, WebSession{}, fmt.Errorf("refresh login identity: %w", err)
 		}
-		if _, err = tx.Exec(`UPDATE users SET profile_email = ?, display_name = ?, updated_at = ? WHERE user_id = ?`, user.ProfileEmail, user.DisplayName, rotation.Now.UTC(), user.ID); err != nil {
+		if _, err = tx.Exec(`UPDATE users SET profile_email = ?, display_name = ?, updated_at = ? WHERE user_id = ?`,
+			user.ProfileEmail, user.DisplayName, rotation.Now.UTC(), user.ID); err != nil {
 			return User{}, WebSession{}, fmt.Errorf("refresh login user: %w", err)
 		}
 	}
 
 	var previousSessionID string
 	if len(rotation.PreviousVerifierDigest) > 0 {
-		err = tx.QueryRow(`SELECT application_session_id FROM application_sessions WHERE verifier_digest = ? AND revoked_at IS NULL`, rotation.PreviousVerifierDigest).Scan(&previousSessionID)
+		err = tx.QueryRow(("SELECT application_session_id FROM application_sessions WHERE verifier_digest = ? AND " +
+			"revoked_at IS NULL"), rotation.PreviousVerifierDigest).
+			Scan(&previousSessionID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return User{}, WebSession{}, fmt.Errorf("resolve previous web session: %w", err)
 		}
 		if err == nil {
-			if _, err = tx.Exec(`UPDATE application_sessions SET revoked_at = ? WHERE application_session_id = ? AND revoked_at IS NULL`, rotation.Now.UTC(), previousSessionID); err != nil {
+			if _, err = tx.Exec(("UPDATE application_sessions SET revoked_at = ? WHERE application_session_id = ? AND " +
+				"revoked_at IS NULL"), rotation.Now.UTC(), previousSessionID); err != nil {
 				return User{}, WebSession{}, fmt.Errorf("revoke previous web session: %w", err)
 			}
 		}
@@ -313,7 +356,10 @@ func (db *DB) RevokeWebSession(userID, sessionID string) (bool, error) {
 }
 
 func (db *DB) RevokeAllWebSessions(userID string) (int64, error) {
-	result, err := db.conn.Exec(`UPDATE application_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revoked_at IS NULL`, userID)
+	result, err := db.conn.Exec(
+		`UPDATE application_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revoked_at IS NULL`,
+		userID,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("revoke all application sessions: %w", err)
 	}
@@ -321,15 +367,20 @@ func (db *DB) RevokeAllWebSessions(userID string) (int64, error) {
 }
 
 func (db *DB) CreateAccountGame(accountGame AccountGame) error {
-	if accountGame.ID == "" || accountGame.UserID == "" || accountGame.BasePuzzleID == "" || accountGame.PlayRunID == "" || len(accountGame.EngineState) == 0 || accountGame.ActualDifficulty == "" || !validAccountGameStatus(accountGame.Status) {
+	if accountGame.ID == "" || accountGame.UserID == "" || accountGame.BasePuzzleID == "" ||
+		accountGame.PlayRunID == "" ||
+		len(accountGame.EngineState) == 0 ||
+		accountGame.ActualDifficulty == "" ||
+		!validAccountGameStatus(accountGame.Status) {
 		return errors.New("account game identity, owner, puzzle, play run, state, difficulty, and status are required")
 	}
 	if accountGame.Revision < 0 || accountGame.ElapsedSeconds < 0 {
 		return errors.New("account game revision and elapsed time must be non-negative")
 	}
-	_, err := db.conn.Exec(`INSERT INTO account_games
-		(account_game_id, user_id, base_puzzle_id, play_run_id, engine_state, revision, actual_difficulty, status, elapsed_seconds)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, accountGame.ID, accountGame.UserID, accountGame.BasePuzzleID, accountGame.PlayRunID, accountGame.EngineState, accountGame.Revision, accountGame.ActualDifficulty, accountGame.Status, accountGame.ElapsedSeconds)
+	_, err := db.conn.Exec(("INSERT INTO account_games\n\t\t(account_game_id, user_id, base_puzzle_id, play_run_id," +
+		" engine_state, revision, actual_difficulty, status, elapsed_seconds)\n\t\tVALUES (?, " +
+		"?, ?, ?, ?, ?, ?, ?, ?)"), accountGame.ID, accountGame.UserID, accountGame.BasePuzzleID, accountGame.PlayRunID,
+		accountGame.EngineState, accountGame.Revision, accountGame.ActualDifficulty, accountGame.Status, accountGame.ElapsedSeconds)
 	if err != nil {
 		return fmt.Errorf("create account game: %w", err)
 	}
@@ -338,13 +389,19 @@ func (db *DB) CreateAccountGame(accountGame AccountGame) error {
 
 // CreateOwnedGame atomically creates one presentation-specific play run and its owner-scoped game.
 func (db *DB) CreateOwnedGame(run PlayRun, accountGame AccountGame) error {
-	if run.ID == "" || run.BasePuzzleID == "" || run.PresentedPuzzle == "" || (run.Status != "" && run.Status != "active") {
+	if run.ID == "" || run.BasePuzzleID == "" || run.PresentedPuzzle == "" ||
+		(run.Status != "" && run.Status != "active") {
 		return errors.New("play run identity, base puzzle, active status, and presentation are required")
 	}
-	if accountGame.ID == "" || accountGame.UserID == "" || accountGame.BasePuzzleID == "" || accountGame.PlayRunID == "" || len(accountGame.EngineState) == 0 || accountGame.ActualDifficulty == "" || !validAccountGameStatus(accountGame.Status) {
+	if accountGame.ID == "" || accountGame.UserID == "" || accountGame.BasePuzzleID == "" ||
+		accountGame.PlayRunID == "" ||
+		len(accountGame.EngineState) == 0 ||
+		accountGame.ActualDifficulty == "" ||
+		!validAccountGameStatus(accountGame.Status) {
 		return errors.New("account game identity, owner, puzzle, play run, state, difficulty, and status are required")
 	}
-	if accountGame.Revision < 0 || accountGame.ElapsedSeconds < 0 || accountGame.PlayRunID != run.ID || accountGame.BasePuzzleID != run.BasePuzzleID {
+	if accountGame.Revision < 0 || accountGame.ElapsedSeconds < 0 || accountGame.PlayRunID != run.ID ||
+		accountGame.BasePuzzleID != run.BasePuzzleID {
 		return errors.New("account game must match a non-negative linked play run")
 	}
 	tx, err := db.conn.Begin()
@@ -352,12 +409,15 @@ func (db *DB) CreateOwnedGame(run PlayRun, accountGame AccountGame) error {
 		return fmt.Errorf("begin owned game creation: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err = tx.Exec(`INSERT INTO play_runs (play_run_id, base_puzzle_id, presented_puzzle, status) VALUES (?, ?, ?, 'active')`, run.ID, run.BasePuzzleID, run.PresentedPuzzle); err != nil {
+	if _, err = tx.Exec(("INSERT INTO play_runs (play_run_id, base_puzzle_id, presented_puzzle, status) VALUES " +
+		"(?, ?, ?, 'active')"), run.ID, run.BasePuzzleID, run.PresentedPuzzle); err != nil {
 		return fmt.Errorf("create owned play run: %w", err)
 	}
-	if _, err = tx.Exec(`INSERT INTO account_games
-		(account_game_id, user_id, base_puzzle_id, play_run_id, engine_state, revision, actual_difficulty, status, elapsed_seconds)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, accountGame.ID, accountGame.UserID, accountGame.BasePuzzleID, accountGame.PlayRunID, accountGame.EngineState, accountGame.Revision, accountGame.ActualDifficulty, accountGame.Status, accountGame.ElapsedSeconds); err != nil {
+	if _, err = tx.Exec(("INSERT INTO account_games\n\t\t(account_game_id, user_id, base_puzzle_id, play_run_id," +
+		" engine_state, revision, actual_difficulty, status, elapsed_seconds)\n\t\tVALUES (?, " +
+		"?, ?, ?, ?, ?, ?, ?, ?)"), accountGame.ID, accountGame.UserID, accountGame.BasePuzzleID, accountGame.PlayRunID,
+		accountGame.EngineState, accountGame.Revision, accountGame.ActualDifficulty, accountGame.Status,
+		accountGame.ElapsedSeconds); err != nil {
 		return fmt.Errorf("create owned account game: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -371,8 +431,14 @@ func (db *DB) CreateOwnedGame(run PlayRun, accountGame AccountGame) error {
 // original game; another owner receives the same bounded claimed error.
 func (db *DB) ClaimGuestGame(claim GuestClaim) (AccountGame, bool, error) {
 	game := claim.AccountGame
-	if len(claim.Fingerprint) == 0 || claim.PresentedPuzzle == "" || game.ID == "" || game.UserID == "" || game.BasePuzzleID == "" || game.PlayRunID == "" || len(game.EngineState) == 0 || game.ActualDifficulty == "" {
-		return AccountGame{}, false, errors.New("claim fingerprint, presentation, account game, owner, puzzle, play run, state, and difficulty are required")
+	if len(claim.Fingerprint) == 0 || claim.PresentedPuzzle == "" || game.ID == "" || game.UserID == "" ||
+		game.BasePuzzleID == "" ||
+		game.PlayRunID == "" ||
+		len(game.EngineState) == 0 ||
+		game.ActualDifficulty == "" {
+		return AccountGame{}, false, errors.New(
+			"claim fingerprint, presentation, account game, owner, puzzle, play run, state, and difficulty are required",
+		)
 	}
 	if game.Revision < 0 {
 		return AccountGame{}, false, errors.New("account game revision must be non-negative")
@@ -384,7 +450,8 @@ func (db *DB) ClaimGuestGame(claim GuestClaim) (AccountGame, bool, error) {
 	defer func() { _ = tx.Rollback() }()
 
 	var existingUserID, existingGameID string
-	err = tx.QueryRow(`SELECT user_id, account_game_id FROM guest_claims WHERE claim_fingerprint = ?`, claim.Fingerprint).Scan(&existingUserID, &existingGameID)
+	err = tx.QueryRow(`SELECT user_id, account_game_id FROM guest_claims WHERE claim_fingerprint = ?`, claim.Fingerprint).
+		Scan(&existingUserID, &existingGameID)
 	switch {
 	case err == nil && existingUserID != game.UserID:
 		return AccountGame{}, false, ErrGuestAlreadyClaimed
@@ -401,15 +468,18 @@ func (db *DB) ClaimGuestGame(claim GuestClaim) (AccountGame, bool, error) {
 		return AccountGame{}, false, fmt.Errorf("resolve guest claim: %w", err)
 	}
 
-	if _, err = tx.Exec(`INSERT INTO play_runs (play_run_id, base_puzzle_id, presented_puzzle, status) VALUES (?, ?, ?, 'active')`, game.PlayRunID, game.BasePuzzleID, claim.PresentedPuzzle); err != nil {
+	if _, err = tx.Exec(("INSERT INTO play_runs (play_run_id, base_puzzle_id, presented_puzzle, status) VALUES " +
+		"(?, ?, ?, 'active')"), game.PlayRunID, game.BasePuzzleID, claim.PresentedPuzzle); err != nil {
 		return AccountGame{}, false, fmt.Errorf("create claimed play run: %w", err)
 	}
-	if _, err = tx.Exec(`INSERT INTO account_games
-		(account_game_id, user_id, base_puzzle_id, play_run_id, engine_state, revision, actual_difficulty, status, elapsed_seconds)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, game.ID, game.UserID, game.BasePuzzleID, game.PlayRunID, game.EngineState, game.Revision, game.ActualDifficulty, game.Status, game.ElapsedSeconds); err != nil {
+	if _, err = tx.Exec(("INSERT INTO account_games\n\t\t(account_game_id, user_id, base_puzzle_id, play_run_id," +
+		" engine_state, revision, actual_difficulty, status, elapsed_seconds)\n\t\tVALUES (?, " +
+		"?, ?, ?, ?, ?, ?, ?, ?)"), game.ID, game.UserID, game.BasePuzzleID, game.PlayRunID, game.EngineState,
+		game.Revision, game.ActualDifficulty, game.Status, game.ElapsedSeconds); err != nil {
 		return AccountGame{}, false, fmt.Errorf("create claimed account game: %w", err)
 	}
-	if _, err = tx.Exec(`INSERT INTO guest_claims (claim_fingerprint, user_id, account_game_id) VALUES (?, ?, ?)`, claim.Fingerprint, game.UserID, game.ID); err != nil {
+	if _, err = tx.Exec(("INSERT INTO guest_claims (claim_fingerprint, user_id, account_game_id) VALUES (?, ?, " +
+		"?)"), claim.Fingerprint, game.UserID, game.ID); err != nil {
 		return AccountGame{}, false, fmt.Errorf("record guest claim: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -430,10 +500,14 @@ type accountGameQuery interface {
 
 func accountGameByID(query accountGameQuery, userID, accountGameID string) (*AccountGame, error) {
 	var accountGame AccountGame
-	err := query.QueryRow(`SELECT account_game_id, user_id, base_puzzle_id, play_run_id, engine_state, revision, actual_difficulty, status, elapsed_seconds, updated_at
-		FROM account_games WHERE account_game_id = ? AND user_id = ?`, accountGameID, userID).Scan(
-		&accountGame.ID, &accountGame.UserID, &accountGame.BasePuzzleID, &accountGame.PlayRunID, &accountGame.EngineState, &accountGame.Revision, &accountGame.ActualDifficulty, &accountGame.Status, &accountGame.ElapsedSeconds, &accountGame.UpdatedAt,
-	)
+	err := query.QueryRow(("SELECT account_game_id, user_id, base_puzzle_id, play_run_id, engine_state, revision, "+
+		"actual_difficulty, status, elapsed_seconds, updated_at\n\t\tFROM account_games WHERE "+
+		"account_game_id = ? AND user_id = ?"), accountGameID, userID).
+		Scan(
+			&accountGame.ID, &accountGame.UserID, &accountGame.BasePuzzleID, &accountGame.PlayRunID,
+			&accountGame.EngineState, &accountGame.Revision, &accountGame.ActualDifficulty, &accountGame.Status,
+			&accountGame.ElapsedSeconds, &accountGame.UpdatedAt,
+		)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -449,8 +523,12 @@ func (db *DB) AccountGamesByUser(userID string, limit int) ([]AccountGame, error
 	if userID == "" || limit < 1 || limit > 100 {
 		return nil, errors.New("user identity and a limit from 1 through 100 are required")
 	}
-	rows, err := db.conn.Query(`SELECT account_game_id, user_id, base_puzzle_id, play_run_id, revision, actual_difficulty, status, elapsed_seconds, updated_at
-		FROM account_games WHERE user_id = ? ORDER BY updated_at DESC, account_game_id LIMIT ?`, userID, limit)
+	rows, err := db.conn.Query(
+		`SELECT account_game_id, user_id, base_puzzle_id, play_run_id, revision, actual_difficulty, status, elapsed_seconds, updated_at
+		FROM account_games WHERE user_id = ? ORDER BY updated_at DESC, account_game_id LIMIT ?`,
+		userID,
+		limit,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("list account games: %w", err)
 	}
@@ -458,7 +536,8 @@ func (db *DB) AccountGamesByUser(userID string, limit int) ([]AccountGame, error
 	games := make([]AccountGame, 0)
 	for rows.Next() {
 		var game AccountGame
-		if err := rows.Scan(&game.ID, &game.UserID, &game.BasePuzzleID, &game.PlayRunID, &game.Revision, &game.ActualDifficulty, &game.Status, &game.ElapsedSeconds, &game.UpdatedAt); err != nil {
+		if err := rows.Scan(&game.ID, &game.UserID, &game.BasePuzzleID, &game.PlayRunID, &game.Revision,
+			&game.ActualDifficulty, &game.Status, &game.ElapsedSeconds, &game.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan account game: %w", err)
 		}
 		games = append(games, game)
@@ -470,12 +549,24 @@ func (db *DB) AccountGamesByUser(userID string, limit int) ([]AccountGame, error
 }
 
 // UpdateAccountGame uses optimistic revision matching and owner-scoped lookup.
-func (db *DB) UpdateAccountGame(userID, accountGameID string, expectedRevision int64, engineState []byte, status string) (bool, error) {
+func (db *DB) UpdateAccountGame(
+	userID, accountGameID string,
+	expectedRevision int64,
+	engineState []byte,
+	status string,
+) (bool, error) {
 	if expectedRevision < 0 || len(engineState) == 0 || !validAccountGameStatus(status) {
 		return false, errors.New("expected revision, engine state, and status are required")
 	}
-	result, err := db.conn.Exec(`UPDATE account_games SET engine_state = ?, status = ?, revision = revision + 1, updated_at = CURRENT_TIMESTAMP
-		WHERE account_game_id = ? AND user_id = ? AND revision = ?`, engineState, status, accountGameID, userID, expectedRevision)
+	result, err := db.conn.Exec(
+		`UPDATE account_games SET engine_state = ?, status = ?, revision = revision + 1, updated_at = CURRENT_TIMESTAMP
+		WHERE account_game_id = ? AND user_id = ? AND revision = ?`,
+		engineState,
+		status,
+		accountGameID,
+		userID,
+		expectedRevision,
+	)
 	if err != nil {
 		return false, fmt.Errorf("update account game: %w", err)
 	}
@@ -485,12 +576,24 @@ func (db *DB) UpdateAccountGame(userID, accountGameID string, expectedRevision i
 
 // RestartAccountGame atomically persists a fresh same-puzzle attempt and
 // clears its presentation time at the same optimistic revision boundary.
-func (db *DB) RestartAccountGame(userID, accountGameID string, expectedRevision int64, engineState []byte, status string) (bool, error) {
+func (db *DB) RestartAccountGame(
+	userID, accountGameID string,
+	expectedRevision int64,
+	engineState []byte,
+	status string,
+) (bool, error) {
 	if expectedRevision < 0 || len(engineState) == 0 || !validAccountGameStatus(status) {
 		return false, errors.New("expected revision, engine state, and status are required")
 	}
-	result, err := db.conn.Exec(`UPDATE account_games SET engine_state = ?, status = ?, elapsed_seconds = 0, revision = revision + 1, updated_at = CURRENT_TIMESTAMP
-		WHERE account_game_id = ? AND user_id = ? AND revision = ?`, engineState, status, accountGameID, userID, expectedRevision)
+	result, err := db.conn.Exec(
+		`UPDATE account_games SET engine_state = ?, status = ?, elapsed_seconds = 0, revision = revision + 1, updated_at = CURRENT_TIMESTAMP
+		WHERE account_game_id = ? AND user_id = ? AND revision = ?`,
+		engineState,
+		status,
+		accountGameID,
+		userID,
+		expectedRevision,
+	)
 	if err != nil {
 		return false, fmt.Errorf("restart account game: %w", err)
 	}
@@ -502,8 +605,13 @@ func (db *DB) UpdateAccountGameElapsed(userID, accountGameID string, elapsedSeco
 	if userID == "" || accountGameID == "" || elapsedSeconds < 0 {
 		return false, errors.New("owner, account game, and non-negative elapsed time are required")
 	}
-	result, err := db.conn.Exec(`UPDATE account_games SET elapsed_seconds = MAX(elapsed_seconds, ?), updated_at = CURRENT_TIMESTAMP
-		WHERE account_game_id = ? AND user_id = ?`, elapsedSeconds, accountGameID, userID)
+	result, err := db.conn.Exec(
+		`UPDATE account_games SET elapsed_seconds = MAX(elapsed_seconds, ?), updated_at = CURRENT_TIMESTAMP
+		WHERE account_game_id = ? AND user_id = ?`,
+		elapsedSeconds,
+		accountGameID,
+		userID,
+	)
 	if err != nil {
 		return false, fmt.Errorf("update account game elapsed time: %w", err)
 	}
@@ -512,7 +620,11 @@ func (db *DB) UpdateAccountGameElapsed(userID, accountGameID string, elapsedSeco
 }
 
 func (db *DB) DeleteAccountGame(userID, accountGameID string) (bool, error) {
-	result, err := db.conn.Exec(`DELETE FROM account_games WHERE account_game_id = ? AND user_id = ?`, accountGameID, userID)
+	result, err := db.conn.Exec(
+		`DELETE FROM account_games WHERE account_game_id = ? AND user_id = ?`,
+		accountGameID,
+		userID,
+	)
 	if err != nil {
 		return false, fmt.Errorf("delete account game: %w", err)
 	}

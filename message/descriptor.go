@@ -111,7 +111,9 @@ func validID(id string) bool {
 
 func (a Argument) validate() error {
 	values := 0
-	for _, present := range []bool{a.Text != nil, a.Integer != nil, a.Digit != nil, a.Cell != nil, a.Candidate != nil, a.Row != nil, a.Column != nil, a.Box != nil, a.Difficulty != nil, a.Strategy != nil, a.Count != nil, a.Digits != nil, a.Cells != nil, a.Candidates != nil, a.Units != nil} {
+	for _, present := range []bool{a.Text != nil, a.Integer != nil, a.Digit != nil, a.Cell != nil, a.Candidate != nil,
+		a.Row != nil, a.Column != nil, a.Box != nil, a.Difficulty != nil, a.Strategy != nil, a.Count != nil,
+		a.Digits != nil, a.Cells != nil, a.Candidates != nil, a.Units != nil} {
 		if present {
 			values++
 		}
@@ -138,7 +140,8 @@ func (a Argument) validate() error {
 			return fmt.Errorf("must carry one-based cell")
 		}
 	case ArgumentCandidate:
-		if a.Candidate == nil || !validCoordinate(a.Candidate.Cell.Row) || !validCoordinate(a.Candidate.Cell.Column) || !validCoordinate(a.Candidate.Digit) {
+		if a.Candidate == nil || !validCoordinate(a.Candidate.Cell.Row) || !validCoordinate(a.Candidate.Cell.Column) ||
+			!validCoordinate(a.Candidate.Digit) {
 			return fmt.Errorf("must carry one-based candidate")
 		}
 	case ArgumentRow:
@@ -188,7 +191,8 @@ func (a Argument) validate() error {
 			return fmt.Errorf("must carry 1 through 64 candidates")
 		}
 		for _, candidate := range a.Candidates {
-			if !validCoordinate(candidate.Cell.Row) || !validCoordinate(candidate.Cell.Column) || !validCoordinate(candidate.Digit) {
+			if !validCoordinate(candidate.Cell.Row) || !validCoordinate(candidate.Cell.Column) ||
+				!validCoordinate(candidate.Digit) {
 				return fmt.Errorf("candidates must contain one-based cells and digits")
 			}
 		}

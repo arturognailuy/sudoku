@@ -22,7 +22,15 @@ Re-running with the same manifest and output directory resumes safely.`,
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Measured %d/%d puzzles (%d new).\nManifest SHA-256: %s\nResults: %s\n", result.Report.Observed, result.Report.Total, result.Appended, result.ManifestHash, output)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Measured %d/%d puzzles (%d new).\nManifest SHA-256: %s\nResults: %s\n",
+				result.Report.Observed,
+				result.Report.Total,
+				result.Appended,
+				result.ManifestHash,
+				output,
+			)
 			return nil
 		},
 	}

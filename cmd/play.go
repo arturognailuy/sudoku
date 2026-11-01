@@ -15,7 +15,11 @@ func runPlay(cmd *cobra.Command) error {
 	resume, _ := cmd.Flags().GetString("resume")
 	dbPath, _ := cmd.Flags().GetString("db")
 	fromDB, _ := cmd.Flags().GetBool("from-db")
-	newGame, _, tracker, err := createTrackedSession(sessionRequest{input: input, level: level, resume: resume, dbPath: dbPath, fromDB: fromDB}, os.Stdout, os.Stderr)
+	newGame, _, tracker, err := createTrackedSession(
+		sessionRequest{input: input, level: level, resume: resume, dbPath: dbPath, fromDB: fromDB},
+		os.Stdout,
+		os.Stderr,
+	)
 	if err != nil {
 		return err
 	}

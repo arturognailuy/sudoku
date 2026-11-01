@@ -129,7 +129,9 @@ func (store Store) Write(id, source string, session []byte) error {
 	if existing, err := store.read(path); err == nil && existing.ID == id {
 		created = existing.CreatedAt
 	}
-	data, err := json.Marshal(envelope{Version: formatVersion, ID: id, CreatedAt: created, UpdatedAt: now, Source: source, Session: session})
+	data, err := json.Marshal(
+		envelope{Version: formatVersion, ID: id, CreatedAt: created, UpdatedAt: now, Source: source, Session: session},
+	)
 	if err != nil {
 		return fmt.Errorf("encode recovery record: %w", err)
 	}
@@ -185,7 +187,8 @@ func (store Store) Discover(validate func([]byte) error) ([]Record, error) {
 			continue
 		}
 		record, readErr := store.read(path)
-		if readErr != nil || record.UpdatedAt.Before(cutoff) || record.UpdatedAt.After(now.Add(5*time.Minute)) || (validate != nil && validate(record.Session) != nil) {
+		if readErr != nil || record.UpdatedAt.Before(cutoff) || record.UpdatedAt.After(now.Add(5*time.Minute)) ||
+			(validate != nil && validate(record.Session) != nil) {
 			_ = os.Remove(path)
 			continue
 		}
@@ -222,10 +225,21 @@ func (store Store) read(path string) (Record, error) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		return Record{}, err
 	}
-	if decoded.Version != formatVersion || !validID(decoded.ID) || !validSource(decoded.Source) || filepath.Base(path) != decoded.ID+".json" || decoded.CreatedAt.IsZero() || decoded.UpdatedAt.IsZero() || decoded.UpdatedAt.Before(decoded.CreatedAt) || int64(len(decoded.Session)) > sessionfile.MaxSize {
+	if decoded.Version != formatVersion || !validID(decoded.ID) || !validSource(decoded.Source) ||
+		filepath.Base(path) != decoded.ID+".json" ||
+		decoded.CreatedAt.IsZero() ||
+		decoded.UpdatedAt.IsZero() ||
+		decoded.UpdatedAt.Before(decoded.CreatedAt) ||
+		int64(len(decoded.Session)) > sessionfile.MaxSize {
 		return Record{}, errors.New("invalid recovery record")
 	}
-	return Record{ID: decoded.ID, CreatedAt: decoded.CreatedAt, UpdatedAt: decoded.UpdatedAt, Source: decoded.Source, Session: decoded.Session}, nil
+	return Record{
+		ID:        decoded.ID,
+		CreatedAt: decoded.CreatedAt,
+		UpdatedAt: decoded.UpdatedAt,
+		Source:    decoded.Source,
+		Session:   decoded.Session,
+	}, nil
 }
 
 func (store Store) path(id string) string { return filepath.Join(store.directory, id+".json") }

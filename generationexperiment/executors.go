@@ -56,7 +56,10 @@ func executeCandidate(store solver.Store, job Job) (Execution, error) {
 	}
 	seedSearch := seed.Copy()
 	if !store.GetDefaultSolver().HasUniqueSolution(&seedSearch) {
-		return Execution{Outcome: "non-unique", DurationMS: boundedDuration(time.Since(start).Milliseconds(), job.Budget.MaxDurationMS)}, nil
+		return Execution{
+			Outcome:    "non-unique",
+			DurationMS: boundedDuration(time.Since(start).Milliseconds(), job.Budget.MaxDurationMS),
+		}, nil
 	}
 	if !time.Now().Before(deadline) {
 		return Execution{Outcome: "timed-out", DurationMS: job.Budget.MaxDurationMS}, nil
@@ -66,7 +69,10 @@ func executeCandidate(store solver.Store, job Job) (Execution, error) {
 		SolveDeterministic(*core.Board) bool
 	})
 	if !ok || !deterministic.SolveDeterministic(&solution) {
-		return Execution{Outcome: "invalid", DurationMS: boundedDuration(time.Since(start).Milliseconds(), job.Budget.MaxDurationMS)}, nil
+		return Execution{
+			Outcome:    "invalid",
+			DurationMS: boundedDuration(time.Since(start).Milliseconds(), job.Budget.MaxDurationMS),
+		}, nil
 	}
 	if !time.Now().Before(deadline) {
 		return Execution{Outcome: "timed-out", DurationMS: job.Budget.MaxDurationMS}, nil
@@ -112,7 +118,12 @@ func executeCandidate(store solver.Store, job Job) (Execution, error) {
 	return executionFromClassification(job, bestBoard, bestClass, duration, classifications, timedOut), nil
 }
 
-func mutatePuzzle(random *rand.Rand, board, solution core.Board, target string, classification solver.Classification) (core.Board, bool) {
+func mutatePuzzle(
+	random *rand.Rand,
+	board, solution core.Board,
+	target string,
+	classification solver.Classification,
+) (core.Board, bool) {
 	remove := mutationDirection(target, classification)
 	positions := make([]core.Position, 0, 81)
 	board.ForEachCell(func(position core.Position, value int) bool {
@@ -190,7 +201,14 @@ func difficultyRank(value string) int {
 	}
 }
 
-func executionFromClassification(job Job, board core.Board, classification solver.Classification, duration int64, classifications int, timedOut bool) Execution {
+func executionFromClassification(
+	job Job,
+	board core.Board,
+	classification solver.Classification,
+	duration int64,
+	classifications int,
+	timedOut bool,
+) Execution {
 	outcome := "strategy-unsolved"
 	if timedOut {
 		outcome = "timed-out"

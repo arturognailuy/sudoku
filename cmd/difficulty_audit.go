@@ -17,11 +17,25 @@ func newDifficultyAuditCommand() *cobra.Command {
 			output, _ := command.Flags().GetString("output")
 			commit, _ := command.Flags().GetString("repository-commit")
 			workers, _ := command.Flags().GetInt("workers")
-			result, err := difficultyaudit.Run(difficultyaudit.Options{ManifestPath: manifest, OutputDir: output, RepositoryCommit: commit, Workers: workers}, solverStore)
+			result, err := difficultyaudit.Run(
+				difficultyaudit.Options{
+					ManifestPath:     manifest,
+					OutputDir:        output,
+					RepositoryCommit: commit,
+					Workers:          workers,
+				},
+				solverStore,
+			)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Audited %d puzzles.\nManifest SHA-256: %s\nResults: %s\n", result.Report.Total, result.Report.ManifestHash, output)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Audited %d puzzles.\nManifest SHA-256: %s\nResults: %s\n",
+				result.Report.Total,
+				result.Report.ManifestHash,
+				output,
+			)
 			return nil
 		},
 	}

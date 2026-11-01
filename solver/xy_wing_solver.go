@@ -33,8 +33,9 @@ func NewXYWingSolver() *XYWingSolver {
 		Base: Base{
 			Key:         "xy-wing",
 			DisplayName: "XY-Wing",
-			Description: "Finds a pivot-wing pattern where a pivot with {X,Y} connects to wings with {X,Z} and {Y,Z}, enabling elimination of Z from cells that see both wings.",
-			Weight:      WeightXYWing,
+			Description: ("Finds a pivot-wing pattern where a pivot with {X,Y} connects to wings with {X,Z} and " +
+				"{Y,Z}, enabling elimination of Z from cells that see both wings."),
+			Weight: WeightXYWing,
 		},
 	}
 }
@@ -134,10 +135,18 @@ func (s *XYWingSolver) Apply(board *core.Board) *Move {
 									Technique: s.Key,
 									Reason: fmt.Sprintf(
 										"XY-Wing: pivot %s {%d,%d}, wings %s {%d,%d} and %s {%d,%d} — %d eliminated from %s, leaving %d",
-										pivot.pos.ToString(), x, y,
-										w1.pos.ToString(), w1.vals[0], w1.vals[1],
-										w2.pos.ToString(), w2.vals[0], w2.vals[1],
-										z, pos.ToString(), value,
+										pivot.pos.ToString(),
+										x,
+										y,
+										w1.pos.ToString(),
+										w1.vals[0],
+										w1.vals[1],
+										w2.pos.ToString(),
+										w2.vals[0],
+										w2.vals[1],
+										z,
+										pos.ToString(),
+										value,
 									),
 								}
 							}
@@ -171,9 +180,15 @@ func (s *XYWingSolver) Apply(board *core.Board) *Move {
 						Technique:       s.Key,
 						Reason: fmt.Sprintf(
 							"XY-Wing: pivot %s {%d,%d}, wings %s {%d,%d} and %s {%d,%d} — %d eliminated from cells seeing both wings",
-							pivot.pos.ToString(), x, y,
-							w1.pos.ToString(), w1.vals[0], w1.vals[1],
-							w2.pos.ToString(), w2.vals[0], w2.vals[1],
+							pivot.pos.ToString(),
+							x,
+							y,
+							w1.pos.ToString(),
+							w1.vals[0],
+							w1.vals[1],
+							w2.pos.ToString(),
+							w2.vals[0],
+							w2.vals[1],
 							z,
 						),
 						Evidence: evidence,

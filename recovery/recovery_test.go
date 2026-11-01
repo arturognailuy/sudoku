@@ -120,14 +120,39 @@ func TestDefaultDirectoryUsesPlatformApplicationData(t *testing.T) {
 		home string
 		want string
 	}{
-		{name: "Linux XDG", goos: "linux", env: map[string]string{"XDG_STATE_HOME": "/state"}, home: "/home/player", want: filepath.Join("/state", "sudoku", "recovery")},
-		{name: "Linux fallback", goos: "linux", home: "/home/player", want: filepath.Join("/home/player", ".local", "state", "sudoku", "recovery")},
-		{name: "macOS", goos: "darwin", home: "/Users/player", want: filepath.Join("/Users/player", "Library", "Application Support", "Sudoku", "recovery")},
-		{name: "Windows", goos: "windows", env: map[string]string{"LOCALAPPDATA": `C:\Users\player\AppData\Local`}, want: filepath.Join(`C:\Users\player\AppData\Local`, "Sudoku", "recovery")},
+		{
+			name: "Linux XDG",
+			goos: "linux",
+			env:  map[string]string{"XDG_STATE_HOME": "/state"},
+			home: "/home/player",
+			want: filepath.Join("/state", "sudoku", "recovery"),
+		},
+		{
+			name: "Linux fallback",
+			goos: "linux",
+			home: "/home/player",
+			want: filepath.Join("/home/player", ".local", "state", "sudoku", "recovery"),
+		},
+		{
+			name: "macOS",
+			goos: "darwin",
+			home: "/Users/player",
+			want: filepath.Join("/Users/player", "Library", "Application Support", "Sudoku", "recovery"),
+		},
+		{
+			name: "Windows",
+			goos: "windows",
+			env:  map[string]string{"LOCALAPPDATA": `C:\Users\player\AppData\Local`},
+			want: filepath.Join(`C:\Users\player\AppData\Local`, "Sudoku", "recovery"),
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			path, err := defaultDirectoryFor(test.goos, func(key string) string { return test.env[key] }, func() (string, error) { return test.home, nil })
+			path, err := defaultDirectoryFor(
+				test.goos,
+				func(key string) string { return test.env[key] },
+				func() (string, error) { return test.home, nil },
+			)
 			if err != nil || path != test.want {
 				t.Fatalf("path=%q want=%q err=%v", path, test.want, err)
 			}

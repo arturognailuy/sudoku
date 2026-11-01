@@ -24,7 +24,8 @@ func TestServiceAuthorizesOwnerAndPersistsRevisionedActions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if transition.Game.Revision != 1 || transition.Snapshot.Values[0][0] != 4 || transition.Result.Action != game.ActionSetValue {
+	if transition.Game.Revision != 1 || transition.Snapshot.Values[0][0] != 4 ||
+		transition.Result.Action != game.ActionSetValue {
 		t.Fatalf("transition = %+v", transition)
 	}
 	stored, err := database.AccountGameByID("user-a", "game-a")
@@ -56,7 +57,10 @@ func TestServiceRestartClearsAttemptStateAndElapsedTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if transition.Game.ElapsedSeconds != 0 || transition.Snapshot.Mistakes != 0 || transition.Snapshot.Status != game.StatusInProgress || transition.Snapshot.CanUndo || transition.Snapshot.CanRedo {
+	if transition.Game.ElapsedSeconds != 0 || transition.Snapshot.Mistakes != 0 ||
+		transition.Snapshot.Status != game.StatusInProgress ||
+		transition.Snapshot.CanUndo ||
+		transition.Snapshot.CanRedo {
 		t.Fatalf("restart transition = %+v", transition)
 	}
 	stored, err := database.AccountGameByID("user-a", "game-a")
@@ -105,7 +109,10 @@ func TestServicePersistsHistoricalTraversalAndTruncatesRedoBranch(t *testing.T) 
 	if state.Snapshot.CanRedo || !state.Snapshot.Candidates[first.Row][first.Column].Has(6) {
 		t.Fatalf("manual action did not replace the historical branch: %+v", state.Snapshot)
 	}
-	if _, err := service.Apply("user-a", "game-a", revision, game.Redo{}); !errors.Is(err, &game.EngineError{Code: game.ErrorNoRedo}) {
+	if _, err := service.Apply("user-a", "game-a", revision, game.Redo{}); !errors.Is(
+		err,
+		&game.EngineError{Code: game.ErrorNoRedo},
+	) {
 		t.Fatalf("redo after a manual historical action = %v, want no-redo", err)
 	}
 	restored, err := service.Get("user-a", "game-a")
@@ -190,7 +197,10 @@ func TestServicePreservesHintEliminationsAcrossPlayerPlacement(t *testing.T) {
 		t.Fatal(err)
 	}
 	if transition.Game.Revision != 2 || transition.Snapshot.Candidates[retained.Row][retained.Column].Has(9) {
-		t.Fatalf("account mutation changed retained elimination: %+v", transition.Snapshot.Candidates[retained.Row][retained.Column])
+		t.Fatalf(
+			"account mutation changed retained elimination: %+v",
+			transition.Snapshot.Candidates[retained.Row][retained.Column],
+		)
 	}
 	state, err = service.Get("user-a", "game-a")
 	if err != nil {
@@ -218,7 +228,12 @@ func TestServiceReportsCurrentRevisionWhenPersistenceLosesARace(t *testing.T) {
 
 type conflictingStore struct{ *db.DB }
 
-func (store *conflictingStore) UpdateAccountGame(userID, accountGameID string, expectedRevision int64, engineState []byte, status string) (bool, error) {
+func (store *conflictingStore) UpdateAccountGame(
+	userID, accountGameID string,
+	expectedRevision int64,
+	engineState []byte,
+	status string,
+) (bool, error) {
 	current, err := store.AccountGameByID(userID, accountGameID)
 	if err != nil || current == nil {
 		return false, err

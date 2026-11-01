@@ -32,7 +32,15 @@ and the command never opens or mutates the live puzzle database.`,
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Observed %d/%d jobs (%d new).\nManifest SHA-256: %s\nResults: %s\n", result.Report.Observed, result.Report.Total, result.Appended, result.ManifestHash, output)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Observed %d/%d jobs (%d new).\nManifest SHA-256: %s\nResults: %s\n",
+				result.Report.Observed,
+				result.Report.Total,
+				result.Appended,
+				result.ManifestHash,
+				output,
+			)
 			return nil
 		},
 	}

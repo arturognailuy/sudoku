@@ -31,8 +31,9 @@ func NewBUGPlusOneSolver() *BUGPlusOneSolver {
 		Base: Base{
 			Key:         "bug-plus-one",
 			DisplayName: "BUG+1",
-			Description: "Bivalue Universal Grave + 1: when all unsolved cells have 2 candidates except one with 3, the extra candidate is the answer.",
-			Weight:      WeightBUGPlusOne,
+			Description: ("Bivalue Universal Grave + 1: when all unsolved cells have 2 candidates except one " +
+				"with 3, the extra candidate is the answer."),
+			Weight: WeightBUGPlusOne,
 		},
 	}
 }
@@ -100,7 +101,9 @@ func (s *BUGPlusOneSolver) Apply(board *core.Board) *Move {
 		},
 		Reason: fmt.Sprintf(
 			"BUG+1: all unsolved cells have 2 candidates except %s with {%s} — %d is the extra candidate and must be placed",
-			triCell.ToString(), candidateString(triCands), value,
+			triCell.ToString(),
+			candidateString(triCands),
+			value,
 		),
 	}
 }

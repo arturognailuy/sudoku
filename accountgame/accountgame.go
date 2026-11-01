@@ -80,7 +80,11 @@ func New(config Config) (*Service, error) {
 }
 
 // Create persists one already-linked play run as an owner-scoped game.
-func (service *Service) Create(userID string, current game.Game, basePuzzleID, playRunID, actualDifficulty string) (State, error) {
+func (service *Service) Create(
+	userID string,
+	current game.Game,
+	basePuzzleID, playRunID, actualDifficulty string,
+) (State, error) {
 	if userID == "" {
 		return State{}, ErrAuthenticatedIdentityRequired
 	}
@@ -101,7 +105,8 @@ func (service *Service) Create(userID string, current game.Game, basePuzzleID, p
 		ActualDifficulty: actualDifficulty, Status: string(current.Snapshot().Status),
 	}
 	presented := current.ProblemBoard()
-	if err := service.store.CreateOwnedGame(db.PlayRun{ID: playRunID, BasePuzzleID: basePuzzleID, PresentedPuzzle: presented.ToString()}, record); err != nil {
+	if err := service.store.CreateOwnedGame(db.PlayRun{ID: playRunID, BasePuzzleID: basePuzzleID,
+		PresentedPuzzle: presented.ToString()}, record); err != nil {
 		return State{}, err
 	}
 	return State{Game: record, Snapshot: current.Snapshot()}, nil
@@ -145,7 +150,11 @@ func (service *Service) Get(userID, accountGameID string) (State, error) {
 
 // Apply restores, mutates, serializes, and atomically persists one engine
 // action under the owner's current optimistic revision.
-func (service *Service) Apply(userID, accountGameID string, expectedRevision int64, action game.Action) (Transition, error) {
+func (service *Service) Apply(
+	userID, accountGameID string,
+	expectedRevision int64,
+	action game.Action,
+) (Transition, error) {
 	state, current, err := service.load(userID, accountGameID)
 	if err != nil {
 		return Transition{}, err
@@ -163,7 +172,13 @@ func (service *Service) Apply(userID, accountGameID string, expectedRevision int
 	}
 	var updated bool
 	if _, restarting := action.(game.Restart); restarting {
-		updated, err = service.store.RestartAccountGame(userID, accountGameID, expectedRevision, serialized, string(current.Snapshot().Status))
+		updated, err = service.store.RestartAccountGame(
+			userID,
+			accountGameID,
+			expectedRevision,
+			serialized,
+			string(current.Snapshot().Status),
+		)
 	} else {
 		updated, err = service.store.UpdateAccountGame(userID, accountGameID, expectedRevision, serialized, string(current.Snapshot().Status))
 	}

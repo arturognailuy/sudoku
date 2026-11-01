@@ -123,11 +123,19 @@ func Restore(data []byte, options Options) (Game, error) {
 	for index, record := range payload.History {
 		before, beforeErr := deserializeSessionState(problem, record.Before, completeSolver)
 		if beforeErr != nil {
-			return Game{}, stateError(StateErrorInvalidHistory, fmt.Sprintf("history record %d has invalid before state", index), beforeErr)
+			return Game{}, stateError(
+				StateErrorInvalidHistory,
+				fmt.Sprintf("history record %d has invalid before state", index),
+				beforeErr,
+			)
 		}
 		after, afterErr := deserializeSessionState(problem, record.After, completeSolver)
 		if afterErr != nil {
-			return Game{}, stateError(StateErrorInvalidHistory, fmt.Sprintf("history record %d has invalid after state", index), afterErr)
+			return Game{}, stateError(
+				StateErrorInvalidHistory,
+				fmt.Sprintf("history record %d has invalid after state", index),
+				afterErr,
+			)
 		}
 		history[index] = historyRecord{before: before, after: after}
 	}
@@ -170,7 +178,11 @@ func serializeSessionState(problem core.Board, state sessionState) serializedSes
 	}
 }
 
-func deserializeSessionState(problem core.Board, payload serializedSessionState, completeSolver solver.CompleteSolver) (sessionState, error) {
+func deserializeSessionState(
+	problem core.Board,
+	payload serializedSessionState,
+	completeSolver solver.CompleteSolver,
+) (sessionState, error) {
 	values, err := boardFromString(payload.Values)
 	if err != nil {
 		return sessionState{}, stateError(StateErrorInvalidSession, "session values are invalid", err)
@@ -187,10 +199,18 @@ func deserializeSessionState(problem core.Board, payload serializedSessionState,
 			value := values.Get(position)
 			invalidValue := invalid.Get(position)
 			if problem.Get(position) != 0 && (value != 0 || invalidValue != 0) {
-				return sessionState{}, stateError(StateErrorInvalidSession, fmt.Sprintf("session changes puzzle cell at row %d, column %d", row, column), nil)
+				return sessionState{}, stateError(
+					StateErrorInvalidSession,
+					fmt.Sprintf("session changes puzzle cell at row %d, column %d", row, column),
+					nil,
+				)
 			}
 			if value != 0 && invalidValue != 0 {
-				return sessionState{}, stateError(StateErrorInvalidSession, fmt.Sprintf("session overlaps valid and invalid values at row %d, column %d", row, column), nil)
+				return sessionState{}, stateError(
+					StateErrorInvalidSession,
+					fmt.Sprintf("session overlaps valid and invalid values at row %d, column %d", row, column),
+					nil,
+				)
 			}
 			if value != 0 {
 				_ = playBoard.Set(position, value)
@@ -209,14 +229,30 @@ func deserializeSessionState(problem core.Board, payload serializedSessionState,
 			return sessionState{}, stateError(StateErrorInvalidSession, "session candidate position is invalid", nil)
 		}
 		if _, exists := seen[position]; exists {
-			return sessionState{}, stateError(StateErrorInvalidSession, fmt.Sprintf("session has duplicate candidates at row %d, column %d", candidate.Row, candidate.Column), nil)
+			return sessionState{}, stateError(
+				StateErrorInvalidSession,
+				fmt.Sprintf("session has duplicate candidates at row %d, column %d", candidate.Row, candidate.Column),
+				nil,
+			)
 		}
 		seen[position] = struct{}{}
 		if len(candidate.Values) == 0 {
-			return sessionState{}, stateError(StateErrorInvalidSession, "session contains an empty candidate record", nil)
+			return sessionState{}, stateError(
+				StateErrorInvalidSession,
+				"session contains an empty candidate record",
+				nil,
+			)
 		}
 		if problem.Get(position) != 0 || values.Get(position) != 0 || invalid.Get(position) != 0 {
-			return sessionState{}, stateError(StateErrorInvalidSession, fmt.Sprintf("session candidates occupy a filled cell at row %d, column %d", candidate.Row, candidate.Column), nil)
+			return sessionState{}, stateError(
+				StateErrorInvalidSession,
+				fmt.Sprintf(
+					"session candidates occupy a filled cell at row %d, column %d",
+					candidate.Row,
+					candidate.Column,
+				),
+				nil,
+			)
 		}
 		for _, value := range candidate.Values {
 			if value < 1 || value > 9 || candidates[candidate.Row][candidate.Column].Has(value) {
@@ -248,7 +284,11 @@ func validateSessionSemantics(state sessionState, completeSolver solver.Complete
 			withInvalid := state.playBoard.Copy()
 			_ = withInvalid.Set(position, value)
 			if withInvalid.IsValid() && completeSolver.HasSolution(&withInvalid) {
-				return stateError(StateErrorInvalidSession, fmt.Sprintf("invalid entry at row %d, column %d is solvable", row, column), nil)
+				return stateError(
+					StateErrorInvalidSession,
+					fmt.Sprintf("invalid entry at row %d, column %d is solvable", row, column),
+					nil,
+				)
 			}
 		}
 	}
@@ -267,7 +307,11 @@ func validateHistory(history []historyRecord, cursor int) error {
 	}
 	for index := 1; index < len(history); index++ {
 		if history[index-1].after != history[index].before {
-			return stateError(StateErrorInvalidHistory, fmt.Sprintf("history records %d and %d are disconnected", index-1, index), nil)
+			return stateError(
+				StateErrorInvalidHistory,
+				fmt.Sprintf("history records %d and %d are disconnected", index-1, index),
+				nil,
+			)
 		}
 	}
 	return nil

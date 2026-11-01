@@ -37,7 +37,10 @@ func TestEnglishCatalogCoversStableNameIDs(t *testing.T) {
 		ids    []string
 	}{
 		{"difficulty", []string{"easy", "medium", "hard", "expert", "evil"}},
-		{"strategy", []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair", "hidden-pair", "x-wing", "xy-wing", "hidden-triple", "w-wing", "swordfish", "naked-quad", "simple-coloring", "hidden-quad", "xyz-wing", "jellyfish", "bug-plus-one", "unique-rectangle", "unique-rectangle-2", "unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain"}},
+		{"strategy", []string{"naked-single", "hidden-single", "naked-pair", "naked-triple", "pointing-pair",
+			"hidden-pair", "x-wing", "xy-wing", "hidden-triple", "w-wing", "swordfish", "naked-quad", "simple-coloring",
+			"hidden-quad", "xyz-wing", "jellyfish", "bug-plus-one", "unique-rectangle", "unique-rectangle-2",
+			"unique-rectangle-3", "unique-rectangle-4", "x-cycles", "xy-chain"}},
 	} {
 		for _, id := range domainIDs.ids {
 			if _, err := RenderEnglishName(catalog, domainIDs.domain, id); err != nil {

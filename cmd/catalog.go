@@ -93,11 +93,22 @@ func newDatabaseBootstrapCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(command.OutOrStdout(), "Database: %s\nBundle version: %d\nStatus: %s\nPuzzles added: %d\nProvenance added: %d\nCohorts added: %d\nCohort members added: %d\n", resolved, result.Version, result.Status, result.PuzzlesAdded, result.ProvenanceAdded, result.CohortsAdded, result.MembersAdded)
+			fmt.Fprintf(
+				command.OutOrStdout(),
+				"Database: %s\nBundle version: %d\nStatus: %s\nPuzzles added: %d\nProvenance added: %d\nCohorts added: %d\nCohort members added: %d\n",
+				resolved,
+				result.Version,
+				result.Status,
+				result.PuzzlesAdded,
+				result.ProvenanceAdded,
+				result.CohortsAdded,
+				result.MembersAdded,
+			)
 			return nil
 		},
 	}
-	command.Flags().StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
+	command.Flags().
+		StringVar(&path, "db", "", "Puzzle database path (defaults to the managed application data directory)")
 	command.Flags().BoolVar(&check, "check", false, "Validate without applying catalog rows or recording the release")
 	return command
 }

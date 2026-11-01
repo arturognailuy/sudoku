@@ -151,7 +151,11 @@ func TestCandidateWorkStaysHiddenAndAppliesAtomically(t *testing.T) {
 	if !controller.RunCommand("hint") {
 		t.Fatal("next hint did not continue from updated candidate state")
 	}
-	manual := game.HintPlan{Conclusion: game.HintConclusion{Eliminations: []solver.CandidateRef{{Position: core.NewPosition(0, 1), Value: 3}}}}
+	manual := game.HintPlan{
+		Conclusion: game.HintConclusion{
+			Eliminations: []solver.CandidateRef{{Position: core.NewPosition(0, 1), Value: 3}},
+		},
+	}
 	if got := formatCLIHint(manual); !strings.Contains(got, candidateHintLimitation) {
 		t.Fatalf("candidate hint text=%q", got)
 	}

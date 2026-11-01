@@ -74,7 +74,8 @@ func (step HintStep) HasValidNarration() bool {
 				return false
 			}
 		case HintNarrationTarget:
-			if chunk.Message != nil || chunk.Target == nil || chunk.Value != 0 || !validHintNarrationTarget(*chunk.Target) {
+			if chunk.Message != nil || chunk.Target == nil || chunk.Value != 0 ||
+				!validHintNarrationTarget(*chunk.Target) {
 				return false
 			}
 		case HintNarrationDigit:
@@ -93,7 +94,8 @@ func validHintNarrationTarget(target HintTarget) bool {
 	case HintTargetCell:
 		return target.Position != nil && target.Position.IsValid() && target.Value == 0 && target.Index == 0
 	case HintTargetCandidate:
-		return target.Position != nil && target.Position.IsValid() && target.Value >= 1 && target.Value <= 9 && target.Index == 0
+		return target.Position != nil && target.Position.IsValid() && target.Value >= 1 && target.Value <= 9 &&
+			target.Index == 0
 	case HintTargetRow, HintTargetColumn, HintTargetBox:
 		return target.Position == nil && target.Value == 0 && target.Index >= 0 && target.Index < 9
 	default:
@@ -217,7 +219,9 @@ type HintReason struct {
 // Validate rejects incomplete or mismatched family reasons before transport.
 func (reason HintReason) Validate() error {
 	validUnit := func(unit solver.UnitRef) bool {
-		return (unit.Kind == solver.UnitRow || unit.Kind == solver.UnitColumn || unit.Kind == solver.UnitBox) && unit.Index >= 0 && unit.Index < 9
+		return (unit.Kind == solver.UnitRow || unit.Kind == solver.UnitColumn || unit.Kind == solver.UnitBox) &&
+			unit.Index >= 0 &&
+			unit.Index < 9
 	}
 	validRefs := func(refs []solver.CandidateRef) bool {
 		if len(refs) == 0 || len(refs) > 64 {
@@ -231,7 +235,8 @@ func (reason HintReason) Validate() error {
 		return true
 	}
 	payloads := 0
-	for _, present := range []bool{reason.SubsetReservation != nil, reason.HiddenSubsetConfinement != nil, reason.IntersectionConfinement != nil, reason.FishConfinement != nil, reason.ImplicationChain != nil} {
+	for _, present := range []bool{reason.SubsetReservation != nil, reason.HiddenSubsetConfinement != nil,
+		reason.IntersectionConfinement != nil, reason.FishConfinement != nil, reason.ImplicationChain != nil} {
 		if present {
 			payloads++
 		}
@@ -242,7 +247,9 @@ func (reason HintReason) Validate() error {
 	switch reason.Kind {
 	case HintReasonSubsetReservation:
 		value := reason.SubsetReservation
-		if value == nil || !validUnit(value.Unit) || len(value.ReservedDigits) < 2 || len(value.ReservedDigits) > 4 || len(value.PremiseCells) != len(value.ReservedDigits) || !validRefs(value.ActionTargets) {
+		if value == nil || !validUnit(value.Unit) || len(value.ReservedDigits) < 2 || len(value.ReservedDigits) > 4 ||
+			len(value.PremiseCells) != len(value.ReservedDigits) ||
+			!validRefs(value.ActionTargets) {
 			return fmt.Errorf("invalid subset-reservation reason")
 		}
 		seenDigits := make(map[int]struct{}, len(value.ReservedDigits))
@@ -267,7 +274,9 @@ func (reason HintReason) Validate() error {
 		}
 	case HintReasonHiddenSubsetConfinement:
 		value := reason.HiddenSubsetConfinement
-		if value == nil || !validUnit(value.Unit) || len(value.ConfinedDigits) < 2 || len(value.ConfinedDigits) > 4 || len(value.PremiseCells) != len(value.ConfinedDigits) || !validRefs(value.ActionTargets) {
+		if value == nil || !validUnit(value.Unit) || len(value.ConfinedDigits) < 2 || len(value.ConfinedDigits) > 4 ||
+			len(value.PremiseCells) != len(value.ConfinedDigits) ||
+			!validRefs(value.ActionTargets) {
 			return fmt.Errorf("invalid hidden-subset-confinement reason")
 		}
 		seenDigits := make(map[int]struct{}, len(value.ConfinedDigits))
@@ -292,7 +301,12 @@ func (reason HintReason) Validate() error {
 		}
 	case HintReasonIntersectionConfinement:
 		value := reason.IntersectionConfinement
-		if value == nil || value.Digit < 1 || value.Digit > 9 || !validUnit(value.SourceUnit) || !validUnit(value.IntersectingUnit) || value.SourceUnit == value.IntersectingUnit || len(value.PremiseCandidates) < 2 || !validRefs(value.PremiseCandidates) || !validRefs(value.ActionTargets) {
+		if value == nil || value.Digit < 1 || value.Digit > 9 || !validUnit(value.SourceUnit) ||
+			!validUnit(value.IntersectingUnit) ||
+			value.SourceUnit == value.IntersectingUnit ||
+			len(value.PremiseCandidates) < 2 ||
+			!validRefs(value.PremiseCandidates) ||
+			!validRefs(value.ActionTargets) {
 			return fmt.Errorf("invalid intersection-confinement reason")
 		}
 		for _, ref := range value.PremiseCandidates {
@@ -302,7 +316,10 @@ func (reason HintReason) Validate() error {
 		}
 	case HintReasonFishConfinement:
 		value := reason.FishConfinement
-		if value == nil || value.Digit < 1 || value.Digit > 9 || len(value.BaseUnits) < 2 || len(value.CoverUnits) != len(value.BaseUnits) || !validRefs(value.PatternCandidates) || !validRefs(value.ActionTargets) {
+		if value == nil || value.Digit < 1 || value.Digit > 9 || len(value.BaseUnits) < 2 ||
+			len(value.CoverUnits) != len(value.BaseUnits) ||
+			!validRefs(value.PatternCandidates) ||
+			!validRefs(value.ActionTargets) {
 			return fmt.Errorf("invalid fish-confinement reason")
 		}
 		for _, unit := range append(append([]solver.UnitRef(nil), value.BaseUnits...), value.CoverUnits...) {
@@ -312,7 +329,10 @@ func (reason HintReason) Validate() error {
 		}
 	case HintReasonImplicationChain:
 		value := reason.ImplicationChain
-		if value == nil || len(value.BivalueGroups) < 2 || len(value.Links) != len(value.BivalueGroups)-1 || value.EndpointDigit < 1 || value.EndpointDigit > 9 || !validRefs(value.ActionTargets) {
+		if value == nil || len(value.BivalueGroups) < 2 || len(value.Links) != len(value.BivalueGroups)-1 ||
+			value.EndpointDigit < 1 ||
+			value.EndpointDigit > 9 ||
+			!validRefs(value.ActionTargets) {
 			return fmt.Errorf("invalid implication-chain reason")
 		}
 		for _, group := range value.BivalueGroups {

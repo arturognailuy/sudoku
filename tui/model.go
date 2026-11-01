@@ -153,7 +153,12 @@ func NewModelWithRecovery(current game.Game, resumePath string, options Recovery
 }
 
 // NewTrackedModelWithRecovery creates a TUI model with completion tracking.
-func NewTrackedModelWithRecovery(current game.Game, resumePath string, options RecoveryOptions, tracker *playrun.Tracker) Model {
+func NewTrackedModelWithRecovery(
+	current game.Game,
+	resumePath string,
+	options RecoveryOptions,
+	tracker *playrun.Tracker,
+) Model {
 	model := Model{
 		game:            &current,
 		tracker:         tracker,
@@ -403,7 +408,9 @@ func (m Model) updateModal(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.recoveryWarning = "Discard failed: " + err.Error()
 				return m, nil
 			}
-			m.recoveryChoices = append(m.recoveryChoices[:m.recoverySelection], m.recoveryChoices[m.recoverySelection+1:]...)
+			m.recoveryChoices = append(
+				m.recoveryChoices[:m.recoverySelection],
+				m.recoveryChoices[m.recoverySelection+1:]...)
 			if len(m.recoveryChoices) == 0 {
 				m.modal = noModal
 			} else if m.recoverySelection == len(m.recoveryChoices) {
@@ -536,7 +543,15 @@ func hintStepMessage(plan game.HintPlan, index int) string {
 		return "Hint preview: " + plan.Summary.Text
 	}
 	step := plan.Steps[index]
-	return fmt.Sprintf("Hint — %s (%s)  •  Step %d of %d [%s]: %s", plan.Strategy.Name.Text, plan.Strategy.GradeName.Text, index+1, len(plan.Steps), step.Kind, formatTUIHintNarration(step))
+	return fmt.Sprintf(
+		"Hint — %s (%s)  •  Step %d of %d [%s]: %s",
+		plan.Strategy.Name.Text,
+		plan.Strategy.GradeName.Text,
+		index+1,
+		len(plan.Steps),
+		step.Kind,
+		formatTUIHintNarration(step),
+	)
 }
 
 func (m *Model) scheduleRecovery() tea.Cmd {
@@ -587,7 +602,13 @@ func (m *Model) cleanupAndQuit() tea.Cmd {
 
 func (m Model) View() string {
 	if m.width > 0 && (m.width < minWidth || m.height < minHeight) {
-		return fmt.Sprintf("Sudoku TUI\n\nTerminal too small: %dx%d. Resize to at least %dx%d.\n", m.width, m.height, minWidth, minHeight)
+		return fmt.Sprintf(
+			"Sudoku TUI\n\nTerminal too small: %dx%d. Resize to at least %dx%d.\n",
+			m.width,
+			m.height,
+			minWidth,
+			minHeight,
+		)
 	}
 	return render(m)
 }

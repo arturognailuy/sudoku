@@ -118,9 +118,27 @@ func TestGetStats(t *testing.T) {
 	defer d.Close()
 
 	puzzles := []Puzzle{
-		{Puzzle: "p1.......................................................................", Difficulty: "easy", Score: 50, MaxTechnique: "naked-single", Source: "test"},
-		{Puzzle: "p2.......................................................................", Difficulty: "easy", Score: 60, MaxTechnique: "hidden-single", Source: "test"},
-		{Puzzle: "p3.......................................................................", Difficulty: "hard", Score: 300, MaxTechnique: "x-wing", Source: "test"},
+		{
+			Puzzle:       "p1.......................................................................",
+			Difficulty:   "easy",
+			Score:        50,
+			MaxTechnique: "naked-single",
+			Source:       "test",
+		},
+		{
+			Puzzle:       "p2.......................................................................",
+			Difficulty:   "easy",
+			Score:        60,
+			MaxTechnique: "hidden-single",
+			Source:       "test",
+		},
+		{
+			Puzzle:       "p3.......................................................................",
+			Difficulty:   "hard",
+			Score:        300,
+			MaxTechnique: "x-wing",
+			Source:       "test",
+		},
 	}
 	for _, p := range puzzles {
 		if _, err := d.InsertPuzzle(p); err != nil {
@@ -151,7 +169,8 @@ func TestAcquireForPlayExhaustsPoolBeforeBalancedReuse(t *testing.T) {
 	defer d.Close()
 
 	for _, puzzle := range []string{"puzzle-a", "puzzle-b"} {
-		if _, err := d.InsertPuzzle(Puzzle{Puzzle: puzzle, Difficulty: "easy", Score: 1, MaxTechnique: "naked-single", Source: "test"}); err != nil {
+		if _, err := d.InsertPuzzle(Puzzle{Puzzle: puzzle, Difficulty: "easy", Score: 1, MaxTechnique: "naked-single",
+			Source: "test"}); err != nil {
 			t.Fatalf("InsertPuzzle: %v", err)
 		}
 	}
@@ -168,7 +187,8 @@ func TestAcquireForPlayExhaustsPoolBeforeBalancedReuse(t *testing.T) {
 		t.Fatalf("third acquisition = %+v, %v", third, err)
 	}
 	var minimum, maximum int
-	if err := d.conn.QueryRow(`SELECT MIN(play_count), MAX(play_count) FROM base_puzzles WHERE difficulty = 'easy'`).Scan(&minimum, &maximum); err != nil {
+	if err := d.conn.QueryRow(`SELECT MIN(play_count), MAX(play_count) FROM base_puzzles WHERE difficulty = 'easy'`).Scan(&minimum,
+		&maximum); err != nil {
 		t.Fatalf("query counts: %v", err)
 	}
 	if minimum != 1 || maximum != 2 {
@@ -216,7 +236,8 @@ func TestConcurrentAcquireForPlayReturnsDistinctUnplayedRows(t *testing.T) {
 		t.Fatalf("Open seed database: %v", err)
 	}
 	for _, puzzle := range []string{"puzzle-a", "puzzle-b"} {
-		if _, err := seed.InsertPuzzle(Puzzle{Puzzle: puzzle, Difficulty: "easy", Score: 1, MaxTechnique: "naked-single", Source: "test"}); err != nil {
+		if _, err := seed.InsertPuzzle(Puzzle{Puzzle: puzzle, Difficulty: "easy", Score: 1, MaxTechnique: "naked-single",
+			Source: "test"}); err != nil {
 			t.Fatalf("InsertPuzzle: %v", err)
 		}
 	}
@@ -274,13 +295,15 @@ func TestMarkForPlayUpdatesOnlyTheSelectedPuzzle(t *testing.T) {
 	}
 	defer d.Close()
 	for _, puzzle := range []string{"selected", "unselected"} {
-		if _, err := d.InsertPuzzle(Puzzle{Puzzle: puzzle, Difficulty: "hard", Score: 1, MaxTechnique: "hidden-pair", Source: "test"}); err != nil {
+		if _, err := d.InsertPuzzle(Puzzle{Puzzle: puzzle, Difficulty: "hard", Score: 1, MaxTechnique: "hidden-pair",
+			Source: "test"}); err != nil {
 			t.Fatalf("InsertPuzzle: %v", err)
 		}
 	}
 
 	marked, err := d.MarkForPlay("selected")
-	if err != nil || marked == nil || marked.Puzzle != "selected" || marked.PlayCount != 1 || marked.LastPlayedAt == "" {
+	if err != nil || marked == nil || marked.Puzzle != "selected" || marked.PlayCount != 1 ||
+		marked.LastPlayedAt == "" {
 		t.Fatalf("MarkForPlay = %+v, %v", marked, err)
 	}
 	missing, err := d.MarkForPlay("missing")
@@ -302,7 +325,8 @@ func TestCompletionStatisticsAndResetScopes(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	for _, puzzle := range []Puzzle{{Puzzle: "easy", Difficulty: "easy", Score: 1, MaxTechnique: "single"}, {Puzzle: "hard", Difficulty: "hard", Score: 2, MaxTechnique: "pair"}} {
+	for _, puzzle := range []Puzzle{{Puzzle: "easy", Difficulty: "easy", Score: 1, MaxTechnique: "single"},
+		{Puzzle: "hard", Difficulty: "hard", Score: 2, MaxTechnique: "pair"}} {
 		if _, err := database.InsertPuzzle(puzzle); err != nil {
 			t.Fatal(err)
 		}
@@ -438,17 +462,20 @@ func TestResetHistoryRollsBackOnDatabaseError(t *testing.T) {
 	if _, err := database.InsertPuzzle(Puzzle{Puzzle: "protected", Difficulty: "easy", Score: 1, MaxTechnique: "single"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := database.conn.Exec(`UPDATE base_puzzles SET play_count=2, completion_count=3 WHERE canonical_puzzle='protected'`); err != nil {
+	if _, err := database.conn.Exec(("UPDATE base_puzzles SET play_count=2, completion_count=3 WHERE " +
+		"canonical_puzzle='protected'")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := database.conn.Exec(`CREATE TRIGGER reject_history_reset BEFORE UPDATE ON base_puzzles BEGIN SELECT RAISE(ABORT, 'protected'); END`); err != nil {
+	if _, err := database.conn.Exec(("CREATE TRIGGER reject_history_reset BEFORE UPDATE ON base_puzzles BEGIN SELECT " +
+		"RAISE(ABORT, 'protected'); END")); err != nil {
 		t.Fatal(err)
 	}
 	if err := database.ResetHistory("all", "easy"); err == nil {
 		t.Fatal("expected reset failure")
 	}
 	var plays, completions int
-	if err := database.conn.QueryRow(`SELECT play_count, completion_count FROM base_puzzles WHERE canonical_puzzle='protected'`).Scan(&plays, &completions); err != nil {
+	if err := database.conn.QueryRow(("SELECT play_count, completion_count FROM base_puzzles WHERE " +
+		"canonical_puzzle='protected'")).Scan(&plays, &completions); err != nil {
 		t.Fatal(err)
 	}
 	if plays != 2 || completions != 3 {
@@ -463,12 +490,28 @@ func TestCatalogIdentityProvenanceAndPlayRunsAreSeparate(t *testing.T) {
 	}
 	defer database.Close()
 	canonical := "canonical-puzzle"
-	first := Puzzle{Puzzle: canonical, Difficulty: "hard", Score: 300, MaxTechnique: "x-wing", Source: "bank", SourceRef: "record-7"}
+	first := Puzzle{
+		Puzzle:       canonical,
+		Difficulty:   "hard",
+		Score:        300,
+		MaxTechnique: "x-wing",
+		Source:       "bank",
+		SourceRef:    "record-7",
+	}
 	inserted, err := database.InsertPuzzle(first)
 	if err != nil || !inserted {
 		t.Fatalf("first insert = %v, %v", inserted, err)
 	}
-	inserted, err = database.InsertPuzzle(Puzzle{Puzzle: canonical, Difficulty: "hard", Score: 300, MaxTechnique: "x-wing", Source: "curated", SourceRef: "sample-2"})
+	inserted, err = database.InsertPuzzle(
+		Puzzle{
+			Puzzle:       canonical,
+			Difficulty:   "hard",
+			Score:        300,
+			MaxTechnique: "x-wing",
+			Source:       "curated",
+			SourceRef:    "sample-2",
+		},
+	)
 	if err != nil || inserted {
 		t.Fatalf("duplicate insert = %v, %v", inserted, err)
 	}
@@ -484,7 +527,8 @@ func TestCatalogIdentityProvenanceAndPlayRunsAreSeparate(t *testing.T) {
 		t.Fatal(err)
 	}
 	run, err := database.PlayRunByID("run-1")
-	if err != nil || run == nil || run.BasePuzzleID != id || run.PresentedPuzzle != "transformed-puzzle" || run.Status != "active" {
+	if err != nil || run == nil || run.BasePuzzleID != id || run.PresentedPuzzle != "transformed-puzzle" ||
+		run.Status != "active" {
 		t.Fatalf("play run = %+v, %v", run, err)
 	}
 	if updated, err := database.CompletePlayRun("run-1"); err != nil || !updated {
@@ -498,7 +542,9 @@ func TestCatalogIdentityProvenanceAndPlayRunsAreSeparate(t *testing.T) {
 		t.Fatalf("status = %q", run.Status)
 	}
 	var completions int
-	if err := database.conn.QueryRow(`SELECT completion_count FROM base_puzzles WHERE base_puzzle_id = ?`, id).Scan(&completions); err != nil || completions != 1 {
+	if err := database.conn.QueryRow(`SELECT completion_count FROM base_puzzles WHERE base_puzzle_id = ?`,
+		id).Scan(&completions); err != nil ||
+		completions != 1 {
 		t.Fatalf("completions = %d, %v", completions, err)
 	}
 }
@@ -509,7 +555,15 @@ func TestInsertPuzzleRejectsMismatchedStableID(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	inserted, err := database.InsertPuzzle(Puzzle{BasePuzzleID: BasePuzzleID("other"), Puzzle: "canonical", Difficulty: "easy", Score: 1, MaxTechnique: "single"})
+	inserted, err := database.InsertPuzzle(
+		Puzzle{
+			BasePuzzleID: BasePuzzleID("other"),
+			Puzzle:       "canonical",
+			Difficulty:   "easy",
+			Score:        1,
+			MaxTechnique: "single",
+		},
+	)
 	if err == nil || inserted {
 		t.Fatalf("inserted=%v err=%v", inserted, err)
 	}
@@ -521,7 +575,8 @@ func TestEvilAcquisitionRequiresMaterializedCohort(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	if _, err := database.InsertPuzzle(Puzzle{Puzzle: "evil-unselected", Difficulty: "evil", Score: 900, MaxTechnique: "x-cycles", Source: "test"}); err != nil {
+	if _, err := database.InsertPuzzle(Puzzle{Puzzle: "evil-unselected", Difficulty: "evil", Score: 900,
+		MaxTechnique: "x-cycles", Source: "test"}); err != nil {
 		t.Fatal(err)
 	}
 	if puzzle, err := database.AcquireForPlay("evil"); !errors.Is(err, ErrEvilCohortUnavailable) || puzzle != nil {
@@ -535,14 +590,35 @@ func TestMaterializedEvilCohortExcludesOtherExactEvilPuzzles(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	selected := Puzzle{Puzzle: "evil-selected", Difficulty: "evil", Score: 1000, MaxTechnique: "xy-chain", Source: "test"}
-	excluded := Puzzle{Puzzle: "evil-excluded", Difficulty: "evil", Score: 900, MaxTechnique: "x-cycles", Source: "test"}
+	selected := Puzzle{
+		Puzzle:       "evil-selected",
+		Difficulty:   "evil",
+		Score:        1000,
+		MaxTechnique: "xy-chain",
+		Source:       "test",
+	}
+	excluded := Puzzle{
+		Puzzle:       "evil-excluded",
+		Difficulty:   "evil",
+		Score:        900,
+		MaxTechnique: "x-cycles",
+		Source:       "test",
+	}
 	for _, puzzle := range []Puzzle{selected, excluded} {
 		if _, err := database.InsertPuzzle(puzzle); err != nil {
 			t.Fatal(err)
 		}
 	}
-	definition := CohortDefinition{Name: "evil-v1", Difficulty: "evil", RuleVersion: 1, ManifestHash: "manifest", RepositoryCommit: "commit", SolverConfigDigest: "solver", EvidenceHash: "evidence", MemberCount: 1}
+	definition := CohortDefinition{
+		Name:               "evil-v1",
+		Difficulty:         "evil",
+		RuleVersion:        1,
+		ManifestHash:       "manifest",
+		RepositoryCommit:   "commit",
+		SolverConfigDigest: "solver",
+		EvidenceHash:       "evidence",
+		MemberCount:        1,
+	}
 	if err := database.MaterializeServingCohort(definition, []string{BasePuzzleID(selected.Puzzle)}); err != nil {
 		t.Fatal(err)
 	}
@@ -553,10 +629,12 @@ func TestMaterializedEvilCohortExcludesOtherExactEvilPuzzles(t *testing.T) {
 		}
 	}
 	var selectedCount, excludedCount int
-	if err := database.conn.QueryRow(`SELECT play_count FROM base_puzzles WHERE canonical_puzzle = ?`, selected.Puzzle).Scan(&selectedCount); err != nil {
+	if err := database.conn.QueryRow(`SELECT play_count FROM base_puzzles WHERE canonical_puzzle = ?`,
+		selected.Puzzle).Scan(&selectedCount); err != nil {
 		t.Fatal(err)
 	}
-	if err := database.conn.QueryRow(`SELECT play_count FROM base_puzzles WHERE canonical_puzzle = ?`, excluded.Puzzle).Scan(&excludedCount); err != nil {
+	if err := database.conn.QueryRow(`SELECT play_count FROM base_puzzles WHERE canonical_puzzle = ?`,
+		excluded.Puzzle).Scan(&excludedCount); err != nil {
 		t.Fatal(err)
 	}
 	if selectedCount != 2 || excludedCount != 0 {
@@ -574,7 +652,16 @@ func TestServingCohortMaterializationIsAtomic(t *testing.T) {
 	if _, err := database.InsertPuzzle(puzzle); err != nil {
 		t.Fatal(err)
 	}
-	definition := CohortDefinition{Name: "evil-v1", Difficulty: "evil", RuleVersion: 1, ManifestHash: "manifest", RepositoryCommit: "commit", SolverConfigDigest: "solver", EvidenceHash: "evidence", MemberCount: 2}
+	definition := CohortDefinition{
+		Name:               "evil-v1",
+		Difficulty:         "evil",
+		RuleVersion:        1,
+		ManifestHash:       "manifest",
+		RepositoryCommit:   "commit",
+		SolverConfigDigest: "solver",
+		EvidenceHash:       "evidence",
+		MemberCount:        2,
+	}
 	err = database.MaterializeServingCohort(definition, []string{BasePuzzleID(puzzle.Puzzle), BasePuzzleID("missing")})
 	if err == nil {
 		t.Fatal("expected missing member failure")

@@ -24,7 +24,9 @@ func newService(t *testing.T) *Service {
 }
 
 func TestCreateFromPuzzleReturnsStructuredSource(t *testing.T) {
-	result, err := newService(t).Create(Request{Puzzle: knownPuzzle, DatabasePath: filepath.Join(t.TempDir(), "puzzles.db")})
+	result, err := newService(
+		t,
+	).Create(Request{Puzzle: knownPuzzle, DatabasePath: filepath.Join(t.TempDir(), "puzzles.db")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +61,8 @@ func TestCreateFromCatalogReturnsStructuredSource(t *testing.T) {
 		t.Fatal(err)
 	}
 	classification := solver.ClassifyPuzzle(store, board)
-	if _, err := catalog.InsertPuzzle(db.Puzzle{Puzzle: knownPuzzle, Difficulty: classification.Difficulty, Score: classification.Score, MaxTechnique: classification.MaxTechnique, Source: "test"}); err != nil {
+	if _, err := catalog.InsertPuzzle(db.Puzzle{Puzzle: knownPuzzle, Difficulty: classification.Difficulty,
+		Score: classification.Score, MaxTechnique: classification.MaxTechnique, Source: "test"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := catalog.Close(); err != nil {
@@ -69,7 +72,9 @@ func TestCreateFromCatalogReturnsStructuredSource(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := service.Create(Request{Difficulty: classification.Difficulty, DatabasePath: path, FromDatabase: true})
+	result, err := service.Create(
+		Request{Difficulty: classification.Difficulty, DatabasePath: path, FromDatabase: true},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +106,8 @@ func TestCreateRestoresSavedSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Source != SourceSavedSession || result.ResumePath != path || result.Game.Snapshot() != current.Snapshot() {
+	if result.Source != SourceSavedSession || result.ResumePath != path ||
+		result.Game.Snapshot() != current.Snapshot() {
 		t.Fatalf("restored result = %+v", result)
 	}
 }
@@ -131,7 +137,9 @@ func TestOptionalPuzzleStorageFailureReturnsStructuredNotice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("optional storage failure prevented play: %v", err)
 	}
-	if len(result.Notices) != 1 || result.Notices[0].Kind != NoticePersistenceFailed || result.Notices[0].Operation != "store the reusable puzzle" || result.Notices[0].Cause == nil {
+	if len(result.Notices) != 1 || result.Notices[0].Kind != NoticePersistenceFailed ||
+		result.Notices[0].Operation != "store the reusable puzzle" ||
+		result.Notices[0].Cause == nil {
 		t.Fatalf("persistence notices = %+v", result.Notices)
 	}
 }

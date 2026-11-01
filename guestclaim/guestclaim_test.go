@@ -43,16 +43,20 @@ func TestClaimIsIdempotentAndOwnerScoped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := New(Config{Documents: sealer, Store: database, Random: bytes.NewReader(bytes.Repeat([]byte{2}, 128))})
+	service, err := New(
+		Config{Documents: sealer, Store: database, Random: bytes.NewReader(bytes.Repeat([]byte{2}, 128))},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	first, err := service.Claim("user-a", token)
-	if err != nil || !first.Created || first.Game.Revision != document.Revision || string(first.Game.EngineState) != string(document.EngineState) {
+	if err != nil || !first.Created || first.Game.Revision != document.Revision ||
+		string(first.Game.EngineState) != string(document.EngineState) {
 		t.Fatalf("first claim = %+v, %v", first, err)
 	}
 	second, err := service.Claim("user-a", token)
-	if err != nil || second.Created || second.Game.ID != first.Game.ID || second.Game.PlayRunID != first.Game.PlayRunID {
+	if err != nil || second.Created || second.Game.ID != first.Game.ID ||
+		second.Game.PlayRunID != first.Game.PlayRunID {
 		t.Fatalf("idempotent claim = %+v, %v", second, err)
 	}
 	if _, err := service.Claim("user-b", token); !errors.Is(err, db.ErrGuestAlreadyClaimed) {

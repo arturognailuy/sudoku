@@ -126,7 +126,14 @@ type hiddenDigitPositions struct {
 
 // findHiddenSubsetOfSize is the shared logic for hidden pair/triple/quad solvers.
 // It searches a single unit for hidden subsets of the given size.
-func findHiddenSubsetOfSize(board *core.Board, positions []core.Position, unitName string, size int, technique string, displayName string) *Move {
+func findHiddenSubsetOfSize(
+	board *core.Board,
+	positions []core.Position,
+	unitName string,
+	size int,
+	technique string,
+	displayName string,
+) *Move {
 	// Build a map of digit → positions of empty cells containing that digit.
 	var digits []hiddenDigitPositions
 	for d := 1; d <= 9; d++ {
@@ -152,7 +159,17 @@ func findHiddenSubsetOfSize(board *core.Board, positions []core.Position, unitNa
 }
 
 // hiddenSubsetCombinationsSearch recursively generates combinations and checks for hidden subsets.
-func hiddenSubsetCombinationsSearch(board *core.Board, digits []hiddenDigitPositions, unitName string, size int, indices []int, start int, depth int, technique string, displayName string) *Move {
+func hiddenSubsetCombinationsSearch(
+	board *core.Board,
+	digits []hiddenDigitPositions,
+	unitName string,
+	size int,
+	indices []int,
+	start int,
+	depth int,
+	technique string,
+	displayName string,
+) *Move {
 	if depth == size {
 		// Compute the union of positions for the selected digits.
 		posSet := make(map[core.Position]bool)
