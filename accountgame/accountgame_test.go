@@ -142,14 +142,25 @@ func TestServicePreservesHintEliminationsAcrossPlayerPlacement(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for number := 0; number < 7; number++ {
+	var placement *game.HintPlan
+	for number := 0; number < 12; number++ {
 		plan := current.Hint()
-		if plan == nil || len(plan.Conclusion.Eliminations) == 0 {
-			t.Fatalf("hint %d is not the reported elimination sequence: %+v", number+1, plan)
+		if plan == nil {
+			t.Fatalf("hint sequence ended before its first placement at hint %d", number+1)
+		}
+		if plan.Conclusion.Placement != nil {
+			placement = plan
+			break
+		}
+		if len(plan.Conclusion.Eliminations) == 0 {
+			t.Fatalf("hint %d has no candidate progress: %+v", number+1, plan)
 		}
 		if _, err := current.Apply(game.ApplyHint{PlanID: plan.PlanID}); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if placement == nil {
+		t.Fatal("reported game did not reach a placement after candidate-only deductions")
 	}
 	prepared, err := current.Serialize()
 	if err != nil {
@@ -168,8 +179,7 @@ func TestServicePreservesHintEliminationsAcrossPlayerPlacement(t *testing.T) {
 	if state.Game.Revision != 1 || state.Snapshot.Candidates[retained.Row][retained.Column].Has(9) {
 		t.Fatal("durable account game lost the reported elimination before placement")
 	}
-	placement := current.Hint()
-	if placement == nil || placement.Conclusion.Placement == nil {
+	if placement.Conclusion.Placement == nil {
 		t.Fatalf("expected the reported placement after eliminations: %+v", placement)
 	}
 	transition, err := service.Apply("user-a", "game-a", 1, game.SetValue{

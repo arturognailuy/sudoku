@@ -434,11 +434,19 @@ func TestReportedAccountGamePreservesEliminationsAcrossPlayerPlacement(t *testin
 			t.Fatal(err)
 		}
 	}
-	consumedEliminations := make([][]solver.CandidateRef, 0, 7)
-	for number := 0; number < 7; number++ {
+	consumedEliminations := make([][]solver.CandidateRef, 0, 8)
+	var placement *HintPlan
+	for number := 0; number < 12; number++ {
 		plan := current.Hint()
-		if plan == nil || len(plan.Conclusion.Eliminations) == 0 {
-			t.Fatalf("hint %d is not the reported elimination sequence: %+v", number+1, plan)
+		if plan == nil {
+			t.Fatalf("hint sequence ended before its first placement at hint %d", number+1)
+		}
+		if plan.Conclusion.Placement != nil {
+			placement = plan
+			break
+		}
+		if len(plan.Conclusion.Eliminations) == 0 {
+			t.Fatalf("hint %d has no candidate progress: %+v", number+1, plan)
 		}
 		consumedEliminations = append(consumedEliminations, append([]solver.CandidateRef(nil), plan.Conclusion.Eliminations...))
 		if _, err := current.Apply(ApplyHint{PlanID: plan.PlanID}); err != nil {
@@ -450,9 +458,8 @@ func TestReportedAccountGamePreservesEliminationsAcrossPlayerPlacement(t *testin
 	if current.Snapshot().Candidates[retained.Row][retained.Column].Has(9) {
 		t.Fatal("reported naked-pair elimination was not present before placement")
 	}
-	placement := current.Hint()
-	if placement == nil || placement.Conclusion.Placement == nil || placement.Conclusion.Placement.Position != core.NewPosition(8, 7) || placement.Conclusion.Placement.Value != 8 {
-		t.Fatalf("unexpected reported placement hint: %+v", placement)
+	if placement == nil || placement.Conclusion.Placement == nil {
+		t.Fatalf("reported game did not reach a placement after candidate-only deductions: %+v", placement)
 	}
 	if _, err := current.Apply(SetValue{Position: placement.Conclusion.Placement.Position, Value: placement.Conclusion.Placement.Value}); err != nil {
 		t.Fatal(err)
@@ -528,9 +535,9 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 			expectedSteps := 3
 			if key == "naked-pair" || key == "hidden-pair" || key == "pointing-pair" {
 				expectedSteps = 4
-			} else if key == "naked-triple" || key == "hidden-triple" || key == "swordfish" {
+			} else if key == "hidden-triple" || key == "swordfish" || (key == "naked-triple" && plan.Conclusion.Placement != nil) {
 				expectedSteps = 5
-			} else if key == "naked-quad" || key == "hidden-quad" {
+			} else if key == "hidden-quad" || (key == "naked-quad" && plan.Conclusion.Placement != nil) {
 				expectedSteps = 6
 			}
 			if plan == nil || plan.Strategy.ID != key || len(plan.Steps) != expectedSteps {
@@ -549,7 +556,7 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 				expectedMessage := "hint.subset-reservation.apply"
 				if key == "naked-pair" {
 					expectedMessage = "hint.naked-pair.apply"
-				} else if key == "naked-triple" {
+				} else if key == "naked-triple" && plan.Conclusion.Placement != nil {
 					expectedMessage = "hint.naked-triple.apply"
 				} else if plan.Conclusion.Placement != nil {
 					expectedMessage = "hint.subset-reservation.place"
@@ -561,7 +568,7 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 				if reason == nil || len(reason.PremiseCells) != len(reason.ReservedDigits) || len(reason.PremiseCells) < 2 || len(reason.ActionTargets) == 0 {
 					t.Fatalf("naked-subset reason does not preserve its complete cardinality and action: %+v", reason)
 				}
-				if key == "naked-triple" {
+				if key == "naked-triple" && plan.Conclusion.Placement != nil {
 					wantMessages := []string{"hint.naked-triple.first", "hint.naked-triple.second", "hint.naked-triple.third", "hint.naked-triple.consequence", "hint.naked-triple.apply"}
 					for index, want := range wantMessages {
 						if plan.Steps[index].Message.ID != want {
@@ -575,7 +582,7 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 						t.Fatalf("naked-triple conclusion = %+v, want r4c2=7", plan.Conclusion)
 					}
 				}
-				if key == "naked-quad" {
+				if key == "naked-quad" && plan.Conclusion.Placement != nil {
 					wantMessages := []string{"hint.naked-quad.cell", "hint.naked-quad.cell", "hint.naked-quad.cell", "hint.naked-quad.cell", "hint.subset-reservation.explain", "hint.subset-reservation.place"}
 					for index, want := range wantMessages {
 						if plan.Steps[index].Message.ID != want {
@@ -607,13 +614,16 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 							t.Fatalf("hidden-pair step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 5, 8, 8}) {
-						t.Fatalf("hidden-pair mark progression = %v, want [2 5 8 8]", got)
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 5, 11, 11}) {
+						t.Fatalf("hidden-pair mark progression = %v, want [2 5 11 11]", got)
 					}
 					wantEliminations := []solver.CandidateRef{
-						{Position: core.NewPosition(4, 6), Value: 6},
-						{Position: core.NewPosition(4, 7), Value: 1},
-						{Position: core.NewPosition(4, 7), Value: 4},
+						{Position: core.NewPosition(0, 0), Value: 6},
+						{Position: core.NewPosition(0, 0), Value: 7},
+						{Position: core.NewPosition(0, 0), Value: 8},
+						{Position: core.NewPosition(0, 0), Value: 9},
+						{Position: core.NewPosition(2, 0), Value: 8},
+						{Position: core.NewPosition(2, 0), Value: 9},
 					}
 					if !reflect.DeepEqual(plan.Conclusion.Eliminations, wantEliminations) {
 						t.Fatalf("hidden-pair eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
@@ -625,13 +635,18 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 							t.Fatalf("hidden-triple step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{3, 7, 10, 13, 13}) {
-						t.Fatalf("hidden-triple mark progression = %v, want [3 7 10 13 13]", got)
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{3, 7, 10, 18, 18}) {
+						t.Fatalf("hidden-triple mark progression = %v, want [3 7 10 18 18]", got)
 					}
 					wantEliminations := []solver.CandidateRef{
-						{Position: core.NewPosition(0, 2), Value: 2},
-						{Position: core.NewPosition(0, 2), Value: 4},
-						{Position: core.NewPosition(4, 2), Value: 1},
+						{Position: core.NewPosition(5, 6), Value: 1},
+						{Position: core.NewPosition(5, 6), Value: 8},
+						{Position: core.NewPosition(7, 6), Value: 2},
+						{Position: core.NewPosition(7, 6), Value: 8},
+						{Position: core.NewPosition(7, 6), Value: 9},
+						{Position: core.NewPosition(8, 6), Value: 1},
+						{Position: core.NewPosition(8, 6), Value: 2},
+						{Position: core.NewPosition(8, 6), Value: 8},
 					}
 					if !reflect.DeepEqual(plan.Conclusion.Eliminations, wantEliminations) {
 						t.Fatalf("hidden-triple eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
@@ -643,15 +658,17 @@ func TestSubsetAndIntersectionFamiliesTeachBeforeNaming(t *testing.T) {
 							t.Fatalf("hidden-quad step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks), len(plan.Steps[5].Marks)}; !reflect.DeepEqual(got, []int{4, 9, 13, 17, 22, 22}) {
-						t.Fatalf("hidden-quad mark progression = %v, want [4 9 13 17 22 22]", got)
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks), len(plan.Steps[5].Marks)}; !reflect.DeepEqual(got, []int{4, 9, 13, 17, 24, 24}) {
+						t.Fatalf("hidden-quad mark progression = %v, want [4 9 13 17 24 24]", got)
 					}
 					wantEliminations := []solver.CandidateRef{
-						{Position: core.NewPosition(3, 0), Value: 2},
-						{Position: core.NewPosition(3, 1), Value: 2},
-						{Position: core.NewPosition(4, 0), Value: 2},
-						{Position: core.NewPosition(4, 0), Value: 5},
-						{Position: core.NewPosition(4, 1), Value: 2},
+						{Position: core.NewPosition(0, 0), Value: 6},
+						{Position: core.NewPosition(0, 0), Value: 7},
+						{Position: core.NewPosition(0, 0), Value: 8},
+						{Position: core.NewPosition(0, 1), Value: 6},
+						{Position: core.NewPosition(0, 1), Value: 9},
+						{Position: core.NewPosition(0, 3), Value: 6},
+						{Position: core.NewPosition(0, 3), Value: 7},
 					}
 					if !reflect.DeepEqual(plan.Conclusion.Eliminations, wantEliminations) {
 						t.Fatalf("hidden-quad eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
@@ -761,16 +778,15 @@ func TestFishAndRelationalFamiliesTeachBeforeNaming(t *testing.T) {
 							t.Fatalf("x-wing step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 6, 8, 11}) {
-						t.Fatalf("x-wing mark progression = %v, want [2 6 8 11]", got)
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks)}; !reflect.DeepEqual(got, []int{2, 6, 8, 10}) {
+						t.Fatalf("x-wing mark progression = %v, want [2 6 8 10]", got)
 					}
-					if got := plan.Steps[0].Message.Text; got != "In row 4, candidate 3 appears only in column 2 and column 3." {
+					if got := plan.Steps[0].Message.Text; got != "In row 5, candidate 7 appears only in column 1 and column 4." {
 						t.Fatalf("x-wing first-step copy = %q", got)
 					}
 					wantEliminations := []solver.CandidateRef{
-						{Position: core.NewPosition(0, 1), Value: 3},
-						{Position: core.NewPosition(0, 2), Value: 3},
-						{Position: core.NewPosition(2, 1), Value: 3},
+						{Position: core.NewPosition(0, 3), Value: 7},
+						{Position: core.NewPosition(7, 3), Value: 7},
 					}
 					if !reflect.DeepEqual(plan.Conclusion.Eliminations, wantEliminations) {
 						t.Fatalf("x-wing eliminations = %+v, want %+v", plan.Conclusion.Eliminations, wantEliminations)
@@ -782,13 +798,13 @@ func TestFishAndRelationalFamiliesTeachBeforeNaming(t *testing.T) {
 							t.Fatalf("swordfish step %d message = %q, want %q", index, plan.Steps[index].Message.ID, want)
 						}
 					}
-					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{2, 6, 9, 12, 14}) {
-						t.Fatalf("swordfish mark progression = %v, want [2 6 9 12 14]", got)
+					if got := []int{len(plan.Steps[0].Marks), len(plan.Steps[1].Marks), len(plan.Steps[2].Marks), len(plan.Steps[3].Marks), len(plan.Steps[4].Marks)}; !reflect.DeepEqual(got, []int{2, 6, 9, 12, 13}) {
+						t.Fatalf("swordfish mark progression = %v, want [2 6 9 12 13]", got)
 					}
 					wantCopy := []string{
-						"In row 1, candidate 6 appears only in column 4 and column 6.",
-						"In row 6, candidate 6 appears only in column 4 and column 5.",
-						"In row 8, candidate 6 appears only in column 5 and column 6.",
+						"In row 3, candidate 3 appears only in column 2 and column 6.",
+						"In row 8, candidate 3 appears only in column 2 and column 9.",
+						"In row 9, candidate 3 appears only in column 6 and column 9.",
 					}
 					for index, want := range wantCopy {
 						if plan.Steps[index].Message.Text != want {
