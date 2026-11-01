@@ -245,6 +245,52 @@ func TestPointingPairSolver_FindsBoxLineReduction(t *testing.T) {
 	}
 }
 
+// TestPointingPairSolver_HintReturnsEliminationWithoutPlacement preserves the
+// reported live-game shape: candidate 4 is confined to r4c4 and r6c4 in box 5,
+// so r9c4 can lose 4 even though that elimination is not yet a naked single.
+func TestPointingPairSolver_HintReturnsEliminationWithoutPlacement(t *testing.T) {
+	board := core.NewEmptyBoard()
+	for row := 3; row <= 5; row++ {
+		for column := 3; column <= 5; column++ {
+			if (row == 3 || row == 5) && column == 3 {
+				continue
+			}
+			board.EliminateCandidate(core.NewPosition(row, column), 4)
+		}
+	}
+	for row := 0; row < 9; row++ {
+		if row == 3 || row == 5 || row == 8 {
+			continue
+		}
+		board.EliminateCandidate(core.NewPosition(row, 3), 4)
+	}
+
+	move := solver.NewPointingPairSolver().Hint(&board)
+	if move == nil {
+		t.Fatal("Expected a pointing-pair elimination hint, got nil")
+	}
+	if move.IsPlacement() || !move.EliminationOnly {
+		t.Fatalf("Expected an elimination-only move, got %+v", move)
+	}
+	if move.Technique != "pointing-pair" {
+		t.Fatalf("Expected pointing-pair, got %q", move.Technique)
+	}
+	if move.Evidence == nil || len(move.Evidence.Eliminations) != 1 {
+		t.Fatalf("Expected one typed elimination, got %+v", move.Evidence)
+	}
+	want := solver.CandidateRef{Position: core.NewPosition(8, 3), Value: 4}
+	if got := move.Evidence.Eliminations[0]; got != want {
+		t.Fatalf("Elimination = %+v, want %+v", got, want)
+	}
+	if len(move.Evidence.Premises) != 2 || move.Evidence.Premises[0].Position != core.NewPosition(3, 3) || move.Evidence.Premises[1].Position != core.NewPosition(5, 3) {
+		t.Fatalf("Premises do not preserve r4c4/r6c4: %+v", move.Evidence.Premises)
+	}
+	wantUnits := []solver.UnitRef{{Kind: solver.UnitBox, Index: 4}, {Kind: solver.UnitColumn, Index: 3}}
+	if len(move.Evidence.Units) != len(wantUnits) || move.Evidence.Units[0] != wantUnits[0] || move.Evidence.Units[1] != wantUnits[1] {
+		t.Fatalf("Units = %+v, want %+v", move.Evidence.Units, wantUnits)
+	}
+}
+
 // TestPointingPairSolver_NoProgress verifies nil when no pointing pairs exist.
 func TestPointingPairSolver_NoProgress(t *testing.T) {
 	board := core.NewEmptyBoard()

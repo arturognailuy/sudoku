@@ -16,8 +16,10 @@ import (
 // is confined to a single box, that candidate can be eliminated from the rest
 // of that box.
 //
-// Like the naked subset solvers, this solver finds eliminations and returns a move
-// only when an elimination creates a naked single.
+// Apply retains the solving contract of returning a move only when an
+// elimination creates a naked single. Hint can also return the elimination
+// itself so an interactive player sees this simpler deduction before a more
+// advanced strategy that reaches the same result.
 type PointingPairSolver struct {
 	Base
 }
@@ -47,6 +49,167 @@ func (s *PointingPairSolver) Apply(board *core.Board) *Move {
 	}
 
 	return nil
+}
+
+// Hint returns a useful pointing-pair or box-line elimination even when it
+// does not immediately create a placement. Placement-producing moves retain
+// the existing solving and teaching sequence.
+func (s *PointingPairSolver) Hint(board *core.Board) *Move {
+	if move := s.Apply(board); move != nil {
+		return move
+	}
+	if move := s.findPointingPairEliminations(board); move != nil {
+		return move
+	}
+	return s.findBoxLineEliminations(board)
+}
+
+func (s *PointingPairSolver) findPointingPairEliminations(board *core.Board) *Move {
+	for boxRow := 0; boxRow < 3; boxRow++ {
+		for boxCol := 0; boxCol < 3; boxCol++ {
+			startRow, startCol := boxRow*3, boxCol*3
+			box := UnitRef{Kind: UnitBox, Index: boxRow*3 + boxCol}
+
+			for digit := 1; digit <= 9; digit++ {
+				rowSet := make(map[int]bool)
+				colSet := make(map[int]bool)
+				var positions []core.Position
+				for row := startRow; row < startRow+3; row++ {
+					for column := startCol; column < startCol+3; column++ {
+						position := core.NewPosition(row, column)
+						if board.Get(position) == 0 && board.Candidates(position).Has(digit) {
+							rowSet[row] = true
+							colSet[column] = true
+							positions = append(positions, position)
+						}
+					}
+				}
+				if len(positions) < 2 {
+					continue
+				}
+
+				if len(rowSet) == 1 {
+					row := positions[0].Row
+					var eliminations []CandidateRef
+					for column := 0; column < 9; column++ {
+						if column >= startCol && column < startCol+3 {
+							continue
+						}
+						position := core.NewPosition(row, column)
+						if board.Get(position) == 0 && board.Candidates(position).Has(digit) {
+							eliminations = append(eliminations, CandidateRef{Position: position, Value: digit})
+						}
+					}
+					if move := pointingEliminationMove(s.Key, box, UnitRef{Kind: UnitRow, Index: row}, positions, eliminations, digit); move != nil {
+						return move
+					}
+				}
+
+				if len(colSet) == 1 {
+					column := positions[0].Column
+					var eliminations []CandidateRef
+					for row := 0; row < 9; row++ {
+						if row >= startRow && row < startRow+3 {
+							continue
+						}
+						position := core.NewPosition(row, column)
+						if board.Get(position) == 0 && board.Candidates(position).Has(digit) {
+							eliminations = append(eliminations, CandidateRef{Position: position, Value: digit})
+						}
+					}
+					if move := pointingEliminationMove(s.Key, box, UnitRef{Kind: UnitColumn, Index: column}, positions, eliminations, digit); move != nil {
+						return move
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (s *PointingPairSolver) findBoxLineEliminations(board *core.Board) *Move {
+	for row := 0; row < 9; row++ {
+		for digit := 1; digit <= 9; digit++ {
+			boxes := make(map[int]bool)
+			var positions []core.Position
+			for column := 0; column < 9; column++ {
+				position := core.NewPosition(row, column)
+				if board.Get(position) == 0 && board.Candidates(position).Has(digit) {
+					boxes[column/3] = true
+					positions = append(positions, position)
+				}
+			}
+			if len(positions) < 2 || len(boxes) != 1 {
+				continue
+			}
+			boxColumn := positions[0].Column / 3
+			boxRow := row / 3
+			var eliminations []CandidateRef
+			for otherRow := boxRow * 3; otherRow < boxRow*3+3; otherRow++ {
+				if otherRow == row {
+					continue
+				}
+				for column := boxColumn * 3; column < boxColumn*3+3; column++ {
+					position := core.NewPosition(otherRow, column)
+					if board.Get(position) == 0 && board.Candidates(position).Has(digit) {
+						eliminations = append(eliminations, CandidateRef{Position: position, Value: digit})
+					}
+				}
+			}
+			if move := pointingEliminationMove(s.Key, UnitRef{Kind: UnitRow, Index: row}, UnitRef{Kind: UnitBox, Index: boxRow*3 + boxColumn}, positions, eliminations, digit); move != nil {
+				return move
+			}
+		}
+	}
+
+	for column := 0; column < 9; column++ {
+		for digit := 1; digit <= 9; digit++ {
+			boxes := make(map[int]bool)
+			var positions []core.Position
+			for row := 0; row < 9; row++ {
+				position := core.NewPosition(row, column)
+				if board.Get(position) == 0 && board.Candidates(position).Has(digit) {
+					boxes[row/3] = true
+					positions = append(positions, position)
+				}
+			}
+			if len(positions) < 2 || len(boxes) != 1 {
+				continue
+			}
+			boxRow := positions[0].Row / 3
+			boxColumn := column / 3
+			var eliminations []CandidateRef
+			for row := boxRow * 3; row < boxRow*3+3; row++ {
+				for otherColumn := boxColumn * 3; otherColumn < boxColumn*3+3; otherColumn++ {
+					if otherColumn == column {
+						continue
+					}
+					position := core.NewPosition(row, otherColumn)
+					if board.Get(position) == 0 && board.Candidates(position).Has(digit) {
+						eliminations = append(eliminations, CandidateRef{Position: position, Value: digit})
+					}
+				}
+			}
+			if move := pointingEliminationMove(s.Key, UnitRef{Kind: UnitColumn, Index: column}, UnitRef{Kind: UnitBox, Index: boxRow*3 + boxColumn}, positions, eliminations, digit); move != nil {
+				return move
+			}
+		}
+	}
+	return nil
+}
+
+func pointingEliminationMove(technique string, source, intersecting UnitRef, positions []core.Position, eliminations []CandidateRef, digit int) *Move {
+	if len(eliminations) == 0 {
+		return nil
+	}
+	evidence := pointingEvidence(source, intersecting, positions, digit)
+	evidence.Eliminations = eliminations
+	return &Move{
+		Technique:       technique,
+		Reason:          fmt.Sprintf("candidate %d is confined to the intersection of %s %d and %s %d", digit, source.Kind, source.Index+1, intersecting.Kind, intersecting.Index+1),
+		EliminationOnly: true,
+		Evidence:        evidence,
+	}
 }
 
 // findPointingPairs checks each box: if a candidate appears only in one row
